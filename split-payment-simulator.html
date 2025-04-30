@@ -73,6 +73,85 @@
 							</div>
 						</div>
 					</div>
+					<div class="form-column">
+						<div class="form-group">
+							<label for="setor">Setor de Atividade:</label>
+							<select id="setor" class="form-control">
+								<option value="">Selecione uma atividade...</option>
+								<option value="comercio" data-aliquota="26.5" data-reducao="0.0">Comércio Varejista (Alíquota: 26.5%, Redução: 0.0%)</option>
+								<option value="industria" data-aliquota="22.0" data-reducao="0.0">Indústria de Transformação (Alíquota: 22.0%, Redução: 0.0%)</option>
+								<option value="servicos" data-aliquota="26.5" data-reducao="0.0">Serviços Contínuos (Alíquota: 26.5%, Redução: 0.0%)</option>
+								<option value="agronegocio" data-aliquota="19.5" data-reducao="0.0">Agronegócio (Alíquota: 19.5%, Redução: 0.0%)</option>
+								<option value="construcao" data-aliquota="24.0" data-reducao="0.0">Construção Civil (Alíquota: 24.0%, Redução: 0.0%)</option>
+								<option value="tecnologia" data-aliquota="26.5" data-reducao="0.0">Tecnologia (Alíquota: 26.5%, Redução: 0.0%)</option>
+								<option value="saude" data-aliquota="14.5" data-reducao="3.0">Saúde (Alíquota: 14.5%, Redução: 3.0%)</option>
+								<option value="educacao" data-aliquota="12.5" data-reducao="5.0">Educação (Alíquota: 12.5%, Redução: 5.0%)</option>
+								<option value="medicamentos" data-aliquota="10.6" data-reducao="60.0">Medicamentos (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="dispositivos_medicos" data-aliquota="10.6" data-reducao="60.0">Dispositivos Médicos (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="dispositivos_acessibilidade" data-aliquota="10.6" data-reducao="60.0">Dispositivos de Acessibilidade (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="cuidados_menstruais" data-aliquota="10.6" data-reducao="60.0">Produtos de Cuidados Menstruais (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="transporte_coletivo" data-aliquota="10.6" data-reducao="60.0">Transporte Coletivo (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="alimentos_consumo_humano" data-aliquota="10.6" data-reducao="60.0">Alimentos para Consumo Humano (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="higiene_limpeza" data-aliquota="10.6" data-reducao="60.0">Produtos de Higiene e Limpeza (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="producoes_artisticas" data-aliquota="10.6" data-reducao="60.0">Produções Artísticas e Culturais (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="insumos_agropecuarios" data-aliquota="10.6" data-reducao="60.0">Insumos Agropecuários (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="seguranca_nacional" data-aliquota="10.6" data-reducao="60.0">Segurança e Soberania Nacional (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="cesta_basica" data-aliquota="0.0" data-reducao="100.0">Cesta Básica Nacional (Alíquota: 0.0%, Redução: 100.0%)</option>
+								<option value="combustiveis_energia" data-aliquota="26.5" data-reducao="0.0">Combustíveis e Energia (Alíquota: 26.5%, Redução: 0.0%)</option>
+								<option value="financeiro_seguros" data-aliquota="26.5" data-reducao="0.0">Financeiro e Seguros (Alíquota: 26.5%, Redução: 0.0%)</option>
+							</select>
+						</div>
+
+						<!-- Seção "Tributação e Split Payment" modificada -->
+						<div class="group-box">
+							<h3>Tributação e Split Payment</h3>
+							<div class="form-row">
+								<div class="form-column">
+									<div class="form-group">
+										<label for="aliquota">Alíquota Efetiva (%):</label>
+										<input type="number" id="aliquota" name="aliquota" value="26.5" min="0" max="100" step="0.1">
+										<small class="text-muted">Ajuste conforme o setor selecionado</small>
+									</div>
+								</div>
+								<div class="form-column">
+									<div class="form-group">
+										<label for="reducao">Redução Especial (%):</label>
+										<input type="number" id="reducao" name="reducao" value="0.0" min="0" max="100" step="0.1">
+										<small class="text-muted">Ajuste conforme o setor selecionado</small>
+									</div>
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-column">
+									<div class="form-group">
+										<label for="tipo-operacao">Tipo de Operação:</label>
+										<select id="tipo-operacao">
+											<option value="b2b">B2B (Empresa-Empresa)</option>
+											<option value="b2c">B2C (Empresa-Consumidor)</option>
+											<option value="mista">Mista</option>
+										</select>
+									</div>
+								</div>
+								<div class="form-column">
+									<div class="form-group">
+										<label for="creditos">Créditos Tributários Mensais:</label>
+										<input type="text" id="creditos" value="0" class="money-input">
+									</div>
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-column">
+									<div class="form-group">
+										<label for="compensacao">Compensação de Créditos:</label>
+										<select id="compensacao">
+											<option value="automatica">Automática (Tempo Real)</option>
+											<option value="mensal">Mensal</option>
+											<option value="trimestral">Trimestral</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
 					<div class="group-box">
 						<h3>Ciclo Financeiro</h3>
 						<div class="form-row">
@@ -117,84 +196,7 @@
 								</div>
 							</div>
 						</div>
-					</div>
-					<div class="form-column">
-						<div class="group-box">
-							<label for="setor">Setor de Atividade:</label>
-							<select id="setor" onchange="atualizarAliquotaReducao()">
-								<option value="">Selecione uma atividade...</option>
-								<option value="comercio" data-aliquota="26.5" data-reducao="0.0">Comércio Varejista</option>
-								<option value="industria" data-aliquota="22.0" data-reducao="0.0">Indústria de Transformação</option>
-								<option value="servicos" data-aliquota="26.5" data-reducao="0.0">Serviços Contínuos</option>
-								<option value="agronegocio" data-aliquota="19.5" data-reducao="0.0">Agronegócio</option>
-								<option value="construcao" data-aliquota="24.0" data-reducao="0.0">Construção Civil</option>
-								<option value="tecnologia" data-aliquota="26.5" data-reducao="0.0">Tecnologia</option>
-								<option value="saude" data-aliquota="14.5" data-reducao="3.0">Saúde</option>
-								<option value="educacao" data-aliquota="12.5" data-reducao="5.0">Educação</option>
-								<option value="medicamentos" data-aliquota="10.6" data-reducao="60.0">Medicamentos</option>
-								<option value="dispositivos_medicos" data-aliquota="10.6" data-reducao="60.0">Dispositivos Médicos</option>
-								<option value="dispositivos_acessibilidade" data-aliquota="10.6" data-reducao="60.0">Dispositivos de Acessibilidade</option>
-								<option value="cuidados_menstruais" data-aliquota="10.6" data-reducao="60.0">Produtos de Cuidados Menstruais</option>
-								<option value="transporte_coletivo" data-aliquota="10.6" data-reducao="60.0">Transporte Coletivo</option>
-								<option value="alimentos_consumo_humano" data-aliquota="10.6" data-reducao="60.0">Alimentos para Consumo Humano</option>
-								<option value="higiene_limpeza" data-aliquota="10.6" data-reducao="60.0">Produtos de Higiene e Limpeza</option>
-								<option value="producoes_artisticas" data-aliquota="10.6" data-reducao="60.0">Produções Artísticas e Culturais</option>
-								<option value="insumos_agropecuarios" data-aliquota="10.6" data-reducao="60.0">Insumos Agropecuários</option>
-								<option value="seguranca_nacional" data-aliquota="10.6" data-reducao="60.0">Segurança e Soberania Nacional</option>
-								<option value="cesta_basica" data-aliquota="0.0" data-reducao="100.0">Cesta Básica Nacional</option>
-								<option value="combustiveis_energia" data-aliquota="26.5" data-reducao="0.0">Combustíveis e Energia</option>
-								<option value="financeiro_seguros" data-aliquota="26.5" data-reducao="0.0">Financeiro e Seguros</option>
-							</select>
-						</div>
-
-						<!-- Seção "Tributação e Split Payment" modificada -->
-						<div class="group-box">
-							<h3>Tributação e Split Payment</h3>
-							<div class="form-row">
-								<div class="form-column">
-									<div class="form-group">
-										<label for="aliquota">Alíquota Efetiva (%):</label>
-										<input type="number" id="aliquota" value="26.5" min="0" max="100" step="0.1" readonly>
-									</div>
-								</div>
-								<div class="form-column">
-									<div class="form-group">
-										<label for="reducao">Redução Especial (%):</label>
-										<input type="number" id="reducao" value="0.0" min="0" max="100" step="0.1" readonly>
-									</div>
-								</div>
-							</div>
-							<div class="form-row">
-								<div class="form-column">
-									<div class="form-group">
-										<label for="tipo-operacao">Tipo de Operação:</label>
-										<select id="tipo-operacao">
-											<option value="b2b">B2B (Empresa-Empresa)</option>
-											<option value="b2c">B2C (Empresa-Consumidor)</option>
-											<option value="mista">Mista</option>
-										</select>
-									</div>
-								</div>
-								<div class="form-column">
-									<div class="form-group">
-										<label for="creditos">Créditos Tributários Mensais:</label>
-										<input type="text" id="creditos" value="0" class="money-input">
-									</div>
-								</div>
-							</div>
-							<div class="form-row">
-								<div class="form-column">
-									<div class="form-group">
-										<label for="compensacao">Compensação de Créditos:</label>
-										<select id="compensacao">
-											<option value="automatica">Automática (Tempo Real)</option>
-											<option value="mensal">Mensal</option>
-											<option value="trimestral">Trimestral</option>
-										</select>
-									</div>
-								</div>
-							</div>
-						</div>
+					</div>				
 
 							<div class="group-box">
 								<h3>Parâmetros da Simulação</h3>
@@ -1022,5 +1024,61 @@
     
     <!-- Por último, o script principal -->
     <script src="js/main.js"></script>
+    
+    <!-- Script direto para atualização dos campos -->
+	<script>
+	function setorSelecionado() {
+		// Obter o elemento select
+		var select = document.getElementById('setor');
+		
+		// Obter o valor (código) do setor selecionado
+		var codigoSetor = select.value;
+		
+		// Verificar se um setor foi selecionado
+		if (codigoSetor && typeof SetoresManager !== 'undefined') {
+			try {
+				// Obter o setor
+				var setor = SetoresManager.obterSetor(codigoSetor);
+				
+				if (setor) {
+					// Obter o valor da redução que sabemos que está funcionando
+					var reducaoEspecial = setor.reducaoEspecial || 0;
+					document.getElementById('reducao').value = (reducaoEspecial * 100).toFixed(1);
+					
+					// Para a alíquota, vamos verificar todas as possibilidades
+					if (typeof setor.aliquotaEfetiva !== 'undefined') {
+						document.getElementById('aliquota').value = (setor.aliquotaEfetiva * 100).toFixed(1);
+					} else if (typeof setor.aliquota_efetiva !== 'undefined') {
+						document.getElementById('aliquota').value = (setor.aliquota_efetiva * 100).toFixed(1);
+					} else {
+						// Se não encontrarmos, usamos o método específico
+						var aliquota = SetoresManager.obterAliquotaEfetiva(codigoSetor);
+						document.getElementById('aliquota').value = (aliquota * 100).toFixed(1);
+					}
+					
+					console.log('Setor selecionado:', setor.nome);
+					console.log('Propriedades do setor:', JSON.stringify(setor));
+				}
+			} catch (error) {
+				console.error('Erro ao atualizar campos:', error);
+				document.getElementById('aliquota').value = "26.5";
+				document.getElementById('reducao').value = "0.0";
+			}
+		} else {
+			document.getElementById('aliquota').value = "26.5";
+			document.getElementById('reducao').value = "0.0";
+		}
+	}
+
+	// Adicionar evento de mudança ao select
+	document.addEventListener('DOMContentLoaded', function() {
+		var selectSetor = document.getElementById('setor');
+		if (selectSetor) {
+			selectSetor.addEventListener('change', setorSelecionado);
+			// Executar uma vez para inicializar os valores
+			setorSelecionado();
+		}
+	});
+	</script>
 </body>
 </html>

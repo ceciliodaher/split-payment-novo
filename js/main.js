@@ -115,37 +115,6 @@ function inicializarEventosPrincipais() {
     console.log('Eventos principais inicializados');
 }
 
-// Função para atualizar alíquota e redução conforme o setor selecionado
-function atualizarAliquotaReducao() {
-    // Obter o elemento select
-    const select = document.getElementById('setor');
-    if (!select || select.selectedIndex < 0) return;
-    
-    // Obter a opção selecionada
-    const option = select.options[select.selectedIndex];
-    if (!option || !option.value) return;
-    
-    // Obter os valores dos atributos data-*
-    const aliquota = option.getAttribute('data-aliquota');
-    const reducao = option.getAttribute('data-reducao');
-    
-    // Atualizar os campos
-    const campoAliquota = document.getElementById('aliquota');
-    const campoReducao = document.getElementById('reducao');
-    
-    if (campoAliquota) campoAliquota.value = aliquota || '';
-    if (campoReducao) campoReducao.value = reducao || '';
-}
-
-// Garantir que a função seja chamada na inicialização
-document.addEventListener('DOMContentLoaded', function() {
-    const select = document.getElementById('setor');
-    if (select) {
-        select.addEventListener('change', atualizarAliquotaReducao);
-        atualizarAliquotaReducao(); // Executar imediatamente
-    }
-});
-
 /**
  * Coleta os dados do formulário de simulação e executa a simulação
  */
