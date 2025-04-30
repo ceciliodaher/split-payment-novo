@@ -994,7 +994,27 @@
     </div>
     
     <!-- Importação dos scripts JavaScript -->
-    
+    <script>
+    // Função para atualizar alíquota e redução conforme o setor selecionado
+	function atualizarAliquotaReducao() {
+		const select = document.getElementById('setor');
+		const option = select.options[select.selectedIndex];
+		
+		const aliquota = option.getAttribute('data-aliquota');
+		const reducao = option.getAttribute('data-reducao');
+		
+		document.getElementById('aliquota').value = aliquota;
+		document.getElementById('reducao').value = reducao;
+	}
+
+	// Adicionar à inicialização para garantir que os valores iniciais estejam corretos
+	document.addEventListener('DOMContentLoaded', function() {
+		// Código existente...
+		
+		// Chamar a função de atualização de alíquota e redução na inicialização
+		atualizarAliquotaReducao();
+	});
+    </script>
     <!-- Primeiro os utilitários -->
     <script src="js/utils/formatters.js"></script>
     <script src="js/utils/validators.js"></script>

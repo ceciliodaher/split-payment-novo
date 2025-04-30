@@ -39,200 +39,206 @@
                 <div class="grid">
                     <!-- Painel de entrada -->
                     <div class="panel">
-                        <!-- Seção "Dados da Empresa" modificada -->
-					<div class="group-box">
-						<h3>Dados da Empresa</h3>
-						<div class="form-group">
-							<label for="empresa">Empresa:</label>
-							<input type="text" id="empresa" placeholder="Nome da empresa">
-						</div>
-						<div class="form-row">
-							<div class="form-column">
-								<div class="form-group">
-									<label for="faturamento">Faturamento Mensal:</label>
-									<input type="text" id="faturamento" value="0" class="money-input">
-								</div>
-							</div>
-							<div class="form-column">
-								<div class="form-group">
-									<label for="margem">Margem Operacional (%):</label>
-									<input type="number" id="margem" value="15" min="0" max="100" step="0.1">
-								</div>
-							</div>
-						</div>
-						<div class="form-row">
-							<div class="form-column">
-								<div class="form-group">
-									<label for="regime">Regime Tributário:</label>
-									<select id="regime">
-										<option value="simples">Simples Nacional</option>
-										<option value="presumido">Lucro Presumido</option>
-										<option value="real">Lucro Real</option>
+                        <div class="group-box">
+                            <h3>Dados da Empresa</h3>
+                            <div class="form-group">
+                                <label for="empresa">Empresa:</label>
+                                <input type="text" id="empresa" placeholder="Nome da empresa">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="faturamento">Faturamento Mensal:</label>
+                                        <input type="text" id="faturamento" value="0" class="money-input">
+                                    </div>
+                                </div>
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="margem">Margem Operacional (%):</label>
+                                        <input type="number" id="margem" value="15" min="0" max="100" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+									<label for="setor">Setor de Atividade:</label>
+									<select id="setor">
+										<!-- Setores Gerais -->
+										<option value="comercio">Comércio Varejista</option>
+										<option value="industria">Indústria de Transformação</option>
+										<option value="servicos">Serviços Contínuos</option>
+										<option value="agronegocio">Agronegócio</option>
+										<option value="construcao">Construção Civil</option>
+										<option value="tecnologia">Tecnologia</option>
+										<option value="saude">Saúde</option>
+										<option value="educacao">Educação</option>
+										
+										<!-- Setores com Redução de 60% na Alíquota -->
+										<option value="dispositivos_medicos">Dispositivos Médicos</option>
+										<option value="dispositivos_acessibilidade">Dispositivos de Acessibilidade</option>
+										<option value="medicamentos">Medicamentos</option>
+										<option value="cuidados_menstruais">Produtos de Cuidados Menstruais</option>
+										<option value="transporte_coletivo">Transporte Coletivo</option>
+										<option value="alimentos_consumo_humano">Alimentos para Consumo Humano</option>
+										<option value="higiene_limpeza">Produtos de Higiene e Limpeza</option>
+										<option value="producoes_artisticas">Produções Artísticas e Culturais</option>
+										<option value="insumos_agropecuarios">Insumos Agropecuários</option>
+										<option value="seguranca_nacional">Segurança e Soberania Nacional</option>
+										
+										<!-- Setores com Alíquota Zero -->
+										<option value="cesta_basica">Cesta Básica Nacional</option>
+										<option value="alimentos_in_natura">Produtos Hortícolas, Frutas e Ovos</option>
+										<option value="educacao_prouni">Serviços de Educação Superior - ProUni</option>
+										<option value="eventos_perse">Serviços do Setor de Eventos - PERSE</option>
+										<option value="recuperacao_urbana">Recuperação Urbana em Áreas Históricas</option>
+										
+										<!-- Regimes Específicos -->
+										<option value="combustiveis_energia">Combustíveis e Energia</option>
+										<option value="financeiro_seguros">Financeiro e Seguros</option>
+										<option value="planos_saude">Planos e Seguros de Saúde</option>
+										<option value="industria_petroleo">Indústria de Petróleo</option>
+										<option value="bens_capital">Bens de Capital</option>
+										<option value="industria_exportacao">Industrialização para Exportação</option>
+										<option value="lojas_francas">Regimes Aduaneiros - Lojas Francas</option>
+										<option value="reporto">Regime Reporto (Modernização de Portos)</option>
 									</select>
 								</div>
-							</div>
-						</div>
-					</div>
-					<div class="group-box">
-						<h3>Ciclo Financeiro</h3>
-						<div class="form-row">
-							<div class="form-column">
-								<div class="form-group">
-									<label for="pmr">Prazo Médio de Recebimento (dias):</label>
-									<input type="number" id="pmr" value="30" min="0" step="1">
-								</div>
-							</div>
-							<div class="form-column">
-								<div class="form-group">
-									<label for="pmp">Prazo Médio de Pagamento (dias):</label>
-									<input type="number" id="pmp" value="30" min="0" step="1">
-								</div>
-							</div>
-						</div>
-						<div class="form-row">
-							<div class="form-column">
-								<div class="form-group">
-									<label for="pme">Prazo Médio de Estoque (dias):</label>
-									<input type="number" id="pme" value="30" min="0" step="1">
-								</div>
-							</div>
-							<div class="form-column">
-								<div class="form-group">
-									<label for="ciclo-financeiro">Ciclo Financeiro (dias):</label>
-									<input type="number" id="ciclo-financeiro" value="30" readonly>
-								</div>
-							</div>
-						</div>
-						<div class="form-row">
-							<div class="form-column">
-								<div class="form-group">
-									<label for="perc-vista">Percentual de Vendas à Vista (%):</label>
-									<input type="number" id="perc-vista" value="30" min="0" max="100" step="1">
-								</div>
-							</div>
-							<div class="form-column">
-								<div class="form-group">
-									<label for="perc-prazo">Percentual de Vendas a Prazo (%):</label>
-									<input type="number" id="perc-prazo" value="70" readonly>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="form-column">
-						<div class="group-box">
-							<label for="setor">Setor de Atividade:</label>
-							<select id="setor" onchange="atualizarAliquotaReducao()">
-								<option value="">Selecione uma atividade...</option>
-								<option value="comercio" data-aliquota="26.5" data-reducao="0.0">Comércio Varejista</option>
-								<option value="industria" data-aliquota="22.0" data-reducao="0.0">Indústria de Transformação</option>
-								<option value="servicos" data-aliquota="26.5" data-reducao="0.0">Serviços Contínuos</option>
-								<option value="agronegocio" data-aliquota="19.5" data-reducao="0.0">Agronegócio</option>
-								<option value="construcao" data-aliquota="24.0" data-reducao="0.0">Construção Civil</option>
-								<option value="tecnologia" data-aliquota="26.5" data-reducao="0.0">Tecnologia</option>
-								<option value="saude" data-aliquota="14.5" data-reducao="3.0">Saúde</option>
-								<option value="educacao" data-aliquota="12.5" data-reducao="5.0">Educação</option>
-								<option value="medicamentos" data-aliquota="10.6" data-reducao="60.0">Medicamentos</option>
-								<option value="dispositivos_medicos" data-aliquota="10.6" data-reducao="60.0">Dispositivos Médicos</option>
-								<option value="dispositivos_acessibilidade" data-aliquota="10.6" data-reducao="60.0">Dispositivos de Acessibilidade</option>
-								<option value="cuidados_menstruais" data-aliquota="10.6" data-reducao="60.0">Produtos de Cuidados Menstruais</option>
-								<option value="transporte_coletivo" data-aliquota="10.6" data-reducao="60.0">Transporte Coletivo</option>
-								<option value="alimentos_consumo_humano" data-aliquota="10.6" data-reducao="60.0">Alimentos para Consumo Humano</option>
-								<option value="higiene_limpeza" data-aliquota="10.6" data-reducao="60.0">Produtos de Higiene e Limpeza</option>
-								<option value="producoes_artisticas" data-aliquota="10.6" data-reducao="60.0">Produções Artísticas e Culturais</option>
-								<option value="insumos_agropecuarios" data-aliquota="10.6" data-reducao="60.0">Insumos Agropecuários</option>
-								<option value="seguranca_nacional" data-aliquota="10.6" data-reducao="60.0">Segurança e Soberania Nacional</option>
-								<option value="cesta_basica" data-aliquota="0.0" data-reducao="100.0">Cesta Básica Nacional</option>
-								<option value="combustiveis_energia" data-aliquota="26.5" data-reducao="0.0">Combustíveis e Energia</option>
-								<option value="financeiro_seguros" data-aliquota="26.5" data-reducao="0.0">Financeiro e Seguros</option>
-							</select>
-						</div>
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="regime">Regime Tributário:</label>
+                                        <select id="regime">
+                                            <option value="simples">Simples Nacional</option>
+                                            <option value="presumido">Lucro Presumido</option>
+                                            <option value="real">Lucro Real</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-						<!-- Seção "Tributação e Split Payment" modificada -->
-						<div class="group-box">
-							<h3>Tributação e Split Payment</h3>
-							<div class="form-row">
-								<div class="form-column">
-									<div class="form-group">
-										<label for="aliquota">Alíquota Efetiva (%):</label>
-										<input type="number" id="aliquota" value="26.5" min="0" max="100" step="0.1" readonly>
-									</div>
-								</div>
-								<div class="form-column">
-									<div class="form-group">
-										<label for="reducao">Redução Especial (%):</label>
-										<input type="number" id="reducao" value="0.0" min="0" max="100" step="0.1" readonly>
-									</div>
-								</div>
-							</div>
-							<div class="form-row">
-								<div class="form-column">
-									<div class="form-group">
-										<label for="tipo-operacao">Tipo de Operação:</label>
-										<select id="tipo-operacao">
-											<option value="b2b">B2B (Empresa-Empresa)</option>
-											<option value="b2c">B2C (Empresa-Consumidor)</option>
-											<option value="mista">Mista</option>
-										</select>
-									</div>
-								</div>
-								<div class="form-column">
-									<div class="form-group">
-										<label for="creditos">Créditos Tributários Mensais:</label>
-										<input type="text" id="creditos" value="0" class="money-input">
-									</div>
-								</div>
-							</div>
-							<div class="form-row">
-								<div class="form-column">
-									<div class="form-group">
-										<label for="compensacao">Compensação de Créditos:</label>
-										<select id="compensacao">
-											<option value="automatica">Automática (Tempo Real)</option>
-											<option value="mensal">Mensal</option>
-											<option value="trimestral">Trimestral</option>
-										</select>
-									</div>
-								</div>
-							</div>
-						</div>
+                        <div class="group-box">
+                            <h3>Ciclo Financeiro</h3>
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="pmr">Prazo Médio de Recebimento (dias):</label>
+                                        <input type="number" id="pmr" value="30" min="0" step="1">
+                                    </div>
+                                </div>
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="pmp">Prazo Médio de Pagamento (dias):</label>
+                                        <input type="number" id="pmp" value="30" min="0" step="1">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="pme">Prazo Médio de Estoque (dias):</label>
+                                        <input type="number" id="pme" value="30" min="0" step="1">
+                                    </div>
+                                </div>
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="ciclo-financeiro">Ciclo Financeiro (dias):</label>
+                                        <input type="number" id="ciclo-financeiro" value="30" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="perc-vista">Percentual de Vendas à Vista (%):</label>
+                                        <input type="number" id="perc-vista" value="30" min="0" max="100" step="1">
+                                    </div>
+                                </div>
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="perc-prazo">Percentual de Vendas a Prazo (%):</label>
+                                        <input type="number" id="perc-prazo" value="70" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-							<div class="group-box">
-								<h3>Parâmetros da Simulação</h3>
-								<div class="form-row">
-									<div class="form-column">
-										<div class="form-group">
-											<label for="data-inicial">Data Inicial:</label>
-											<input type="date" id="data-inicial" value="2026-01-01">
-										</div>
-									</div>
-									<div class="form-column">
-										<div class="form-group">
-											<label for="data-final">Data Final:</label>
-											<input type="date" id="data-final" value="2033-12-31">
-										</div>
-									</div>
-								</div>
-								<div class="form-row">
-									<div class="form-column">
-										<div class="form-group">
-											<label for="cenario">Cenário de Crescimento:</label>
-											<select id="cenario">
-												<option value="conservador">Conservador (2% a.a.)</option>
-												<option value="moderado" selected>Moderado (5% a.a.)</option>
-												<option value="otimista">Otimista (8% a.a.)</option>
-												<option value="personalizado">Personalizado</option>
-											</select>
-										</div>
-									</div>
-									<div class="form-column">
-										<div class="form-group" id="cenario-personalizado" style="display: none;">
-											<label for="taxa-crescimento">Taxa de Crescimento (% a.a.):</label>
-											<input type="number" id="taxa-crescimento" value="5" min="0" max="100" step="0.1">
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
+                        <div class="group-box">
+                            <h3>Tributação e Split Payment</h3>
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="aliquota">Alíquota Efetiva (%):</label>
+                                        <input type="number" id="aliquota" value="26.5" min="0" max="100" step="0.1">
+                                    </div>
+                                </div>
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="tipo-operacao">Tipo de Operação:</label>
+                                        <select id="tipo-operacao">
+                                            <option value="b2b">B2B (Empresa-Empresa)</option>
+                                            <option value="b2c">B2C (Empresa-Consumidor)</option>
+                                            <option value="mista">Mista</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="creditos">Créditos Tributários Mensais:</label>
+                                        <input type="text" id="creditos" value="0" class="money-input">
+                                    </div>
+                                </div>
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="compensacao">Compensação de Créditos:</label>
+                                        <select id="compensacao">
+                                            <option value="automatica">Automática (Tempo Real)</option>
+                                            <option value="mensal">Mensal</option>
+                                            <option value="trimestral">Trimestral</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="group-box">
+                            <h3>Parâmetros da Simulação</h3>
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="data-inicial">Data Inicial:</label>
+                                        <input type="date" id="data-inicial" value="2026-01-01">
+                                    </div>
+                                </div>
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="data-final">Data Final:</label>
+                                        <input type="date" id="data-final" value="2033-12-31">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="cenario">Cenário de Crescimento:</label>
+                                        <select id="cenario">
+                                            <option value="conservador">Conservador (2% a.a.)</option>
+                                            <option value="moderado" selected>Moderado (5% a.a.)</option>
+                                            <option value="otimista">Otimista (8% a.a.)</option>
+                                            <option value="personalizado">Personalizado</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-column">
+                                    <div class="form-group" id="cenario-personalizado" style="display: none;">
+                                        <label for="taxa-crescimento">Taxa de Crescimento (% a.a.):</label>
+                                        <input type="number" id="taxa-crescimento" value="5" min="0" max="100" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <button id="btn-simular" style="width: 100%; padding: 15px; font-size: 16px;">Simular Impacto no Fluxo de Caixa</button>
                     </div>
 
@@ -994,7 +1000,6 @@
     </div>
     
     <!-- Importação dos scripts JavaScript -->
-    
     <!-- Primeiro os utilitários -->
     <script src="js/utils/formatters.js"></script>
     <script src="js/utils/validators.js"></script>

@@ -9,12 +9,18 @@ const CurrencyFormatter = {
     inicializar: function() {
         console.log('Inicializando formatador de moeda em tempo real');
         
-        // Selecionar todos os campos monetários pelo seletor de classe
-        const camposMoeda = document.querySelectorAll('.money-input');
+        // Primeiro, corrigir qualquer formatação indevida nas áreas de navegação
+        this.corrigirFormatacaoIndevida();
         
-        // Aplicar formatação a cada campo
+        // Selecionar todos os campos monetários pelo seletor de classe
+        const camposMoeda = document.querySelectorAll('input.money-input');
+        
+        // Aplicar formatação a cada campo válido
         camposMoeda.forEach(campo => {
-            this.aplicarFormatacaoMoeda(campo);
+            // Verificar se não está em uma área de navegação
+            if (!this.estaEmAreaDeNavegacao(campo)) {
+                this.aplicarFormatacaoMoeda(campo);
+            }
         });
         
         // Campos específicos por ID (garantia extra)
@@ -36,12 +42,80 @@ const CurrencyFormatter = {
     },
     
     /**
+     * Verifica se um elemento está em uma área de navegação
+     * @param {HTMLElement} elemento - Elemento a verificar
+     * @returns {boolean} - Se está em área de navegação
+     */
+    estaEmAreaDeNavegacao: function(elemento) {
+        const areasDeNavegacao = [
+            '.tab-buttons',
+            '.header',
+            '.tab-container > h2',
+            '.strategy-tab-buttons',
+            '.tab-button',
+            '.modal-header'
+        ];
+        
+        return areasDeNavegacao.some(seletor => {
+            return elemento.closest(seletor) !== null;
+        });
+    },
+    
+    /**
+     * Corrige formatação aplicada indevidamente
+     */
+    corrigirFormatacaoIndevida: function() {
+        const areasDeNavegacao = [
+            '.tab-buttons',
+            '.header',
+            '.tab-container > h2',
+            '.strategy-tab-buttons',
+            '.tab-button',
+            '.modal-header'
+        ];
+        
+        // Para cada área de navegação
+        areasDeNavegacao.forEach(area => {
+            // Remover prefixos R$
+            document.querySelectorAll(`${area} .money-prefix`).forEach(el => {
+                if (el.parentNode) {
+                    el.parentNode.removeChild(el);
+                }
+            });
+            
+            // Remover containers de formatação
+            document.querySelectorAll(`${area} .money-input-container`).forEach(container => {
+                const elementosOriginais = Array.from(container.children)
+                    .filter(el => !el.classList.contains('money-prefix'));
+                
+                // Reposicionar elementos originais fora do container
+                elementosOriginais.forEach(el => {
+                    if (container.parentNode) {
+                        container.parentNode.insertBefore(el, container);
+                    }
+                });
+                
+                // Remover o container
+                if (container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
+            });
+            
+            // Remover classes money-input de elementos em áreas de navegação
+            document.querySelectorAll(`${area} .money-input`).forEach(el => {
+                el.classList.remove('money-input');
+                delete el.dataset.currencyInitialized;
+            });
+        });
+    },
+    
+    /**
      * Aplica a formatação monetária a um campo específico
      * @param {HTMLElement} campo - Campo de entrada (input)
      */
     aplicarFormatacaoMoeda: function(campo) {
-        // Verificar se já foi inicializado
-        if (campo.dataset.currencyInitialized === 'true') {
+        // Verificar se já foi inicializado ou se está em área de navegação
+        if (campo.dataset.currencyInitialized === 'true' || this.estaEmAreaDeNavegacao(campo)) {
             return;
         }
         
@@ -50,20 +124,25 @@ const CurrencyFormatter = {
             campo.classList.add('money-input');
         }
         
+        // Verificar se já está em um container
+        const jaTemContainer = campo.closest('.money-input-container') !== null;
+        
         // Adicionar container se não existir
-        const parent = campo.parentElement;
-        if (!parent.classList.contains('money-input-container')) {
-            // Envolver o campo em um container
-            const container = document.createElement('div');
-            container.className = 'money-input-container';
-            parent.insertBefore(container, campo);
-            container.appendChild(campo);
-            
-            // Adicionar o prefixo R$
-            const prefix = document.createElement('span');
-            prefix.className = 'money-prefix';
-            prefix.textContent = 'R$';
-            container.appendChild(prefix);
+        if (!jaTemContainer) {
+            const parent = campo.parentElement;
+            if (parent) {
+                // Envolver o campo em um container
+                const container = document.createElement('div');
+                container.className = 'money-input-container';
+                parent.insertBefore(container, campo);
+                container.appendChild(campo);
+                
+                // Adicionar o prefixo R$
+                const prefix = document.createElement('span');
+                prefix.className = 'money-prefix';
+                prefix.textContent = 'R$';
+                container.appendChild(prefix);
+            }
         }
         
         // Aplicar formatação inicial se houver valor
@@ -105,6 +184,9 @@ const CurrencyFormatter = {
      * @returns {string} - Apenas os dígitos
      */
     extrairNumeros: function(texto) {
+        if (!texto || typeof texto !== 'string') {
+            return '';
+        }
         return texto.replace(/\D/g, '');
     },
     
@@ -130,4 +212,19 @@ const CurrencyFormatter = {
 // Inicializar automaticamente quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', function() {
     CurrencyFormatter.inicializar();
+    
+    // Executar também após um breve atraso para garantir que
+    // outros scripts já foram executados
+    setTimeout(function() {
+        CurrencyFormatter.corrigirFormatacaoIndevida();
+    }, 200);
+});
+
+// Corrigir formatação indevida quando as abas são trocadas
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('tab-button')) {
+        setTimeout(function() {
+            CurrencyFormatter.corrigirFormatacaoIndevida();
+        }, 100);
+    }
 });
