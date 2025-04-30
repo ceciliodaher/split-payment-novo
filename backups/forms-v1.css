@@ -158,26 +158,7 @@ input[readonly] {
     border: none;
 }
 
-/* MODIFICAÇÕES ADICIONADAS - Início */
 .table-container {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
     border: 1px solid #dee2e6;
     border-radius: 5px;
 }
-
-.cronograma-table {
-    width: 100%;
-}
-
-textarea {
-    width: 100%;
-    box-sizing: border-box;
-    resize: vertical;
-    min-height: 80px;
-    padding: 10px;
-    border: 1px solid var(--light-border);
-    border-radius: 4px;
-}
-/* MODIFICAÇÕES ADICIONADAS - Fim */

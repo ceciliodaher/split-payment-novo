@@ -273,279 +273,426 @@
                 </div>
             </div>
 
-            <!-- Conteúdo da aba Configurações - manter o ID original -->
-			<div id="configuracoes" class="tab-content">
-				<h2>Configurações</h2>
-				
-				<!-- Parâmetros Gerais do Split Payment -->
-				<div class="panel mb-4">
-					<h3 class="panel-title">Parâmetros Gerais do Split Payment</h3>
-					<p class="text-muted mb-3">Configure os valores base para o cálculo do split payment que serão aplicados a todos os setores, exceto quando houver configurações específicas.</p>
+            <!-- Aba de Configurações -->
+            <div id="configuracoes" class="tab-content">
+                <div class="group-box">
+                    <h3>Parâmetros Financeiros</h3>
+                    <div class="form-row">
+                        <div class="form-column">
+                            <div class="form-group">
+                                <label for="taxa-antecipacao">Taxa de Antecipação de Recebíveis (% a.m.):</label>
+                                <input type="number" id="taxa-antecipacao" value="1.8" min="0" step="0.1">
+                            </div>
+                        </div>
+                        <div class="form-column">
+                            <div class="form-group">
+                                <label for="taxa-capital-giro">Taxa de Capital de Giro (% a.m.):</label>
+                                <input type="number" id="taxa-capital-giro" value="2.1" min="0" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-column">
+                            <div class="form-group">
+                                <label for="spread-bancario">Spread Bancário (p.p.):</label>
+                                <input type="number" id="spread-bancario" value="3.5" min="0" step="0.1">
+                            </div>
+                        </div>
+                        <div class="form-column">
+                            <div class="form-group">
+                                <label for="custo-adequacao">Custo de Adequação Tecnológica (R$):</label>
+                                <input type="text" id="custo-adequacao" value="0" class="money-input">
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-					<div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
-						<div class="form-group">
-							<label for="aliquota-cbs">Alíquota CBS (%):</label>
-							<div class="input-group">
-								<input type="number" id="aliquota-cbs" name="aliquota-cbs" min="0" max="100" step="0.01" value="8.8">
-								<div class="input-group-append">
-									<span class="input-group-text">%</span>
-								</div>
-							</div>
-							<small class="help-text">Contribuição sobre Bens e Serviços - Alíquota Federal</small>
-						</div>
-						<div class="form-group">
-							<label for="aliquota-ibs">Alíquota IBS (%):</label>
-							<div class="input-group">
-								<input type="number" id="aliquota-ibs" name="aliquota-ibs" min="0" max="100" step="0.01" value="17.7">
-								<div class="input-group-append">
-									<span class="input-group-text">%</span>
-								</div>
-							</div>
-							<small class="help-text">Imposto sobre Bens e Serviços - Alíquota Estadual/Municipal</small>
-						</div>
-						<div class="form-group">
-							<label for="data-inicio">Data de Início:</label>
-							<input type="month" id="data-inicio" name="data-inicio" value="2026-01" min="2026-01">
-							<small class="help-text">Início da implementação do split payment</small>
-						</div>
-					</div>
-					
-					<h3 class="section-subtitle mt-4">Cronograma de Implementação</h3>
-					<p class="text-muted mb-3">Defina o percentual de implementação do split payment ao longo dos anos de transição (2026-2033).</p>
-					
-					<div class="table-actions">
-						<button type="button" class="btn btn-outline" id="btn-restaurar-cronograma">Restaurar Cronograma Padrão</button>
-					</div>
-					
-					<div class="table-container">
-						<table class="editable-table cronograma-table" id="cronograma-table">
-							<thead>
-								<tr>
-									<th>Ano</th>
-									<th>Percentual (%)</th>
-									<th>Observações</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>2026</td>
-									<td><input type="number" name="perc-2026" min="0" max="100" step="0.1" value="10.0"></td>
-									<td><input type="text" name="obs-2026" placeholder="Observações..."></td>
-								</tr>
-								<tr>
-									<td>2027</td>
-									<td><input type="number" name="perc-2027" min="0" max="100" step="0.1" value="25.0"></td>
-									<td><input type="text" name="obs-2027" placeholder="Observações..."></td>
-								</tr>
-								<tr>
-									<td>2028</td>
-									<td><input type="number" name="perc-2028" min="0" max="100" step="0.1" value="40.0"></td>
-									<td><input type="text" name="obs-2028" placeholder="Observações..."></td>
-								</tr>
-								<tr>
-									<td>2029</td>
-									<td><input type="number" name="perc-2029" min="0" max="100" step="0.1" value="55.0"></td>
-									<td><input type="text" name="obs-2029" placeholder="Observações..."></td>
-								</tr>
-								<tr>
-									<td>2030</td>
-									<td><input type="number" name="perc-2030" min="0" max="100" step="0.1" value="70.0"></td>
-									<td><input type="text" name="obs-2030" placeholder="Observações..."></td>
-								</tr>
-								<tr>
-									<td>2031</td>
-									<td><input type="number" name="perc-2031" min="0" max="100" step="0.1" value="85.0"></td>
-									<td><input type="text" name="obs-2031" placeholder="Observações..."></td>
-								</tr>
-								<tr>
-									<td>2032</td>
-									<td><input type="number" name="perc-2032" min="0" max="100" step="0.1" value="95.0"></td>
-									<td><input type="text" name="obs-2032" placeholder="Observações..."></td>
-								</tr>
-								<tr>
-									<td>2033</td>
-									<td><input type="number" name="perc-2033" min="0" max="100" step="0.1" value="100.0"></td>
-									<td><input type="text" name="obs-2033" placeholder="Observações..."></td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
+                <div class="group-box">
+					<h3>Fases da Implementação do Split Payment</h3>
+					<table id="tabela-fases" class="data-table">
+						<thead>
+							<tr>
+								<th>Ano</th>
+								<th>Percentual (%)</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr><td>2026</td><td><input type="number" data-ano="2026" value="10" step="1" min="0" max="100"></td></tr>
+							<tr><td>2027</td><td><input type="number" data-ano="2027" value="25" step="1" min="0" max="100"></td></tr>
+							<tr><td>2028</td><td><input type="number" data-ano="2028" value="40" step="1" min="0" max="100"></td></tr>
+							<tr><td>2029</td><td><input type="number" data-ano="2029" value="55" step="1" min="0" max="100"></td></tr>
+							<tr><td>2030</td><td><input type="number" data-ano="2030" value="70" step="1" min="0" max="100"></td></tr>
+							<tr><td>2031</td><td><input type="number" data-ano="2031" value="85" step="1" min="0" max="100"></td></tr>
+							<tr><td>2032</td><td><input type="number" data-ano="2032" value="95" step="1" min="0" max="100"></td></tr>
+							<tr><td>2033</td><td><input type="number" data-ano="2033" value="100" step="1" min="0" max="100"></td></tr>
+						</tbody>
+					</table>
 				</div>
-				
-				<!-- Configurações Específicas por Setor -->
-				<div class="panel mb-4">
-					<h3 class="panel-title">Configurações Específicas por Setor</h3>
-					<p class="text-muted mb-3">Configure parâmetros específicos para setores que possuem tratamento diferenciado no regime do split payment.</p>
-					
-					<div class="table-actions">
-						<button type="button" class="btn btn-primary" id="btn-adicionar-setor">Adicionar Setor</button>
-					</div>
-					
-					<div class="table-container">
-						<table class="editable-table sector-table" id="sector-table">
-							<thead>
-								<tr>
-									<th>Setor</th>
-									<th>Alíquota Específica (%)</th>
-									<th>Redução Especial (%)</th>
-									<th>Cronograma Próprio</th>
-									<th class="actions-column">Ações</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr id="setor-1">
-									<td>
-										<select name="setor-nome-1" class="setor-select" data-id="1">
-											<option value="">Selecione um setor...</option>
-											<!-- Opções de setores serão adicionadas via JavaScript -->
-										</select>
-									</td>
-									<td><input type="number" name="setor-aliquota-1" min="0" max="100" step="0.01" value="26.5"></td>
-									<td><input type="number" name="setor-reducao-1" min="0" max="100" step="0.01" value="0"></td>
-									<td>
-										<select name="setor-cronograma-1">
-											<option value="padrao">Cronograma Padrão</option>
-											<option value="proprio">Cronograma Específico</option>
-										</select>
-									</td>
-									<td>
-										<button type="button" class="btn btn-outline btn-sm" onclick="configurarCronogramaSetor(1)">Configurar</button>
-										<button type="button" class="btn btn-accent btn-sm" onclick="removerSetor(1)">Remover</button>
-									</td>
-								</tr>
-								<tr id="setor-2">
-									<td>
-										<select name="setor-nome-2" class="setor-select" data-id="2">
-											<option value="">Selecione um setor...</option>
-											<!-- Opções de setores serão adicionadas via JavaScript -->
-										</select>
-									</td>
-									<td><input type="number" name="setor-aliquota-2" min="0" max="100" step="0.01" value="26.5"></td>
-									<td><input type="number" name="setor-reducao-2" min="0" max="100" step="0.01" value="0"></td>
-									<td>
-										<select name="setor-cronograma-2">
-											<option value="padrao">Cronograma Padrão</option>
-											<option value="proprio">Cronograma Específico</option>
-										</select>
-									</td>
-									<td>
-										<button type="button" class="btn btn-outline btn-sm" onclick="configurarCronogramaSetor(2)">Configurar</button>
-										<button type="button" class="btn btn-accent btn-sm" onclick="removerSetor(2)">Remover</button>
-									</td>
-								</tr>
-								<tr id="setor-3">
-									<td>
-										<select name="setor-nome-3" class="setor-select" data-id="3">
-											<option value="">Selecione um setor...</option>
-											<!-- Opções de setores serão adicionadas via JavaScript -->
-										</select>
-									</td>
-									<td><input type="number" name="setor-aliquota-3" min="0" max="100" step="0.01" value="26.5"></td>
-									<td><input type="number" name="setor-reducao-3" min="0" max="100" step="0.01" value="0"></td>
-									<td>
-										<select name="setor-cronograma-3">
-											<option value="padrao">Cronograma Padrão</option>
-											<option value="proprio">Cronograma Específico</option>
-										</select>
-									</td>
-									<td>
-										<button type="button" class="btn btn-outline btn-sm" onclick="configurarCronogramaSetor(3)">Configurar</button>
-										<button type="button" class="btn btn-accent btn-sm" onclick="removerSetor(3)">Remover</button>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-				
-				<!-- Parâmetros Financeiros -->
-				<div class="panel mb-4">
-					<h3 class="panel-title">Parâmetros Financeiros</h3>
-					<p class="text-muted mb-3">Configure os parâmetros financeiros para cálculo do impacto do split payment no capital de giro e fluxo de caixa.</p>
-					
-					<div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
-						<div class="form-group">
-							<label for="taxa-antecipacao">Taxa Média de Antecipação de Recebíveis:</label>
-							<div class="input-group">
-								<input type="number" id="taxa-antecipacao" name="taxa-antecipacao" min="0" max="100" step="0.01" value="1.8">
-								<div class="input-group-append">
-									<span class="input-group-text">% a.m.</span>
-								</div>
-							</div>
-							<small class="help-text">Taxa média para antecipação de recebíveis ao mês</small>
-						</div>
-						
-						<div class="form-group">
-							<label for="taxa-capital-giro">Taxa Média de Capital de Giro:</label>
-							<div class="input-group">
-								<input type="number" id="taxa-capital-giro" name="taxa-capital-giro" min="0" max="100" step="0.01" value="2.1">
-								<div class="input-group-append">
-									<span class="input-group-text">% a.m.</span>
-								</div>
-							</div>
-							<small class="help-text">Taxa média para linhas de capital de giro ao mês</small>
-						</div>
-						
-						<div class="form-group">
-							<label for="spread-bancario">Spread Bancário Médio:</label>
-							<div class="input-group">
-								<input type="number" id="spread-bancario" name="spread-bancario" min="0" max="100" step="0.01" value="3.5">
-								<div class="input-group-append">
-									<span class="input-group-text">p.p.</span>
-								</div>
-							</div>
-							<small class="help-text">Spread bancário médio em pontos percentuais</small>
-						</div>
-					</div>
-					
-					<div class="form-group mt-3">
-						<label for="observacoes-financeiras">Observações Adicionais:</label>
-						<textarea id="observacoes-financeiras" name="observacoes-financeiras" rows="3" placeholder="Insira aqui observações adicionais sobre os parâmetros financeiros..."></textarea>
-					</div>
-				</div>
-				
-				<!-- Botões de Ação -->
-				<div class="form-actions">
-					<button type="button" class="btn btn-primary" id="btn-salvar-configuracoes">Salvar Configurações</button>
-					<button type="button" class="btn btn-secondary" id="btn-restaurar-padroes">Restaurar Padrões</button>
-				</div>
-				
-				<!-- Modal para Configuração de Cronograma Setorial -->
-				<div class="modal-backdrop" id="modal-cronograma-setor">
-					<div class="modal">
-						<div class="modal-header">
-							<h3 class="modal-title">Cronograma Específico para Setor</h3>
-							<button type="button" class="modal-close" id="btn-fechar-modal">&times;</button>
-						</div>
-						<div class="modal-body">
-							<div class="mb-3">
-								<label for="modal-setor-nome" class="fw-bold">Setor:</label>
-								<span id="modal-setor-nome"></span>
-								<input type="hidden" id="modal-setor-id">
-							</div>
+                
+				<!-- Substitua todo o conteúdo da div group-box para Parâmetros Setoriais por este código original -->
+				<div class="group-box">
+					<h3>Parâmetros Setoriais</h3>
+					<table id="tabela-setores">
+						<thead>
+							<tr>
+								<th>Setor</th>
+								<th>Alíquota Efetiva (%)</th>
+								<th>Implementação Inicial (%)</th>
+								<th>Cronograma Próprio</th>
+							</tr>
+						</thead>
+						<tbody>
+							<!-- Setores Gerais -->
+							<tr>
+								<td>Comércio Varejista</td>
+								<td><input type="number" data-setor="comercio" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="comercio" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="comercio" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Indústria de Transformação</td>
+								<td><input type="number" data-setor="industria" data-campo="aliquota" value="22.0" step="0.1"></td>
+								<td><input type="number" data-setor="industria" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="industria" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Serviços Contínuos</td>
+								<td><input type="number" data-setor="servicos" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="servicos" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="servicos" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Agronegócio</td>
+								<td><input type="number" data-setor="agronegocio" data-campo="aliquota" value="19.5" step="0.1"></td>
+								<td><input type="number" data-setor="agronegocio" data-campo="implementacao" value="5" step="1"></td>
+								<td>
+									<select data-setor="agronegocio" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Construção Civil</td>
+								<td><input type="number" data-setor="construcao" data-campo="aliquota" value="24.0" step="0.1"></td>
+								<td><input type="number" data-setor="construcao" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="construcao" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Tecnologia</td>
+								<td><input type="number" data-setor="tecnologia" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="tecnologia" data-campo="implementacao" value="15" step="1"></td>
+								<td>
+									<select data-setor="tecnologia" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Saúde</td>
+								<td><input type="number" data-setor="saude" data-campo="aliquota" value="14.5" step="0.1"></td>
+								<td><input type="number" data-setor="saude" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="saude" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Educação</td>
+								<td><input type="number" data-setor="educacao" data-campo="aliquota" value="12.5" step="0.1"></td>
+								<td><input type="number" data-setor="educacao" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="educacao" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
 							
-							<div class="table-container">
-								<table class="editable-table cronograma-table" id="cronograma-setor-table">
-									<thead>
-										<tr>
-											<th>Ano</th>
-											<th>Percentual (%)</th>
-											<th>Observações</th>
-										</tr>
-									</thead>
-									<tbody>
-										<!-- Será preenchido dinamicamente por JavaScript -->
-									</tbody>
-								</table>
-							</div>
-						</div>
-						<div class="modal-footer">
-							<button type="button" class="btn btn-primary" id="btn-salvar-cronograma-setor">Salvar</button>
-							<button type="button" class="btn btn-secondary" id="btn-cancelar-modal">Cancelar</button>
-						</div>
-					</div>
+							<!-- Setores com Redução de 60% na Alíquota -->
+							<tr>
+								<td>Dispositivos Médicos</td>
+								<td><input type="number" data-setor="dispositivos_medicos" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="dispositivos_medicos" data-campo="implementacao" value="5" step="1"></td>
+								<td>
+									<select data-setor="dispositivos_medicos" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Dispositivos de Acessibilidade</td>
+								<td><input type="number" data-setor="dispositivos_acessibilidade" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="dispositivos_acessibilidade" data-campo="implementacao" value="5" step="1"></td>
+								<td>
+									<select data-setor="dispositivos_acessibilidade" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Medicamentos</td>
+								<td><input type="number" data-setor="medicamentos" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="medicamentos" data-campo="implementacao" value="5" step="1"></td>
+								<td>
+									<select data-setor="medicamentos" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Produtos de Cuidados Menstruais</td>
+								<td><input type="number" data-setor="cuidados_menstruais" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="cuidados_menstruais" data-campo="implementacao" value="5" step="1"></td>
+								<td>
+									<select data-setor="cuidados_menstruais" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Transporte Coletivo</td>
+								<td><input type="number" data-setor="transporte_coletivo" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="transporte_coletivo" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="transporte_coletivo" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Alimentos para Consumo Humano</td>
+								<td><input type="number" data-setor="alimentos_consumo_humano" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="alimentos_consumo_humano" data-campo="implementacao" value="5" step="1"></td>
+								<td>
+									<select data-setor="alimentos_consumo_humano" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Produtos de Higiene e Limpeza</td>
+								<td><input type="number" data-setor="higiene_limpeza" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="higiene_limpeza" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="higiene_limpeza" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Produções Artísticas e Culturais</td>
+								<td><input type="number" data-setor="producoes_artisticas" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="producoes_artisticas" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="producoes_artisticas" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Insumos Agropecuários</td>
+								<td><input type="number" data-setor="insumos_agropecuarios" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="insumos_agropecuarios" data-campo="implementacao" value="5" step="1"></td>
+								<td>
+									<select data-setor="insumos_agropecuarios" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Segurança e Soberania Nacional</td>
+								<td><input type="number" data-setor="seguranca_nacional" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="seguranca_nacional" data-campo="implementacao" value="5" step="1"></td>
+								<td>
+									<select data-setor="seguranca_nacional" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							
+							<!-- Setores com Alíquota Zero -->
+							<tr>
+								<td>Cesta Básica Nacional</td>
+								<td><input type="number" data-setor="cesta_basica" data-campo="aliquota" value="0.0" step="0.1"></td>
+								<td><input type="number" data-setor="cesta_basica" data-campo="implementacao" value="0" step="1"></td>
+								<td>
+									<select data-setor="cesta_basica" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Produtos Hortícolas, Frutas e Ovos</td>
+								<td><input type="number" data-setor="alimentos_in_natura" data-campo="aliquota" value="0.0" step="0.1"></td>
+								<td><input type="number" data-setor="alimentos_in_natura" data-campo="implementacao" value="0" step="1"></td>
+								<td>
+									<select data-setor="alimentos_in_natura" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Serviços de Educação Superior - ProUni</td>
+								<td><input type="number" data-setor="educacao_prouni" data-campo="aliquota" value="0.0" step="0.1"></td>
+								<td><input type="number" data-setor="educacao_prouni" data-campo="implementacao" value="0" step="1"></td>
+								<td>
+									<select data-setor="educacao_prouni" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Serviços do Setor de Eventos - PERSE</td>
+								<td><input type="number" data-setor="eventos_perse" data-campo="aliquota" value="0.0" step="0.1"></td>
+								<td><input type="number" data-setor="eventos_perse" data-campo="implementacao" value="0" step="1"></td>
+								<td>
+									<select data-setor="eventos_perse" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio" selected>Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Recuperação Urbana em Áreas Históricas</td>
+								<td><input type="number" data-setor="recuperacao_urbana" data-campo="aliquota" value="0.0" step="0.1"></td>
+								<td><input type="number" data-setor="recuperacao_urbana" data-campo="implementacao" value="0" step="1"></td>
+								<td>
+									<select data-setor="recuperacao_urbana" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio">Próprio</option>
+									</select>
+								</td>
+							</tr>
+							
+							<!-- Regimes Específicos -->
+							<tr>
+								<td>Combustíveis e Energia</td>
+								<td><input type="number" data-setor="combustiveis_energia" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="combustiveis_energia" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="combustiveis_energia" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio" selected>Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Financeiro e Seguros</td>
+								<td><input type="number" data-setor="financeiro_seguros" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="financeiro_seguros" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="financeiro_seguros" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio" selected>Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Planos e Seguros de Saúde</td>
+								<td><input type="number" data-setor="planos_saude" data-campo="aliquota" value="10.6" step="0.1"></td>
+								<td><input type="number" data-setor="planos_saude" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="planos_saude" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio" selected>Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Indústria de Petróleo</td>
+								<td><input type="number" data-setor="industria_petroleo" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="industria_petroleo" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="industria_petroleo" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio" selected>Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Bens de Capital</td>
+								<td><input type="number" data-setor="bens_capital" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="bens_capital" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="bens_capital" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio" selected>Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Industrialização para Exportação</td>
+								<td><input type="number" data-setor="industria_exportacao" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="industria_exportacao" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="industria_exportacao" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio" selected>Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Regimes Aduaneiros - Lojas Francas</td>
+								<td><input type="number" data-setor="lojas_francas" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="lojas_francas" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="lojas_francas" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio" selected>Próprio</option>
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>Regime Reporto (Modernização de Portos)</td>
+								<td><input type="number" data-setor="reporto" data-campo="aliquota" value="26.5" step="0.1"></td>
+								<td><input type="number" data-setor="reporto" data-campo="implementacao" value="10" step="1"></td>
+								<td>
+									<select data-setor="reporto" data-campo="cronograma">
+										<option value="padrao">Padrão</option>
+										<option value="proprio" selected>Próprio</option>
+									</select>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
-			</div>
 
             <!-- Aba de Estratégias de Mitigação -->
             <div id="estrategias" class="tab-content">
@@ -1004,11 +1151,8 @@
     <script src="js/utils/formatters.js"></script>
     <script src="js/utils/validators.js"></script>
     <script src="js/utils/export-tools.js"></script>
-    <!-- Adicionar após formatters.js e antes de main.js -->
-	<script src="js/utils/currency-formatter.js"></script>
     
     <!-- Depois os gerenciadores de configuração -->
-    <script src="js/config/configuracoes-setoriais"></script>
     <script src="js/config/setores-manager.js"></script>
     <script src="js/config/config-manager.js"></script>
     

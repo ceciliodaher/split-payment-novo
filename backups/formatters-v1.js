@@ -16,16 +16,6 @@ const FormatacaoHelper = {
         });
     },
     
-    // Adicionar ao FormatacaoHelper em formatters.js
-    formatarInputMonetarioLive: function(input) {
-        if (window.CurrencyFormatter) {
-            CurrencyFormatter.aplicarFormatacaoMoeda(input);
-        } else {
-            // Fallback para o método antigo
-            this.formatarInputMonetario(input);
-        }
-    },
-    
     /**
      * Formata um valor numérico como percentual
      * @param {number} valor - Valor numérico para formatar (decimal)

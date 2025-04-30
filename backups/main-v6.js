@@ -106,12 +106,6 @@ function inicializarEventosPrincipais() {
         });
     }
     
-    // No final da função inicializarEventosPrincipais() no main.js
-    // Adicionar:
-    if (window.CurrencyFormatter) {
-        CurrencyFormatter.inicializar();
-    }
-    
     console.log('Eventos principais inicializados');
 }
 

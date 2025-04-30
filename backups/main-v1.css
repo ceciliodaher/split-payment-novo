@@ -9,49 +9,7 @@
     --dark-text: #343a40;
     --gray-text: #6c757d;
     --light-border: #dee2e6;
-    --white: #ffffff;
 }
-    
-    /* Derivados com transparência */
-    --primary-light: rgba(52, 152, 219, 0.1);
-    --secondary-light: rgba(46, 204, 113, 0.1);
-    --accent-light: rgba(231, 76, 60, 0.1);
-    
-    /* Dimensões e espaçamentos */
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
-    
-    /* Bordas e sombras */
-    --border-radius-sm: 4px;
-    --border-radius-md: 8px;
-    --border-radius-lg: 12px;
-    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    --box-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
-	
-	/* Estilos específicos para campos com formatação monetária */
-	
-    .money-input-container {
-        position: relative;
-        width: 100%;
-    }
-
-    .money-input {
-        padding-left: 30px !important; /* Espaço para o símbolo da moeda */
-        text-align: right !important;
-        font-family: 'Consolas', monospace;
-    }
-
-    .money-prefix {
-        position: absolute;
-        left: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #6c757d;
-        pointer-events: none; /* Permite clicar através do prefixo */
-    }
 
 /* Reset e estilos base */
 * {

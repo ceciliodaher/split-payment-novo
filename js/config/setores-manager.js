@@ -245,10 +245,10 @@ const SetoresManager = {
                 implementacaoInicial: 10,
                 cronogramaProprio: true
             }
-        },
+        };
         
-        // Carregar setores do localStorage, se existirem
-        const setoresSalvos = localStorage.getItem('setores-split-payment');
+    // Carregar setores do localStorage, se existirem
+    const setoresSalvos = localStorage.getItem('setores-split-payment');
         if (setoresSalvos) {
             try {
                 const setoresObj = JSON.parse(setoresSalvos);
@@ -257,7 +257,7 @@ const SetoresManager = {
                 console.error('Erro ao carregar setores do localStorage:', error);
             }
         }
-        
+
         this.initialized = true;
         console.log('Gerenciador de setores inicializado com ' + Object.keys(this.setores).length + ' setores');
     },    

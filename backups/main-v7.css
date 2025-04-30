@@ -32,26 +32,24 @@
     --box-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
 	
 	/* Estilos específicos para campos com formatação monetária */
+	.money-input-container {
+		position: relative;
+	}
 	
-    .money-input-container {
-        position: relative;
-        width: 100%;
-    }
-
-    .money-input {
-        padding-left: 30px !important; /* Espaço para o símbolo da moeda */
-        text-align: right !important;
-        font-family: 'Consolas', monospace;
-    }
-
-    .money-prefix {
-        position: absolute;
-        left: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #6c757d;
-        pointer-events: none; /* Permite clicar através do prefixo */
-    }
+	.money-input {
+		padding-left: 30px !important; /* Espaço para o símbolo da moeda */
+		text-align: right !important;
+		font-family: 'Consolas', monospace;
+	}
+	
+	.money-prefix {
+		position: absolute;
+		left: 10px;
+		top: 50%;
+		transform: translateY(-50%);
+		color: #6c757d;
+		pointer-events: none; /* Permite clicar através do prefixo */
+	}
 
 /* Reset e estilos base */
 * {
