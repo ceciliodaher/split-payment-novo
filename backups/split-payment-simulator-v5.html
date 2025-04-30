@@ -64,7 +64,6 @@
 									<div class="form-group">
 										<label for="setor">Setor de Atividade:</label>
 										<select id="setor">
-											<option value="">Selecione um setor...</option>
 											<!-- As opções serão preenchidas via JavaScript -->
 										</select>
 									</div>
@@ -274,26 +273,26 @@
                 </div>
 
                 <div class="group-box">
-					<h3>Fases da Implementação do Split Payment</h3>
-					<table id="tabela-fases" class="data-table">
-						<thead>
-							<tr>
-								<th>Ano</th>
-								<th>Percentual (%)</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr><td>2026</td><td><input type="number" data-ano="2026" value="10" step="1" min="0" max="100"></td></tr>
-							<tr><td>2027</td><td><input type="number" data-ano="2027" value="25" step="1" min="0" max="100"></td></tr>
-							<tr><td>2028</td><td><input type="number" data-ano="2028" value="40" step="1" min="0" max="100"></td></tr>
-							<tr><td>2029</td><td><input type="number" data-ano="2029" value="55" step="1" min="0" max="100"></td></tr>
-							<tr><td>2030</td><td><input type="number" data-ano="2030" value="70" step="1" min="0" max="100"></td></tr>
-							<tr><td>2031</td><td><input type="number" data-ano="2031" value="85" step="1" min="0" max="100"></td></tr>
-							<tr><td>2032</td><td><input type="number" data-ano="2032" value="95" step="1" min="0" max="100"></td></tr>
-							<tr><td>2033</td><td><input type="number" data-ano="2033" value="100" step="1" min="0" max="100"></td></tr>
-						</tbody>
-					</table>
-				</div>
+                    <h3>Fases da Implementação do Split Payment</h3>
+                    <table id="tabela-fases">
+                        <thead>
+                            <tr>
+                                <th>Ano</th>
+                                <th>Percentual (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>2026</td><td><input type="number" data-ano="2026" value="10" step="1" min="0" max="100"></td></tr>
+                            <tr><td>2027</td><td><input type="number" data-ano="2027" value="25" step="1" min="0" max="100"></td></tr>
+                            <tr><td>2028</td><td><input type="number" data-ano="2028" value="40" step="1" min="0" max="100"></td></tr>
+                            <tr><td>2029</td><td><input type="number" data-ano="2029" value="60" step="1" min="0" max="100"></td></tr>
+                            <tr><td>2030</td><td><input type="number" data-ano="2030" value="80" step="1" min="0" max="100"></td></tr>
+                            <tr><td>2031</td><td><input type="number" data-ano="2031" value="90" step="1" min="0" max="100"></td></tr>
+                            <tr><td>2032</td><td><input type="number" data-ano="2032" value="95" step="1" min="0" max="100"></td></tr>
+                            <tr><td>2033</td><td><input type="number" data-ano="2033" value="100" step="1" min="0" max="100"></td></tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <!-- Substituir o conteúdo atual da aba "Configurações Setoriais" pelo seguinte: -->
 				<div class="group-box">
@@ -382,23 +381,12 @@
 					</div>
 				</div>
 
-				<!-- Modal de confirmação de exclusão -->
-				<div id="modal-confirmar-exclusao" class="modal">
-					<div class="modal-content" style="max-width: 400px;">
-						<div class="modal-header">
-							<h3>Confirmar Exclusão</h3>
-							<span class="close">&times;</span>
-						</div>
-						<div class="modal-body">
-							<p>Tem certeza que deseja excluir o setor <span id="nome-setor-exclusao"></span>?</p>
-							<p>Esta ação não pode ser desfeita.</p>
-						</div>
-						<div class="modal-footer">
-							<button id="btn-confirmar-exclusao" class="primary">Sim, Excluir</button>
-							<button id="btn-cancelar-exclusao" class="secondary">Cancelar</button>
-						</div>
-					</div>
-				</div>
+                <div class="button-group">
+                    <button id="btn-salvar-config">Salvar Configurações</button>
+                    <button id="btn-carregar-config">Carregar Configurações</button>
+                    <button id="btn-restaurar-config">Restaurar Padrões</button>
+                </div>
+            </div>
 
             <!-- Aba de Estratégias de Mitigação -->
             <div id="estrategias" class="tab-content">
