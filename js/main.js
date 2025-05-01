@@ -55,13 +55,61 @@ function inicializarEventosPrincipais() {
         btnSimular.addEventListener('click', function() {
             console.log('Botão Simular clicado');
 
-            // Verificação explícita da disponibilidade
-            if (window.SimuladorFluxoCaixa && typeof window.SimuladorFluxoCaixa.simularImpacto === 'function') {
-                // Chamada explícita usando window
-                window.SimuladorFluxoCaixa.simularImpacto();
-            } else {
-                console.error('SimuladorFluxoCaixa não está definido corretamente', window.SimuladorFluxoCaixa);
-                alert('Erro ao iniciar a simulação. Verifique o console para mais detalhes.');
+            try {
+                // Primeiro verifica se o SimuladorFluxoCaixa está disponível
+                // Mantém a abordagem original para retrocompatibilidade
+                if (window.SimuladorFluxoCaixa && typeof window.SimuladorFluxoCaixa.simularImpacto === 'function') {
+                    // A função simularImpacto foi modificada para usar o SimuladorModulo quando disponível
+                    window.SimuladorFluxoCaixa.simularImpacto();
+                } else {
+                    // Caso o SimuladorFluxoCaixa não esteja disponível, tenta usar o SimuladorModulo diretamente
+                    if (window.SimuladorModulo && typeof window.SimuladorModulo.simular === 'function') {
+                        console.log('Executando simulação diretamente via SimuladorModulo');
+
+                        // Coletar dados do formulário
+                        const dados = {
+                            empresa: document.getElementById('empresa').value,
+                            setor: document.getElementById('setor').value,
+                            regime: document.getElementById('regime').value,
+                            faturamento: parseFloat(document.getElementById('faturamento').value.replace(/[^\d,.]/g, '').replace(',', '.')),
+                            margem: parseFloat(document.getElementById('margem').value) / 100,
+                            pmr: parseInt(document.getElementById('pmr').value) || 30,
+                            pmp: parseInt(document.getElementById('pmp').value) || 30,
+                            pme: parseInt(document.getElementById('pme').value) || 30,
+                            percVista: parseFloat(document.getElementById('perc-vista').value) / 100,
+                            percPrazo: parseFloat(document.getElementById('perc-prazo').value) / 100,
+                            aliquota: parseFloat(document.getElementById('aliquota').value) / 100,
+                            tipoOperacao: document.getElementById('tipo-operacao').value,
+                            creditos: parseFloat(document.getElementById('creditos').value.replace(/[^\d,.]/g, '').replace(',', '.')),
+                            dataInicial: document.getElementById('data-inicial').value,
+                            dataFinal: document.getElementById('data-final').value,
+                            cenario: document.getElementById('cenario').value,
+                            taxaCrescimento: parseFloat(document.getElementById('taxa-crescimento').value) / 100,
+                            taxaCapitalGiro: 0.021 // Valor padrão
+                        };
+
+                        // Executar simulação
+                        const resultados = window.SimuladorModulo.simular(dados);
+
+                        // Atualizar a interface com os resultados
+                        // Use o método exibirResultados do SimulacaoPrincipalController se disponível
+                        if (typeof SimulacaoPrincipalController !== 'undefined' && 
+                            typeof SimulacaoPrincipalController.exibirResultados === 'function') {
+                            SimulacaoPrincipalController.exibirResultados(resultados);
+                        } else {
+                            // Implementar uma exibição básica como fallback
+                            const containerResultados = document.getElementById('resultados');
+                            if (containerResultados) {
+                                containerResultados.innerHTML = '<div class="alert alert-success">Simulação concluída com sucesso. Implemente a exibição dos resultados.</div>';
+                            }
+                        }
+                    } else {
+                        throw new Error('Nenhum módulo de simulação disponível');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao executar simulação:', error);
+                alert('Erro ao iniciar a simulação: ' + error.message);
             }
         });
     }

@@ -987,6 +987,9 @@
     
     <!-- Adicionar antes dos outros scripts do gerenciador de setores -->
 	<script src="js/config/setores-repository.js"></script>
+	
+	<!-- Depois o repositório central (nova arquitetura) -->
+	<script src="js/repository/simulador-repository.js"></script>
 
 	<!-- Depois os gerenciadores de configuração -->
     <script src="js/config/configuracoes-setoriais.js"></script>
@@ -999,6 +1002,10 @@
     <script src="js/simulation/strategies.js"></script>
     <script src="js/simulation/simulator.js"></script>
     
+    <!-- Novas implementações -->
+	<script src="js/simulation/simulador-modulo.js"></script>
+	<script src="js/simulation/strategies.js"></script>
+    
     <!-- Depois os módulos de UI -->
     <script src="js/ui/tabs-manager.js"></script>
     <script src="js/ui/forms-manager.js"></script>
@@ -1006,6 +1013,11 @@
     <script src="js/ui/modal-manager.js"></script>
 	<script src="js/ui/setores-ui.js"></script>  <!-- Nova linha adicionada aqui -->
 	<script src="js/ui/setores-modal.js"></script>
+	
+	<!-- Controladores específicos (novos) -->
+	<script src="js/ui/simulacao-controller.js"></script>
+	<script src="js/ui/estrategias-controller.js"></script>
+	<script src="js/ui/memoria-controller.js"></script>
     
     <!-- Por último, o script principal -->
     <script src="js/main.js"></script>
