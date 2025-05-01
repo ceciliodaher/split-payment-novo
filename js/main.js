@@ -75,7 +75,7 @@ function inicializarEventosPrincipais() {
             }
         });
     }
-    
+
     const btnExportarExcel = document.getElementById('btn-exportar-excel');
     if (btnExportarExcel) {
         btnExportarExcel.addEventListener('click', function() {
@@ -84,7 +84,7 @@ function inicializarEventosPrincipais() {
             }
         });
     }
-    
+
     const btnExportarMemoria = document.getElementById('btn-exportar-memoria');
     if (btnExportarMemoria) {
         btnExportarMemoria.addEventListener('click', function() {

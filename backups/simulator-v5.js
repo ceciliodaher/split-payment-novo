@@ -674,6 +674,350 @@ window.SimuladorFluxoCaixa = {
 };
 
     /**
+     * Movido de main.js
+     * Coleta os dados do formulário de simulação e executa a simulação
+     */
+    // Implementação da função simularImpacto
+    function simularImpacto() {
+        console.log('Iniciando simulação...');
+
+        // Coletar dados do formulário
+        const dados = {
+            empresa: document.getElementById('empresa').value,
+            setor: document.getElementById('setor').value,
+            regime: document.getElementById('regime').value,
+            faturamento: extrairValorNumerico(document.getElementById('faturamento').value),
+            margem: parseFloat(document.getElementById('margem').value) / 100,
+            pmr: parseInt(document.getElementById('pmr').value) || 30,
+            pmp: parseInt(document.getElementById('pmp').value) || 30,
+            pme: parseInt(document.getElementById('pme').value) || 30,
+            percVista: parseFloat(document.getElementById('perc-vista').value) / 100,
+            percPrazo: parseFloat(document.getElementById('perc-prazo').value) / 100,
+            aliquota: parseFloat(document.getElementById('aliquota').value) / 100,
+            tipoOperacao: document.getElementById('tipo-operacao').value,
+            creditos: extrairValorNumerico(document.getElementById('creditos').value),
+            dataInicial: document.getElementById('data-inicial').value,
+            dataFinal: document.getElementById('data-final').value,
+            cenario: document.getElementById('cenario').value,
+            taxaCrescimento: parseFloat(document.getElementById('taxa-crescimento').value) / 100
+        };
+
+        // Validar dados
+        if (!validarDadosSimulacao(dados)) {
+            return;
+        }
+
+        // Executar simulação usando o objeto SimuladorFluxoCaixa
+        const resultados = SimuladorFluxoCaixa.simular(dados);
+
+        // Exibir resultados
+        exibirResultados(resultados);
+
+        // Gerar gráficos
+        gerarGraficos(resultados);
+
+        // Atualizar memória de cálculo
+        atualizarMemoriaCalculo(resultados.memoriaCalculo);
+
+        // Armazenar resultados para uso posterior (exportação)
+        window.ultimaSimulacao = {
+            dados: dados,
+            resultados: resultados
+        };
+
+        console.log('Simulação concluída com sucesso');
+    }
+
+    // Função para extrair valor numérico de uma string formatada
+    function extrairValorNumerico(valor) {
+        if (!valor) return 0;
+        return parseFloat(valor.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+    }
+
+    // Validação dos dados de simulação
+    function validarDadosSimulacao(dados) {
+        if (!dados.empresa) {
+            alert('Por favor, informe o nome da empresa.');
+            return false;
+        }
+
+        if (!dados.setor) {
+            alert('Por favor, selecione o setor de atividade.');
+            return false;
+        }
+
+        if (isNaN(dados.faturamento) || dados.faturamento <= 0) {
+            alert('Por favor, informe um valor válido para o faturamento.');
+            return false;
+        }
+
+        if (isNaN(dados.aliquota) || dados.aliquota <= 0) {
+            alert('Por favor, informe uma alíquota válida.');
+            return false;
+        }
+
+        return true;
+    }
+
+    // Exibição dos resultados
+    function exibirResultados(resultados) {
+        const containerResultados = document.getElementById('resultados');
+        if (!containerResultados) return;
+
+        // Formatar valores para exibição
+        const formatarMoeda = (valor) => `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const formatarPercent = (valor) => `${(valor * 100).toFixed(2)}%`;
+
+        // Extrair dados principais
+        const impacto = resultados.impactoBase;
+        const projecao = resultados.projecaoTemporal;
+
+        // Construir HTML dos resultados
+        let html = `
+            <div class="result-card">
+                <h3>Resultados da Simulação</h3>
+
+                <div class="result-section">
+                    <h4>Impacto Inicial (${projecao.parametros.anoInicial})</h4>
+                    <table class="result-table">
+                        <tr>
+                            <td>Percentual de Implementação:</td>
+                            <td>${formatarPercent(impacto.resultadoSplitPayment.percentualImplementacao)}</td>
+                        </tr>
+                        <tr>
+                            <td>Diferença no Capital de Giro:</td>
+                            <td class="${impacto.diferencaCapitalGiro >= 0 ? 'positive-value' : 'negative-value'}">
+                                ${formatarMoeda(impacto.diferencaCapitalGiro)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Impacto Percentual:</td>
+                            <td class="${impacto.percentualImpacto >= 0 ? 'positive-value' : 'negative-value'}">
+                                ${formatarPercent(impacto.percentualImpacto/100)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Necessidade Adicional de Capital:</td>
+                            <td>${formatarMoeda(impacto.necessidadeAdicionalCapitalGiro)}</td>
+                        </tr>
+                        <tr>
+                            <td>Impacto na Margem Operacional:</td>
+                            <td>De ${formatarPercent(impacto.margemOperacionalOriginal)} para ${formatarPercent(impacto.margemOperacionalAjustada)}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="result-section">
+                    <h4>Projeção do Impacto</h4>
+                    <p>Impacto acumulado ao longo do período ${projecao.parametros.anoInicial}-${projecao.parametros.anoFinal}:</p>
+                    <table class="result-table">
+                        <tr>
+                            <td>Necessidade Total de Capital:</td>
+                            <td>${formatarMoeda(projecao.impactoAcumulado.totalNecessidadeCapitalGiro)}</td>
+                        </tr>
+                        <tr>
+                            <td>Custo Financeiro Total:</td>
+                            <td>${formatarMoeda(projecao.impactoAcumulado.custoFinanceiroTotal)}</td>
+                        </tr>
+                        <tr>
+                            <td>Impacto Médio na Margem:</td>
+                            <td>${formatarPercent(projecao.impactoAcumulado.impactoMedioMargem/100)}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        // Inserir HTML no container
+        containerResultados.innerHTML = html;
+
+        // Gerar gráficos
+        gerarGraficos(resultados);
+
+        // Atualizar memória de cálculo
+        atualizarMemoriaCalculo(resultados.memoriaCalculo);
+    }
+
+    // Geração de gráficos
+    function gerarGraficos(resultados) {
+        // Destruir gráficos existentes, se houver
+        if (window.graficos) {
+            Object.values(window.graficos).forEach(grafico => {
+                if (grafico && typeof grafico.destroy === 'function') {
+                    grafico.destroy();
+                }
+            });
+        }
+
+        window.graficos = {};
+
+        // Gráfico de fluxo de caixa
+        const ctxFluxoCaixa = document.getElementById('grafico-fluxo-caixa').getContext('2d');
+        window.graficos.fluxoCaixa = new Chart(ctxFluxoCaixa, {
+            type: 'bar',
+            data: {
+                labels: ['Regime Atual', 'Split Payment'],
+                datasets: [{
+                    label: 'Capital de Giro Disponível (R$)',
+                    data: [
+                        resultados.impactoBase.resultadoAtual.capitalGiroDisponivel,
+                        resultados.impactoBase.resultadoSplitPayment.capitalGiroDisponivel
+                    ],
+                    backgroundColor: ['rgba(54, 162, 235, 0.5)', 'rgba(255, 99, 132, 0.5)'],
+                    borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'R$'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Gráfico de capital de giro
+        const ctxCapitalGiro = document.getElementById('grafico-capital-giro').getContext('2d');
+        window.graficos.capitalGiro = new Chart(ctxCapitalGiro, {
+            type: 'doughnut',
+            data: {
+                labels: ['Mantido', 'Reduzido'],
+                datasets: [{
+                    data: [
+                        resultados.impactoBase.resultadoSplitPayment.capitalGiroDisponivel,
+                        Math.abs(resultados.impactoBase.diferencaCapitalGiro)
+                    ],
+                    backgroundColor: ['rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)'],
+                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Impacto no Capital de Giro'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de projeção
+        const ctxProjecao = document.getElementById('grafico-projecao').getContext('2d');
+
+        // Preparar dados para o gráfico de projeção
+        const anos = Object.keys(resultados.projecaoTemporal.resultadosAnuais);
+        const impactosPorAno = anos.map(ano => 
+            Math.abs(resultados.projecaoTemporal.resultadosAnuais[ano].diferencaCapitalGiro)
+        );
+
+        window.graficos.projecao = new Chart(ctxProjecao, {
+            type: 'line',
+            data: {
+                labels: anos,
+                datasets: [{
+                    label: 'Impacto no Capital de Giro (R$)',
+                    data: impactosPorAno,
+                    backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 2,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'R$'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Atualização da memória de cálculo
+    function atualizarMemoriaCalculo(memoriaCalculo) {
+        // Armazenar memória de cálculo para uso posterior
+        window.memoriaCalculoSimulacao = memoriaCalculo;
+
+        // Atualizar o select de anos na aba de memória
+        const selectAno = document.getElementById('select-ano-memoria');
+        if (selectAno) {
+            // Limpar options existentes
+            selectAno.innerHTML = '';
+
+            // Adicionar uma option para cada ano disponível
+            Object.keys(memoriaCalculo).forEach(ano => {
+                const option = document.createElement('option');
+                option.value = ano;
+                option.textContent = ano;
+                selectAno.appendChild(option);
+            });
+
+            // Exibir memória de cálculo para o primeiro ano
+            exibirMemoriaCalculo(Object.keys(memoriaCalculo)[0]);
+        }
+    }
+
+    function exibirMemoriaCalculo(ano) {
+        const containerMemoria = document.getElementById('memoria-calculo');
+        if (!containerMemoria || !window.memoriaCalculoSimulacao || !window.memoriaCalculoSimulacao[ano]) {
+            return;
+        }
+
+        // Formatar a memória de cálculo (usar texto pré-formatado para manter formatação)
+        containerMemoria.innerHTML = `<pre>${window.memoriaCalculoSimulacao[ano]}</pre>`;
+    }
+
+    /**
+     * Valida os dados da simulação
+     * @param {Object} dados - Dados coletados do formulário
+     * @returns {boolean} - Se os dados são válidos
+     */
+    function validarDadosSimulacao(dados) {
+        if (!dados.empresa) {
+            alert('Por favor, informe o nome da empresa.');
+            return false;
+        }
+
+        if (!dados.setor) {
+            alert('Por favor, selecione o setor de atividade.');
+            return false;
+        }
+
+        if (!dados.regime) {
+            alert('Por favor, selecione o regime tributário.');
+            return false;
+        }
+
+        if (isNaN(dados.faturamento) || dados.faturamento <= 0) {
+            alert('Por favor, informe um valor válido para o faturamento.');
+            return false;
+        }
+
+        if (isNaN(dados.aliquota) || dados.aliquota <= 0) {
+            alert('Por favor, informe uma alíquota válida.');
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Simula o impacto das estratégias de mitigação selecionadas
      */
     function simularEstrategias() {
