@@ -98,32 +98,8 @@ function inicializarEventosPrincipais() {
     const btnAtualizarMemoria = document.getElementById('btn-atualizar-memoria');
     if (btnAtualizarMemoria) {
         btnAtualizarMemoria.addEventListener('click', function() {
-            atualizarExibicaoMemoriaCalculo();
+            atualizarMemoriaCalculo();
         });
-    }
-    
-    // Evento para select de anos da memória
-    const selectAnoMemoria = document.getElementById('select-ano-memoria');
-    if (selectAnoMemoria) {
-        selectAnoMemoria.addEventListener('change', function() {
-            atualizarExibicaoMemoriaCalculo();
-        });
-    }
-    
-    // Função para atualizar exibição da memória de cálculo
-    function atualizarExibicaoMemoriaCalculo() {
-        const selectAno = document.getElementById('select-ano-memoria');
-        if (!selectAno) return;
-        
-        const anoSelecionado = selectAno.value;
-        console.log('Atualizando memória para o ano:', anoSelecionado);
-        
-        if (window.SimuladorFluxoCaixa && window.memoriaCalculoSimulacao) {
-            window.SimuladorFluxoCaixa.exibirMemoriaCalculo(anoSelecionado);
-        } else {
-            console.error('Não há memória de cálculo disponível ou o simulador não está inicializado');
-            document.getElementById('memoria-calculo').innerHTML = '<p>Realize uma simulação antes de visualizar a memória de cálculo.</p>';
-        }
     }
     
     // Evento para simulação de estratégias

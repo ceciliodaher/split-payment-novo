@@ -65,7 +65,6 @@
 								<div class="form-group">
 									<label for="regime">Regime Tributário:</label>
 									<select id="regime">
-										<option value="">Selecione o regime tributário...</option>
 										<option value="simples">Simples Nacional</option>
 										<option value="presumido">Lucro Presumido</option>
 										<option value="real">Lucro Real</option>
@@ -79,7 +78,27 @@
 							<label for="setor">Setor de Atividade:</label>
 							<select id="setor" class="form-control">
 								<option value="">Selecione uma atividade...</option>
-								<!-- Opções serão preenchidas via SetoresRepository -->
+								<option value="comercio" data-aliquota="26.5" data-reducao="0.0">Comércio Varejista (Alíquota: 26.5%, Redução: 0.0%)</option>
+								<option value="industria" data-aliquota="22.0" data-reducao="0.0">Indústria de Transformação (Alíquota: 22.0%, Redução: 0.0%)</option>
+								<option value="servicos" data-aliquota="26.5" data-reducao="0.0">Serviços Contínuos (Alíquota: 26.5%, Redução: 0.0%)</option>
+								<option value="agronegocio" data-aliquota="19.5" data-reducao="0.0">Agronegócio (Alíquota: 19.5%, Redução: 0.0%)</option>
+								<option value="construcao" data-aliquota="24.0" data-reducao="0.0">Construção Civil (Alíquota: 24.0%, Redução: 0.0%)</option>
+								<option value="tecnologia" data-aliquota="26.5" data-reducao="0.0">Tecnologia (Alíquota: 26.5%, Redução: 0.0%)</option>
+								<option value="saude" data-aliquota="14.5" data-reducao="3.0">Saúde (Alíquota: 14.5%, Redução: 3.0%)</option>
+								<option value="educacao" data-aliquota="12.5" data-reducao="5.0">Educação (Alíquota: 12.5%, Redução: 5.0%)</option>
+								<option value="medicamentos" data-aliquota="10.6" data-reducao="60.0">Medicamentos (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="dispositivos_medicos" data-aliquota="10.6" data-reducao="60.0">Dispositivos Médicos (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="dispositivos_acessibilidade" data-aliquota="10.6" data-reducao="60.0">Dispositivos de Acessibilidade (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="cuidados_menstruais" data-aliquota="10.6" data-reducao="60.0">Produtos de Cuidados Menstruais (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="transporte_coletivo" data-aliquota="10.6" data-reducao="60.0">Transporte Coletivo (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="alimentos_consumo_humano" data-aliquota="10.6" data-reducao="60.0">Alimentos para Consumo Humano (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="higiene_limpeza" data-aliquota="10.6" data-reducao="60.0">Produtos de Higiene e Limpeza (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="producoes_artisticas" data-aliquota="10.6" data-reducao="60.0">Produções Artísticas e Culturais (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="insumos_agropecuarios" data-aliquota="10.6" data-reducao="60.0">Insumos Agropecuários (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="seguranca_nacional" data-aliquota="10.6" data-reducao="60.0">Segurança e Soberania Nacional (Alíquota: 10.6%, Redução: 60.0%)</option>
+								<option value="cesta_basica" data-aliquota="0.0" data-reducao="100.0">Cesta Básica Nacional (Alíquota: 0.0%, Redução: 100.0%)</option>
+								<option value="combustiveis_energia" data-aliquota="26.5" data-reducao="0.0">Combustíveis e Energia (Alíquota: 26.5%, Redução: 0.0%)</option>
+								<option value="financeiro_seguros" data-aliquota="26.5" data-reducao="0.0">Financeiro e Seguros (Alíquota: 26.5%, Redução: 0.0%)</option>
 							</select>
 						</div>
 
@@ -173,7 +192,7 @@
 							<div class="form-column">
 								<div class="form-group">
 									<label for="perc-prazo">Percentual de Vendas a Prazo (%):</label>
-									<input type="text" id="perc-prazo" value="70%" readonly class="percent-input">
+									<input type="number" id="perc-prazo" value="70" readonly>
 								</div>
 							</div>
 						</div>
@@ -985,14 +1004,10 @@
     <!-- Adicionar após formatters.js e antes de main.js -->
 	<script src="js/utils/currency-formatter.js"></script>
     
-    <!-- Adicionar antes dos outros scripts do gerenciador de setores -->
-	<script src="js/config/setores-repository.js"></script>
-
-	<!-- Depois os gerenciadores de configuração -->
-    <script src="js/config/configuracoes-setoriais.js"></script>
+    <!-- Depois os gerenciadores de configuração -->
+    <script src="js/config/configuracoes-setoriais"></script>
     <script src="js/config/setores-manager.js"></script>
     <script src="js/config/config-manager.js"></script>
-	
     
     <!-- Depois os módulos de simulação -->
     <script src="js/simulation/calculation.js"></script>
@@ -1013,36 +1028,36 @@
     <!-- Script direto para atualização dos campos -->
 	<script>
 	function setorSelecionado() {
-      // Obter o elemento select
-      var select = document.getElementById('setor');
-
-      // Obter o valor (código) do setor selecionado
-      var codigoSetor = select.value;
-
-      // Verificar se um setor foi selecionado
-      if (codigoSetor) {
-          // Obter dados do setor diretamente do SetoresRepository
-          if (typeof SetoresRepository !== 'undefined' && SetoresRepository.obterSetor) {
-              var setor = SetoresRepository.obterSetor(codigoSetor);
-              if (setor) {
-                  // Usar o método para obter alíquota efetiva que já considera a redução
-                  var aliquotaEfetiva = SetoresRepository.obterAliquotaEfetiva(codigoSetor);
-                  var reducaoEspecial = setor.reducaoEspecial || 0;
-
-                  // Converter para percentagem para exibição (valores internos são decimais)
-                  document.getElementById('aliquota').value = (aliquotaEfetiva * 100).toFixed(1);
-                  document.getElementById('reducao').value = (reducaoEspecial * 100).toFixed(1);
-
-                  console.log('Setor selecionado: ' + setor.nome);
-                  console.log('Alíquota Efetiva: ' + (aliquotaEfetiva * 100).toFixed(1) + '%, Redução: ' + (reducaoEspecial * 100).toFixed(1) + '%');
-              }
-          }
-      } else {
-          // Caso nenhum setor esteja selecionado, usar valores padrão
-          document.getElementById('aliquota').value = "26.5";
-          document.getElementById('reducao').value = "0.0";
-      }
-  }
+		// Obter o elemento select
+		var select = document.getElementById('setor');
+		
+		// Obter o valor (código) do setor selecionado
+		var codigoSetor = select.value;
+		
+		// Verificar se um setor foi selecionado
+		if (codigoSetor) {
+			// Obter dados do setor diretamente do SetoresManager
+			if (typeof SetoresManager !== 'undefined' && SetoresManager.obterSetor) {
+				var setor = SetoresManager.obterSetor(codigoSetor);
+				if (setor) {
+					// Calcular alíquota efetiva considerando a redução
+					var aliquotaEfetiva = setor.aliquotaEfetiva || 0.265;
+					var reducaoEspecial = setor.reducaoEspecial || 0;
+					
+					// Converter para percentagem para exibição (valores internos são decimais)
+					document.getElementById('aliquota').value = (aliquotaEfetiva * 100).toFixed(1);
+					document.getElementById('reducao').value = (reducaoEspecial * 100).toFixed(1);
+					
+					console.log('Setor selecionado: ' + setor.nome);
+					console.log('Alíquota: ' + (aliquotaEfetiva * 100).toFixed(1) + '%, Redução: ' + (reducaoEspecial * 100).toFixed(1) + '%');
+				}
+			}
+		} else {
+			// Caso nenhum setor esteja selecionado, usar valores padrão
+			document.getElementById('aliquota').value = "26.5";
+			document.getElementById('reducao').value = "0.0";
+		}
+	}
 
 	// Adicionar evento de mudança ao select
 	document.addEventListener('DOMContentLoaded', function() {

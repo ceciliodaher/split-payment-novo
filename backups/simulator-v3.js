@@ -55,28 +55,11 @@ window.SimuladorFluxoCaixa = {
     },
 
     /**
-     * Extrai valor numérico de uma string formatada para moeda brasileira
+     * Extrai valor numérico de uma string formatada
      */
     extrairValorNumerico: function(valor) {
         if (!valor) return 0;
-        
-        // Remove tudo exceto dígitos, vírgulas e pontos
-        const apenasNumeros = valor.replace(/[^\d,.]/g, '');
-        
-        // Trata formato brasileiro: converte vírgulas para pontos e remove pontos (separadores de milhar)
-        let valorConvertido;
-        if (apenasNumeros.indexOf(',') !== -1) {
-            // Se tem vírgula, tratar como padrão brasileiro
-            valorConvertido = apenasNumeros.replace(/\./g, '').replace(',', '.');
-        } else {
-            // Se não tem vírgula, pode ser formato americano ou inteiro
-            valorConvertido = apenasNumeros;
-        }
-        
-        // Converte para número e retorna
-        const valorNumerico = parseFloat(valorConvertido);
-        console.log('Extraindo valor numérico de:', valor, '→', valorNumerico);
-        return isNaN(valorNumerico) ? 0 : valorNumerico;
+        return parseFloat(valor.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
     },
 
     /**
