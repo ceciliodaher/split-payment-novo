@@ -11,8 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-   <!-- Replace all existing CSS references with: -->
-	<link rel="stylesheet" href="css/main.css">
+    <!-- Arquivos CSS próprios -->
+    <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/tabs.css">
     <link rel="stylesheet" href="css/forms.css">
     <link rel="stylesheet" href="css/charts.css">
@@ -232,9 +232,8 @@
 										<div class="form-group">
 											<label for="cenario">Cenário de Crescimento:</label>
 											<select id="cenario">
-												<option value="">Selecione um cenário...</option>
 												<option value="conservador">Conservador (2% a.a.)</option>
-												<option value="moderado">Moderado (5% a.a.)</option>
+												<option value="moderado" selected>Moderado (5% a.a.)</option>
 												<option value="otimista">Otimista (8% a.a.)</option>
 												<option value="personalizado">Personalizado</option>
 											</select>
@@ -249,11 +248,7 @@
 								</div>
 							</div>
 						</div>
-                        <!-- Para estas duas linhas (adicionando um container para os botões) -->
-						<div class="button-group" style="display: flex; gap: 10px; margin-top: 20px;">
-							<button id="btn-simular" style="flex: 3; padding: 15px; font-size: 16px;">Simular Impacto no Fluxo de Caixa</button>
-							<button id="btn-limpar" style="flex: 1; padding: 15px; font-size: 16px;" class="btn-secondary">Limpar</button>
-						</div>
+                        <button id="btn-simular" style="width: 100%; padding: 15px; font-size: 16px;">Simular Impacto no Fluxo de Caixa</button>
                     </div>
 
                     <!-- Painel de resultados -->
@@ -1015,16 +1010,12 @@
     
     <!-- Importação dos scripts JavaScript -->
     
-	<!-- Scripts de núcleo -->
-	<script src="js/core/state-manager.js"></script>
-	<script src="js/core/event-bus.js"></script>
-	<script src="js/utils/dom-utils.js"></script>
-    
+    <!-- Scripts principais -->
 	<!-- Primeiro os utilitários -->
-	<script src="js/utils/dom-utils.js"></script>
 	<script src="js/utils/formatters.js"></script>
 	<script src="js/utils/validators.js"></script>
 	<script src="js/utils/export-tools.js"></script>
+	<script src="js/utils/currency-formatter.js"></script>
 
 	<!-- Depois os repositórios e gerenciadores de configuração -->
 	<script src="js/config/setores-repository.js"></script>
@@ -1045,18 +1036,14 @@
 	<script src="js/ui/memoria-controller.js"></script>
 	<script src="js/ui/estrategias-controller.js"></script>
 
-	<!-- Módulos de cálculo -->
-    <script src="js/simulation/calculation.js"></script>
-    <script src="js/simulation/simulator.js"></script>
-    <script src="js/simulation/credit-compensation.js"></script>
-    <script src="js/simulation/sensitivity-analysis.js"></script>
-    <script src="js/simulation/mitigation-strategies.js"></script>
-    <script src="js/simulation/simulador-modulo.js"></script>
+	<!-- Depois os módulos de simulação -->
+	<script src="js/simulation/calculation.js"></script>
+	<script src="js/simulation/simulator.js"></script>
+	<script src="js/simulation/simulador-modulo.js"></script>
+	<script src="js/simulation/strategies.js"></script>
 
-	<!-- Por último, a integração e inicialização -->
-	<script src="js/core/app-integrator.js"></script>
+	<!-- Por último, o script principal e integração -->
 	<script src="js/integration.js"></script>
-	<script src="js/app.js"></script>
 	<script src="js/main.js"></script>
 	
     <!-- Script direto para atualização dos campos -->
@@ -1103,52 +1090,6 @@
 		
 		// Executar uma vez para configurar os valores iniciais
 		setorSelecionado();
-	});
-	</script>
-	<script>
-	document.addEventListener('DOMContentLoaded', function() {
-		// Financial Cycle Calculation
-		function calcularCicloFinanceiro() {
-			const pmr = parseInt(document.getElementById('pmr')?.value) || 0;
-			const pmp = parseInt(document.getElementById('pmp')?.value) || 0;
-			const pme = parseInt(document.getElementById('pme')?.value) || 0;
-			
-			const ciclo = pmr + pme - pmp;
-			const campoCiclo = document.getElementById('ciclo-financeiro');
-			if (campoCiclo) {
-				campoCiclo.value = ciclo;
-			}
-		}
-		
-		['pmr', 'pmp', 'pme'].forEach(id => {
-			const campo = document.getElementById(id);
-			if (campo) {
-				campo.addEventListener('input', calcularCicloFinanceiro);
-			}
-		});
-		
-		calcularCicloFinanceiro();
-		
-		// Credit Sales Percentage Update
-		function atualizarPercPrazo() {
-			const campoPercVista = document.getElementById('perc-vista');
-			const campoPercPrazo = document.getElementById('perc-prazo');
-			
-			if (campoPercVista && campoPercPrazo) {
-				const valorPercVista = parseFloat(campoPercVista.value) || 0;
-				const valorPercPrazo = Math.max(0, Math.min(100, 100 - valorPercVista));
-				
-				campoPercPrazo.value = valorPercPrazo.toFixed(1) + '%';
-			}
-		}
-		
-		const campoPercVista = document.getElementById('perc-vista');
-		if (campoPercVista) {
-			campoPercVista.addEventListener('input', atualizarPercPrazo);
-			campoPercVista.addEventListener('blur', atualizarPercPrazo);
-		}
-		
-		atualizarPercPrazo();
 	});
 	</script>
 </body>

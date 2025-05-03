@@ -51,7 +51,7 @@ const FormsManager = {
     
     // Substituir a função inicializarCalculoCicloFinanceiro completa por:
 	inicializarCalculoCicloFinanceiro: function() {
-		const self = this;
+		const self = this; // Capturar o contexto do FormsManager
 		const campos = ['pmr', 'pmp', 'pme'];
 		
 		campos.forEach(id => {
@@ -231,15 +231,13 @@ const FormsManager = {
 			// Ajustar o impacto considerando a proporção de vendas a prazo
 			const proporcaoAfetada = percPrazo > 0 ? percPrazo : 1;
 
-			// CORREÇÃO: Cálculo correto do impacto no ciclo financeiro
-			// O split payment reduz tecnicamente o ciclo financeiro, mas isso representa
-			// uma MAIOR necessidade de capital de giro, não menor
+			// Impacto no PMR
 			const impactoPMR = pmr * (valorTributarioRetido / valorTributarioTotal) * proporcaoAfetada;
 			console.log('Impacto no PMR:', impactoPMR);
 
-			// Ciclo financeiro ajustado 
+			// Ciclo financeiro ajustado
 			const cicloAjustado = pmr + pme - pmp - impactoPMR;
-			
+
 			// Atualizar campo com valor ajustado
 			const campoCiclo = document.getElementById('ciclo-financeiro');
 			if (campoCiclo) {
@@ -248,19 +246,8 @@ const FormsManager = {
 
 			// Calcular necessidade de capital de giro (NCG)
 			const faturamentoDiario = faturamento / 30;
-			
-			// Calculamos a NCG atual normalmente
 			const ncgAtual = faturamentoDiario * (pmr + pme - pmp);
-			
-			// A NCG ajustada deve considerar:
-			// 1. A NCG básica calculada com o ciclo ajustado
-			const ncgBasica = faturamentoDiario * cicloAjustado;
-			
-			// 2. O valor tributário retido que não está mais disponível como capital de giro
-			// CORREÇÃO: Precisamos ADICIONAR o valor do imposto que não estará mais disponível
-			const ncgAjustada = ncgBasica + valorTributarioRetido; 
-			
-			// Diferença (sempre será positiva com a fórmula corrigida)
+			const ncgAjustada = faturamentoDiario * cicloAjustado;
 			const diferencaNCG = ncgAjustada - ncgAtual;
 			
 			console.log('NCG Atual:', ncgAtual, 'NCG Ajustada:', ncgAjustada);

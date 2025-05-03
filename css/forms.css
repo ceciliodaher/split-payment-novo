@@ -109,6 +109,24 @@ input[readonly] {
     padding: 0 5px;
 }
 
+/* Adicionar ao final do arquivo forms.css */
+
+.btn-secondary {
+    background-color: #f8f9fa;
+    color: #3a3a3a;
+    border: 1px solid #dee2e6;
+}
+
+.btn-secondary:hover {
+    background-color: #e9ecef;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+}
+
 /* Estilos para tabelas de entrada de dados */
 .data-table {
     width: 100%;

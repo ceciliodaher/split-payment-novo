@@ -20,6 +20,7 @@ const TabsManager = {
     /**
      * Configura as abas principais com eventos personalizados
      */
+    // Substitua a função inicializarAbasPrincipais no arquivo tabs-manager.js
     inicializarAbasPrincipais: function() {
         const botoes = document.querySelectorAll('.tab-button');
         const conteudos = document.querySelectorAll('.tab-content');
@@ -27,6 +28,7 @@ const TabsManager = {
         botoes.forEach(botao => {
             botao.addEventListener('click', () => {
                 const tabId = botao.getAttribute('data-tab');
+                console.log('Mudando para a aba:', tabId);
 
                 // Reset de estados ativos
                 botoes.forEach(b => b.classList.remove('active'));
@@ -34,7 +36,13 @@ const TabsManager = {
 
                 // Ativação dos elementos selecionados
                 botao.classList.add('active');
-                document.getElementById(tabId).classList.add('active');
+                const conteudoAlvo = document.getElementById(tabId);
+                if (conteudoAlvo) {
+                    conteudoAlvo.classList.add('active');
+                    console.log('Ativando conteúdo:', tabId);
+                } else {
+                    console.error('Conteúdo da aba não encontrado:', tabId);
+                }
 
                 // Disparo de evento personalizado
                 const event = new CustomEvent('tabChange', {

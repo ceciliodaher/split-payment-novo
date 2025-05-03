@@ -10,7 +10,7 @@
     --gray-text: #6c757d;
     --light-border: #dee2e6;
     --white: #ffffff;
-}
+
     
     /* Derivados com transparência */
     --primary-light: rgba(52, 152, 219, 0.1);
@@ -30,7 +30,7 @@
     --border-radius-lg: 12px;
     --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     --box-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
-	
+}
 	/* Estilos específicos para campos com formatação monetária */
 	
     .money-input-container {

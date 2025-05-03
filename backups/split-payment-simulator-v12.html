@@ -11,8 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-   <!-- Replace all existing CSS references with: -->
-	<link rel="stylesheet" href="css/main.css">
+    <!-- Arquivos CSS próprios -->
+    <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/tabs.css">
     <link rel="stylesheet" href="css/forms.css">
     <link rel="stylesheet" href="css/charts.css">
@@ -162,38 +162,6 @@
 									<input type="number" id="ciclo-financeiro" value="30" readonly>
 								</div>
 							</div>
-							<div class="form-column">
-								<div class="form-group checkbox-group">
-									<input type="checkbox" id="considerar-split" name="considerar-split">
-									<label for="considerar-split">Considerar Split Payment no cálculo</label>
-									<span class="tooltip">
-										<i class="info-icon">i</i>
-										<span class="tooltip-text">Ajusta o ciclo financeiro de acordo com o impacto do Split Payment, considerando o percentual de implementação do ano selecionado.</span>
-									</span>
-								</div>
-							</div>
-						</div>
-						
-						<!-- Campos opcionais para exibir a NCG (inicialmente ocultos) -->
-						<div id="campos-ncg" style="display: none;" class="form-row">
-							<div class="form-column">
-								<div class="form-group">
-									<label for="ncg-atual">NCG Atual:</label>
-									<input type="text" id="ncg-atual" readonly>
-								</div>
-							</div>
-							<div class="form-column">
-								<div class="form-group">
-									<label for="ncg-ajustada">NCG com Split Payment:</label>
-									<input type="text" id="ncg-ajustada" readonly>
-								</div>
-							</div>
-							<div class="form-column">
-								<div class="form-group">
-									<label for="diferenca-ncg">Impacto no Capital de Giro:</label>
-									<input type="text" id="diferenca-ncg" readonly class="impact-field">
-								</div>
-							</div>
 						</div>
 						<div class="form-row">
 							<div class="form-column">
@@ -232,9 +200,8 @@
 										<div class="form-group">
 											<label for="cenario">Cenário de Crescimento:</label>
 											<select id="cenario">
-												<option value="">Selecione um cenário...</option>
 												<option value="conservador">Conservador (2% a.a.)</option>
-												<option value="moderado">Moderado (5% a.a.)</option>
+												<option value="moderado" selected>Moderado (5% a.a.)</option>
 												<option value="otimista">Otimista (8% a.a.)</option>
 												<option value="personalizado">Personalizado</option>
 											</select>
@@ -249,11 +216,7 @@
 								</div>
 							</div>
 						</div>
-                        <!-- Para estas duas linhas (adicionando um container para os botões) -->
-						<div class="button-group" style="display: flex; gap: 10px; margin-top: 20px;">
-							<button id="btn-simular" style="flex: 3; padding: 15px; font-size: 16px;">Simular Impacto no Fluxo de Caixa</button>
-							<button id="btn-limpar" style="flex: 1; padding: 15px; font-size: 16px;" class="btn-secondary">Limpar</button>
-						</div>
+                        <button id="btn-simular" style="width: 100%; padding: 15px; font-size: 16px;">Simular Impacto no Fluxo de Caixa</button>
                     </div>
 
                     <!-- Painel de resultados -->
@@ -516,7 +479,7 @@
 						<label for="observacoes-financeiras">Observações Adicionais:</label>
 						<textarea id="observacoes-financeiras" name="observacoes-financeiras" rows="3" placeholder="Insira aqui observações adicionais sobre os parâmetros financeiros..."></textarea>
 					</div>
-				</div>
+				
 				
 				<!-- Botões de Ação -->
 				<div class="form-actions">
@@ -1015,50 +978,61 @@
     
     <!-- Importação dos scripts JavaScript -->
     
-	<!-- Scripts de núcleo -->
-	<script src="js/core/state-manager.js"></script>
-	<script src="js/core/event-bus.js"></script>
-	<script src="js/utils/dom-utils.js"></script>
+    <!-- Primeiro os utilitários -->
+    <script src="js/utils/formatters.js"></script>
+    <script src="js/utils/validators.js"></script>
+    <script src="js/utils/export-tools.js"></script>
+    <!-- Adicionar após formatters.js e antes de main.js -->
+	<script src="js/utils/currency-formatter.js"></script>
     
-	<!-- Primeiro os utilitários -->
-	<script src="js/utils/dom-utils.js"></script>
-	<script src="js/utils/formatters.js"></script>
-	<script src="js/utils/validators.js"></script>
-	<script src="js/utils/export-tools.js"></script>
-
-	<!-- Depois os repositórios e gerenciadores de configuração -->
+    <!-- Adicionar antes dos outros scripts do gerenciador de setores -->
 	<script src="js/config/setores-repository.js"></script>
+	
+	<!-- Depois o repositório central (nova arquitetura) -->
 	<script src="js/repository/simulador-repository.js"></script>
-	<script src="js/config/configuracoes-setoriais.js"></script>
-	<script src="js/config/setores-manager.js"></script>
-	<script src="js/config/config-manager.js"></script>
+	
 
-	<!-- Depois os gerenciadores de UI -->
-	<script src="js/ui/tabs-manager.js"></script>
-	<script src="js/ui/forms-manager.js"></script>
-	<script src="js/ui/charts-manager.js"></script>
-	<script src="js/ui/modal-manager.js"></script>
-	<script src="js/ui/setores-ui.js"></script>
-
-	<!-- Depois os controladores -->
+	<!-- Depois os gerenciadores de configuração -->
+    <script src="js/config/configuracoes-setoriais.js"></script>
+    <script src="js/config/setores-manager.js"></script>
+    <script src="js/config/config-manager.js"></script>
+	
+    
+    <!-- Depois os módulos de simulação -->
+    <script src="js/simulation/calculation.js"></script>
+    <script src="js/simulation/strategies.js"></script>
+    <script src="js/simulation/simulator.js"></script>
+    
+    <!-- Novas implementações -->
+	<script src="js/simulation/simulador-modulo.js"></script>
+	<script src="js/simulation/strategies.js"></script>
+    
+    <!-- Depois os módulos de UI -->
+    <script src="js/ui/tabs-manager.js"></script>
+    <script src="js/ui/forms-manager.js"></script>
+    <script src="js/ui/charts-manager.js"></script>
+    <script src="js/ui/modal-manager.js"></script>
+	<script src="js/ui/setores-ui.js"></script>  <!-- Nova linha adicionada aqui -->
+	<script src="js/ui/setores-modal.js"></script>
+	
+	<!-- Controladores específicos (novos) -->
 	<script src="js/ui/simulacao-controller.js"></script>
+	<script src="js/ui/estrategias-controller.js"></script>
 	<script src="js/ui/memoria-controller.js"></script>
 	<script src="js/ui/estrategias-controller.js"></script>
 
-	<!-- Módulos de cálculo -->
-    <script src="js/simulation/calculation.js"></script>
-    <script src="js/simulation/simulator.js"></script>
-    <script src="js/simulation/credit-compensation.js"></script>
-    <script src="js/simulation/sensitivity-analysis.js"></script>
-    <script src="js/simulation/mitigation-strategies.js"></script>
-    <script src="js/simulation/simulador-modulo.js"></script>
+	<!-- Gerenciadores de interface -->
+	<script src="js/ui/charts-manager.js"></script>
+	<script src="js/ui/modal-manager.js"></script>
+	<script src="js/ui/setores-ui.js"></script>
+	<script src="js/ui/setores-modal.js"></script>
 
-	<!-- Por último, a integração e inicialização -->
-	<script src="js/core/app-integrator.js"></script>
-	<script src="js/integration.js"></script>
-	<script src="js/app.js"></script>
-	<script src="js/main.js"></script>
-	
+	<!-- Integradores -->
+	<script src="js/integration/integration.js"></script>
+    
+    <!-- Por último, o script principal -->
+    <script src="js/main.js"></script>
+    
     <!-- Script direto para atualização dos campos -->
 	<script>
 	function setorSelecionado() {
@@ -1103,52 +1077,6 @@
 		
 		// Executar uma vez para configurar os valores iniciais
 		setorSelecionado();
-	});
-	</script>
-	<script>
-	document.addEventListener('DOMContentLoaded', function() {
-		// Financial Cycle Calculation
-		function calcularCicloFinanceiro() {
-			const pmr = parseInt(document.getElementById('pmr')?.value) || 0;
-			const pmp = parseInt(document.getElementById('pmp')?.value) || 0;
-			const pme = parseInt(document.getElementById('pme')?.value) || 0;
-			
-			const ciclo = pmr + pme - pmp;
-			const campoCiclo = document.getElementById('ciclo-financeiro');
-			if (campoCiclo) {
-				campoCiclo.value = ciclo;
-			}
-		}
-		
-		['pmr', 'pmp', 'pme'].forEach(id => {
-			const campo = document.getElementById(id);
-			if (campo) {
-				campo.addEventListener('input', calcularCicloFinanceiro);
-			}
-		});
-		
-		calcularCicloFinanceiro();
-		
-		// Credit Sales Percentage Update
-		function atualizarPercPrazo() {
-			const campoPercVista = document.getElementById('perc-vista');
-			const campoPercPrazo = document.getElementById('perc-prazo');
-			
-			if (campoPercVista && campoPercPrazo) {
-				const valorPercVista = parseFloat(campoPercVista.value) || 0;
-				const valorPercPrazo = Math.max(0, Math.min(100, 100 - valorPercVista));
-				
-				campoPercPrazo.value = valorPercPrazo.toFixed(1) + '%';
-			}
-		}
-		
-		const campoPercVista = document.getElementById('perc-vista');
-		if (campoPercVista) {
-			campoPercVista.addEventListener('input', atualizarPercPrazo);
-			campoPercVista.addEventListener('blur', atualizarPercPrazo);
-		}
-		
-		atualizarPercPrazo();
 	});
 	</script>
 </body>
