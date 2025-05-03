@@ -25,6 +25,11 @@ const AppIntegrator = {
             SimuladorRepository.inicializar();
         }
 
+        // Inicializar repositório de setores (se necessário)
+        if (typeof SetoresRepository !== 'undefined') {
+            SetoresRepository.inicializar();
+        }
+
         // Inicializar gerenciador de formulários
         if (typeof FormsManager !== 'undefined') {
             FormsManager.inicializar();
