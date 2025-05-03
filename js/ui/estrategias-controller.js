@@ -21,6 +21,18 @@ const EstrategiasMitigacaoController = {
     verificarSimulacaoRealizada: function() {
         // Verificar se há uma simulação realizada
         const interfaceState = SimuladorRepository.obterSecao('interfaceState');
+        if (!interfaceState) {
+            // Tratar o caso onde interfaceState é null/undefined
+            console.warn('Estado da interface não encontrado no repositório');
+            const containerResultados = document.getElementById('resultados-estrategias');
+            if (containerResultados) {
+                containerResultados.innerHTML = 
+                    '<p class="text-warning">É necessário realizar uma simulação principal antes de configurar estratégias de mitigação.</p>';
+            }
+            return;
+        }
+
+        // O código original continua a partir daqui
         if (!interfaceState.simulacaoRealizada) {
             const containerResultados = document.getElementById('resultados-estrategias');
             if (containerResultados) {
@@ -70,7 +82,7 @@ const EstrategiasMitigacaoController = {
         try {
             // Verificar se a simulação principal foi realizada
             const interfaceState = SimuladorRepository.obterSecao('interfaceState');
-            if (!interfaceState.simulacaoRealizada) {
+            if (!interfaceState || !interfaceState.simulacaoRealizada) {
                 alert('É necessário realizar uma simulação principal antes de simular estratégias.');
 
                 // Redirecionar para a aba de simulação
@@ -83,10 +95,15 @@ const EstrategiasMitigacaoController = {
 
             try {
                 // Executar simulação de estratégias
-                const resultados = window.simularEstrategias();
+                if (typeof window.simularEstrategias === 'function') {
+                    const resultados = window.simularEstrategias();
 
-                // Armazenar resultados no repositório
-                SimuladorRepository.atualizarCampo('resultadosSimulacao', 'estrategiasMitigacao', resultados);
+                    // Armazenar resultados no repositório
+                    SimuladorRepository.atualizarCampo('resultadosSimulacao', 'estrategiasMitigacao', resultados);
+                } else {
+                    console.error('Função simularEstrategias não encontrada');
+                    alert('Erro: Função de simulação de estratégias não encontrada.');
+                }
             } catch (error) {
                 console.error('Erro ao simular estratégias:', error);
                 alert('Ocorreu um erro durante a simulação de estratégias: ' + error.message);
