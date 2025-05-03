@@ -50,31 +50,28 @@ const FormsManager = {
     },
     
     inicializarCalculoCicloFinanceiro: function() {
-		const self = this; // Capture FormsManager context
-		const campos = ['pmr', 'pmp', 'pme'];
-		campos.forEach(id => {
-			const campo = document.getElementById(id);
-			if (campo) {
-				campo.addEventListener('input', function() {
-					self.calcularCicloFinanceiro(); // Use captured context
-				});
-			}
-		});
-		
-		// Calculate initial value
-		this.calcularCicloFinanceiro();
-	},
+        const self = this;
+        const campos = ['pmr', 'pmp', 'pme'];
 
-        // Adicionar evento para o checkbox de split payment
-        const checkSplit = document.getElementById('considerar-split');
-        if (checkSplit) {
-            checkSplit.addEventListener('change', () => {
-                this.calcularCicloFinanceiro();
+        campos.forEach(id => {
+            const campo = document.getElementById(id);
+            if (campo) {
+                campo.addEventListener('input', function() {
+                    self.calcularCicloFinanceiro();
+                });
+            }
+        });
+
+        // Adicionar evento para o checkbox de split payment (movido para dentro da função)
+        const checkboxSplit = document.getElementById('considerar-split');
+        if (checkboxSplit) {
+            checkboxSplit.addEventListener('change', function() {
+                self.calcularCicloFinanceiro();
 
                 // Mostrar ou ocultar campos de NCG
                 const camposNCG = document.getElementById('campos-ncg');
                 if (camposNCG) {
-                    camposNCG.style.display = checkSplit.checked ? 'block' : 'none';
+                    camposNCG.style.display = checkboxSplit.checked ? 'block' : 'none';
                 }
             });
         }
@@ -85,19 +82,19 @@ const FormsManager = {
             const campo = document.getElementById(id);
             if (campo) {
                 // Para inputs de texto e número
-                campo.addEventListener('input', () => {
+                campo.addEventListener('input', function() {
                     // Só recalcular se o split payment estiver ativado
                     if (document.getElementById('considerar-split')?.checked) {
-                        this.calcularCicloFinanceiro();
+                        self.calcularCicloFinanceiro();
                     }
                 });
 
                 // Para selects e campos de data
                 if (campo.tagName === 'SELECT' || campo.type === 'date') {
-                    campo.addEventListener('change', () => {
+                    campo.addEventListener('change', function() {
                         // Só recalcular se o split payment estiver ativado
                         if (document.getElementById('considerar-split')?.checked) {
-                            this.calcularCicloFinanceiro();
+                            self.calcularCicloFinanceiro();
                         }
                     });
                 }
@@ -120,15 +117,72 @@ const FormsManager = {
         // Verificar se estamos calculando com split payment
         const comSplitPayment = document.getElementById('considerar-split')?.checked || false;
 
+        // Cálculo tradicional do ciclo financeiro
+        const cicloFinanceiroAtual = pmr + pme - pmp;
+        const campoCiclo = document.getElementById('ciclo-financeiro');
+        if (campoCiclo) {
+            campoCiclo.value = cicloFinanceiroAtual;
+        }
+
+        // Se não estiver calculando com split payment, encerrar aqui
         if (!comSplitPayment) {
-            // Cálculo tradicional
-            const ciclo = pmr + pme - pmp;
-            const campoCiclo = document.getElementById('ciclo-financeiro');
-            if (campoCiclo) {
-                campoCiclo.value = ciclo;
-            }
             return;
         }
+
+        // Recuperar dados financeiros
+        const faturamento = FormatacaoHelper.extrairValorNumerico(document.getElementById('faturamento')?.value) || 0;
+        const aliquota = parseFloat(document.getElementById('aliquota')?.value) / 100 || 0;
+
+        // Recuperar ano de referência para percentual de implementação
+        const anoReferencia = document.getElementById('data-inicial')?.value.split('-')[0] || '2026';
+
+        // Obter percentual de implementação para o ano
+        let percentualImplementacao = 0.10; // Valor padrão para 2026
+
+        // Tentar obter do SimuladorFluxoCaixa se disponível
+        if (window.SimuladorFluxoCaixa && typeof window.SimuladorFluxoCaixa.obterPercentualImplementacao === 'function') {
+            percentualImplementacao = window.SimuladorFluxoCaixa.obterPercentualImplementacao(parseInt(anoReferencia));
+        } else {
+            // Cronograma de implementação definido na metodologia
+            const cronograma = {
+                2026: 0.10,
+                2027: 0.25,
+                2028: 0.40,
+                2029: 0.55,
+                2030: 0.70,
+                2031: 0.85,
+                2032: 0.95,
+                2033: 1.00
+            };
+            percentualImplementacao = cronograma[parseInt(anoReferencia)] || 0.10;
+        }
+
+        // Valor tributário total
+        const valorTributarioTotal = faturamento * aliquota;
+
+        // Valor tributário retido via split payment
+        const valorTributarioRetido = valorTributarioTotal * percentualImplementacao;
+
+        // MUDANÇA FUNDAMENTAL: Split Payment AUMENTA a NCG
+
+        // Cálculo da NCG Atual (sem Split Payment)
+        const ncgAtual = (faturamento / 30) * cicloFinanceiroAtual;
+
+        // Cálculo da NCG Ajustada (AUMENTADA com Split Payment)
+        const ncgAjustada = ncgAtual + valorTributarioRetido;
+
+        // A diferença será POSITIVA, indicando AUMENTO na NCG
+        const diferencaNCG = ncgAjustada - ncgAtual;
+
+        // Atualizar campos de NCG
+        const campoNCGAtual = document.getElementById('ncg-atual');
+        const campoNCGAjustada = document.getElementById('ncg-ajustada');
+        const campoDiferencaNCG = document.getElementById('diferenca-ncg');
+
+        if (campoNCGAtual) campoNCGAtual.value = FormatacaoHelper.formatarMoeda(ncgAtual);
+        if (campoNCGAjustada) campoNCGAjustada.value = FormatacaoHelper.formatarMoeda(ncgAjustada);
+        if (campoDiferencaNCG) campoDiferencaNCG.value = FormatacaoHelper.formatarMoeda(diferencaNCG);
+    }
 
         // Recuperar ano de referência para percentual de implementação
         const anoReferencia = document.getElementById('data-inicial')?.value.split('-')[0] || '2026';

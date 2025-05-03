@@ -533,13 +533,21 @@ function calcularImpactoCicloFinanceiro(dados, ano = 2026, parametrosSetoriais =
     const valorImpostoTotal = faturamento * aliquota;
     const impostoSplit = valorImpostoTotal * percentualImplementacao;
     
+    // Impacto DIRETO na NCG (AUMENTO)
+    // Aqui modifique o cálculo sem redeclarar as variáveis
+    ncgAtual = (faturamento / 30) * cicloFinanceiroAtual;
+    ncgAjustada = ncgAtual + impostoSplit; // Adiciona o Split Payment à NCG
+    
+    // Diferença na necessidade de capital de giro (POSITIVA)
+    diferencaNCG = ncgAjustada - ncgAtual;
+    
     // Impacto em dias de PMR (considerando a retenção no momento do recebimento)
     const impactoPMR = (impostoSplit / faturamento) * pmr;
     
     // Ciclo financeiro ajustado
     const cicloFinanceiroAjustado = cicloFinanceiroAtual - impactoPMR;
     
-    // Necessidade de capital de giro antes e depois
+     // Necessidade de capital de giro antes e depois
     const ncgAtual = (faturamento / 30) * cicloFinanceiroAtual;
     const ncgAjustada = (faturamento / 30) * cicloFinanceiroAjustado;
     
