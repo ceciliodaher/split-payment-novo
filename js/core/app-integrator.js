@@ -6,30 +6,97 @@ const AppIntegrator = {
     /**
      * Inicializa o integrador
      */
-    initialize: function() {
-        console.log('Inicializando integrador de aplicação...');
-        
-        // Verificar disponibilidade dos módulos essenciais
-        this._checkModulesAvailability();
-        
-        // Inicializar gerenciador de estado
-        if (typeof StateManager !== 'undefined') {
-            // Carregar estado do localStorage
-            StateManager.loadFromLocalStorage();
-            
-            // Configurar salvamento automático
-            this._setupAutoSave();
-            
-            console.log('Gerenciador de estado inicializado com sucesso');
+    // Em app-integrator.js, modifique o método inicializar se existir ou adicione-o
+    inicializar: function() {
+        console.log('Inicializando AppIntegrator...');
+
+        // Inicializar o gerenciador de abas
+        if (typeof TabsManager !== 'undefined') {
+            TabsManager.inicializar();
+
+            // Adicionar um callback para quando as abas forem alteradas
+            TabsManager.registrarCallbackTrocaAba((abaAnterior, abaNova) => {
+                this.gerenciarTrocaAba(abaAnterior, abaNova);
+            });
         }
-        
-        // Conectar componentes e integrar eventos
-        this._connectComponents();
-        
-        // Observar mudanças no estado para atualizar a interface
-        this._setupStateObservers();
-        
-        console.log('Integrador de aplicação inicializado com sucesso');
+
+        // Inicializar o repositório principal
+        if (typeof SimuladorRepository !== 'undefined') {
+            SimuladorRepository.inicializar();
+        }
+
+        // Inicializar gerenciador de formulários
+        if (typeof FormsManager !== 'undefined') {
+            FormsManager.inicializar();
+        }
+
+        // Inicializar outros gerenciadores e utilitários
+        this.inicializarModuloSeExistir('SetoresManager');
+        this.inicializarModuloSeExistir('FormatHelper');
+        this.inicializarModuloSeExistir('SimuladorModulo');
+
+        console.log('AppIntegrator inicializado com sucesso');
+    },
+
+    // Adicione este método auxiliar para inicializar módulos de forma segura
+    inicializarModuloSeExistir: function(nomeModulo) {
+        if (typeof window[nomeModulo] !== 'undefined' && 
+            typeof window[nomeModulo].inicializar === 'function') {
+            try {
+                window[nomeModulo].inicializar();
+                console.log(`Módulo ${nomeModulo} inicializado com sucesso`);
+            } catch (error) {
+                console.error(`Erro ao inicializar ${nomeModulo}:`, error);
+            }
+        } else {
+            console.warn(`Módulo ${nomeModulo} não disponível ou não tem método inicializar`);
+        }
+    },
+
+    // Adicione este novo método para gerenciar a mudança de abas
+    gerenciarTrocaAba: function(abaAnterior, abaNova) {
+        console.log(`Mudando de aba: ${abaAnterior} -> ${abaNova}`);
+
+        // Inicializar controlador específico da aba, se necessário
+        switch (abaNova) {
+            case 'simulacao':
+                this.inicializarModuloSeExistir('SimuladorController');
+                break;
+            case 'memoria':
+                this.inicializarModuloSeExistir('MemoriaController');
+                break;
+            case 'estrategias':
+                this.inicializarModuloSeExistir('EstrategiasController');
+                break;
+            case 'configuracoes':
+                this.inicializarModuloSeExistir('ConfiguracoesController');
+                break;
+            // Adicione outros casos para abas adicionais
+        }
+
+        // Se houver método específico para a aba, chame-o
+        const metodoAba = 'inicializar' + this.capitalizarPrimeiraLetra(abaNova);
+        if (typeof this[metodoAba] === 'function') {
+            this[metodoAba]();
+        }
+    },
+
+    // Método auxiliar para capitalizar a primeira letra
+    capitalizarPrimeiraLetra: function(texto) {
+        return texto.charAt(0).toUpperCase() + texto.slice(1);
+    },
+
+    // Método para mudar de aba - já deve existir, mas vamos melhorá-lo com tratamento de erros
+    mudarPara: function(nomeAba) {
+        try {
+            if (typeof TabsManager !== 'undefined') {
+                TabsManager.mudarPara(nomeAba);
+            } else {
+                console.error('TabsManager não definido ao tentar mudar para aba:', nomeAba);
+            }
+        } catch (error) {
+            console.error('Erro ao mudar para aba ' + nomeAba + ':', error);
+        }
     },
     
     /**

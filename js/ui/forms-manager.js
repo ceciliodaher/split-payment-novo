@@ -53,7 +53,7 @@ const FormsManager = {
 	inicializarCalculoCicloFinanceiro: function() {
 		const self = this;
 		const campos = ['pmr', 'pmp', 'pme'];
-		
+
 		campos.forEach(id => {
 			const campo = document.getElementById(id);
 			if (campo) {
@@ -62,21 +62,27 @@ const FormsManager = {
 				});
 			}
 		});
-		
+
 		// Adicionar evento para o checkbox de split payment
 		const checkSplit = document.getElementById('considerar-split');
 		if (checkSplit) {
 			checkSplit.addEventListener('change', function() {
 				self.calcularCicloFinanceiro();
-				
+
 				// Mostrar ou ocultar campos de NCG
 				const camposNCG = document.getElementById('campos-ncg');
 				if (camposNCG) {
 					camposNCG.style.display = this.checked ? 'block' : 'none';
 				}
 			});
+
+			// Definir visibilidade inicial com base no estado atual do checkbox
+			const camposNCG = document.getElementById('campos-ncg');
+			if (camposNCG) {
+				camposNCG.style.display = checkSplit.checked ? 'block' : 'none';
+			}
 		}
-		
+
 		// Adicionar eventos para campos adicionais que afetam o cálculo com split payment
 		const camposAdicionais = ['faturamento', 'aliquota', 'perc-vista', 'perc-prazo', 'data-inicial'];
 		camposAdicionais.forEach(id => {
@@ -89,7 +95,7 @@ const FormsManager = {
 						self.calcularCicloFinanceiro();
 					}
 				});
-				
+
 				// Para selects e campos de data
 				if (campo.tagName === 'SELECT' || campo.type === 'date') {
 					campo.addEventListener('change', function() {
@@ -101,53 +107,10 @@ const FormsManager = {
 				}
 			}
 		});
-		
+
 		// Calcular valor inicial
 		this.calcularCicloFinanceiro();
 	},
-
-        // Adicionar evento para o checkbox de split payment
-        const checkSplit = document.getElementById('considerar-split');
-        if (checkSplit) {
-            checkSplit.addEventListener('change', () => {
-                this.calcularCicloFinanceiro();
-
-                // Mostrar ou ocultar campos de NCG
-                const camposNCG = document.getElementById('campos-ncg');
-                if (camposNCG) {
-                    camposNCG.style.display = checkSplit.checked ? 'block' : 'none';
-                }
-            });
-        }
-
-        // Adicionar eventos para campos adicionais que afetam o cálculo com split payment
-        const camposAdicionais = ['faturamento', 'aliquota', 'perc-vista', 'perc-prazo', 'data-inicial'];
-        camposAdicionais.forEach(id => {
-            const campo = document.getElementById(id);
-            if (campo) {
-                // Para inputs de texto e número
-                campo.addEventListener('input', () => {
-                    // Só recalcular se o split payment estiver ativado
-                    if (document.getElementById('considerar-split')?.checked) {
-                        this.calcularCicloFinanceiro();
-                    }
-                });
-
-                // Para selects e campos de data
-                if (campo.tagName === 'SELECT' || campo.type === 'date') {
-                    campo.addEventListener('change', () => {
-                        // Só recalcular se o split payment estiver ativado
-                        if (document.getElementById('considerar-split')?.checked) {
-                            this.calcularCicloFinanceiro();
-                        }
-                    });
-                }
-            }
-        });
-
-        // Calcular valor inicial
-        this.calcularCicloFinanceiro();
-    },
     
     /**
      * Calcula o ciclo financeiro

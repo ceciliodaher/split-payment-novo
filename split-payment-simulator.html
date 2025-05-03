@@ -253,6 +253,7 @@
 						<div class="button-group" style="display: flex; gap: 10px; margin-top: 20px;">
 							<button id="btn-simular" style="flex: 3; padding: 15px; font-size: 16px;">Simular Impacto no Fluxo de Caixa</button>
 							<button id="btn-limpar" style="flex: 1; padding: 15px; font-size: 16px;" class="btn-secondary">Limpar</button>
+							<button id="btn-nova-simulacao" class="btn btn-outline">Nova Simulação</button>
 						</div>
                     </div>
 
@@ -1149,6 +1150,13 @@
 		}
 		
 		atualizarPercPrazo();
+	});
+	</script>
+	<script>
+	document.getElementById('btn-nova-simulacao').addEventListener('click', function() {
+		if (confirm('Deseja iniciar uma nova simulação? Todos os dados atuais serão perdidos.')) {
+			window.location.href = window.location.pathname + '?nova=true';
+		}
 	});
 	</script>
 </body>

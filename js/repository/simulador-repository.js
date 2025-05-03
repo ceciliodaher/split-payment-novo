@@ -48,50 +48,34 @@ const SetoresRepository = (function() {
     
     // Verificar se há dados salvos no localStorage
     function carregarDadosSalvos() {
-        try {
-            // Carregar setores personalizados
-            const setoresSalvos = localStorage.getItem('setores-split-payment');
-            if (setoresSalvos) {
-                setoresPersonalizados = JSON.parse(setoresSalvos);
-            }
-            
-            // Carregar configurações setoriais
-            const configsSalvas = localStorage.getItem('configuracoes-setoriais');
-            if (configsSalvas) {
-                const configs = JSON.parse(configsSalvas);
-                
-                // Integrar configurações gerais
-                if (configs.parametrosGerais) {
-                    configuracoesGerais = {
-                        ...configuracoesGerais,
-                        ...configs.parametrosGerais
-                    };
-                }
-                
-                // Integrar parâmetros financeiros
-                if (configs.parametrosFinanceiros) {
-                    parametrosFinanceiros = {
-                        ...parametrosFinanceiros,
-                        ...configs.parametrosFinanceiros
-                    };
-                }
-                
-                // Integrar cronogramas setoriais
-                if (configs.setores && Array.isArray(configs.setores)) {
-                    configs.setores.forEach(setor => {
-                        if (setor.codigo && setor.tipoCronograma === 'proprio' && setor.cronogramaEspecifico) {
-                            cronogramasSetoriais[setor.codigo] = setor.cronogramaEspecifico;
-                        }
-                    });
-                }
-            }
-            
-            console.log('Dados carregados do localStorage com sucesso');
+        // Verificar se há um parâmetro URL indicando nova sessão
+        const urlParams = new URLSearchParams(window.location.search);
+        const novaSessao = urlParams.get('nova') === 'true';
+
+        if (novaSessao) {
+            this.reinicializar(); // Limpar dados e inicializar com valores padrão
             return true;
+        }
+
+        // Código existente para carregar dados
+        try {
+            const dadosSalvos = localStorage.getItem('simulador-split-payment');
+            if (dadosSalvos) {
+                this._data = JSON.parse(dadosSalvos);
+                return true;
+            }
+            return false;
         } catch (error) {
-            console.error('Erro ao carregar dados do localStorage:', error);
+            console.error('Erro ao carregar dados:', error);
             return false;
         }
+    }
+
+    // Adicione este novo método
+    function reinicializar() {
+        this._data = this._getEstruturaInicial();
+        localStorage.removeItem('simulador-split-payment');
+        console.log('Repositório reinicializado com valores padrão');
     }
     
     // Salvar todos os dados no localStorage
