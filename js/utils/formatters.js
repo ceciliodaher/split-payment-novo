@@ -1,8 +1,7 @@
 /**
  * FormatHelper - Utilitário unificado para formatação de valores e campos
- * Versão: 1.0.2 - Correção de ordem de declaração e inicialização
+ * Versão: 1.0.0 - Unifica funcionalidades do FormatacaoHelper e CurrencyFormatter
  */
-
 const FormatHelper = {
     /**
      * Inicializa o formatador para todos os campos relevantes
@@ -49,6 +48,8 @@ const FormatHelper = {
     
     /**
      * Verifica se um elemento está em uma área de navegação
+     * @param {HTMLElement} elemento - Elemento a verificar
+     * @returns {boolean} - Se está em área de navegação
      */
     estaEmAreaDeNavegacao: function(elemento) {
         const areasDeNavegacao = [
@@ -60,7 +61,9 @@ const FormatHelper = {
             '.modal-header'
         ];
         
-        return areasDeNavegacao.some(seletor => elemento.closest(seletor) !== null);
+        return areasDeNavegacao.some(seletor => {
+            return elemento.closest(seletor) !== null;
+        });
     },
     
     /**
@@ -76,21 +79,34 @@ const FormatHelper = {
             '.modal-header'
         ];
         
+        // Para cada área de navegação
         areasDeNavegacao.forEach(area => {
+            // Remover prefixos R$
             document.querySelectorAll(`${area} .money-prefix`).forEach(el => {
-                el.parentNode?.removeChild(el);
+                if (el.parentNode) {
+                    el.parentNode.removeChild(el);
+                }
             });
             
+            // Remover containers de formatação
             document.querySelectorAll(`${area} .money-input-container`).forEach(container => {
                 const elementosOriginais = Array.from(container.children)
                     .filter(el => !el.classList.contains('money-prefix'));
                 
+                // Reposicionar elementos originais fora do container
                 elementosOriginais.forEach(el => {
-                    container.parentNode?.insertBefore(el, container);
+                    if (container.parentNode) {
+                        container.parentNode.insertBefore(el, container);
+                    }
                 });
-                container.parentNode?.removeChild(container);
+                
+                // Remover o container
+                if (container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
             });
             
+            // Remover classes money-input de elementos em áreas de navegação
             document.querySelectorAll(`${area} .money-input`).forEach(el => {
                 el.classList.remove('money-input');
                 delete el.dataset.formatterInitialized;
@@ -100,9 +116,13 @@ const FormatHelper = {
     
     /**
      * Formata um valor numérico como moeda (R$)
+     * @param {number} valor - Valor numérico para formatar
+     * @returns {string} - Valor formatado como moeda
      */
     formatarMoeda: function(valor) {
-        return (isNaN(valor) ? 0 : valor).toLocaleString('pt-BR', {
+        if (isNaN(valor)) valor = 0;
+        
+        return valor.toLocaleString('pt-BR', {
             style: 'currency',
             currency: 'BRL',
             minimumFractionDigits: 2,
@@ -111,111 +131,201 @@ const FormatHelper = {
     },
     
     /**
-     * Formata valor monetário a partir de string de dígitos
+     * Formata um valor como moeda a partir de uma string de dígitos
+     * @param {string} valorStr - String contendo apenas dígitos
+     * @returns {string} - Valor formatado como moeda
      */
     formatarValorMonetario: function(valorStr) {
+        // Converter para número e dividir por 100 (para considerar centavos)
         const valorNumerico = parseFloat(valorStr) / 100;
+        
+        // Formatar no padrão brasileiro
         return this.formatarMoeda(valorNumerico);
     },
     
     /**
-     * Formata valor percentual
+     * Formata um valor numérico como percentual
+     * @param {number} valor - Valor numérico para formatar (decimal)
+     * @returns {string} - Valor formatado como percentual
      */
     formatarPercentual: function(valor) {
-        return ((isNaN(valor) ? 0 : valor) * 100).toLocaleString('pt-BR', {
+        if (isNaN(valor)) valor = 0;
+        
+        return (valor * 100).toLocaleString('pt-BR', {
             minimumFractionDigits: 1,
             maximumFractionDigits: 1
         }) + '%';
     },
     
     /**
-     * Extrai dígitos de uma string
+     * Extrai apenas os dígitos de uma string
+     * @param {string} texto - Texto a ser processado
+     * @returns {string} - Apenas os dígitos
      */
     extrairNumeros: function(texto) {
-        return (typeof texto === 'string' ? texto.replace(/\D/g, '') : '');
+        if (!texto || typeof texto !== 'string') {
+            return '';
+        }
+        return texto.replace(/\D/g, '');
     },
     
     /**
-    /**
-    * Extrai valor numérico de texto formatado
-    */
+     * Extrai o valor numérico de uma string formatada
+     * @param {string} texto - Texto formatado (ex: "R$ 1.234,56" ou "12,5%")
+     * @returns {number} - Valor numérico extraído
+     */
     extrairValorNumerico: function(texto) {
         if (typeof texto === 'number') return texto;
-        if (typeof texto !== 'string') return 0;
-    
-        return texto.includes('%') ?
-            parseFloat(texto.replace(/[^\d,-]/g, '').replace(',', '.')) / 100 :
-            parseFloat(texto.replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
+        
+        if (!texto || typeof texto !== 'string') {
+            return 0;
+        }
+        
+        // Verificar se é uma string percentual
+        if (texto.includes('%')) {
+            // Remover o símbolo % e converter para decimal
+            const valor = texto.replace(/[^\d,-]/g, '').replace(',', '.');
+            return parseFloat(valor) / 100;
+        }
+        
+        // Para moeda, remover símbolos e substituir vírgula por ponto
+        const valor = texto.replace(/[^\d,-]/g, '').replace(',', '.');
+        return parseFloat(valor) || 0;
     },
     
     /**
-     * Aplica formatação monetária a um campo
+     * Aplica a formatação monetária a um campo específico
+     * @param {HTMLElement} campo - Campo de entrada (input)
      */
     aplicarFormatacaoMonetaria: function(campo) {
-        if (campo.dataset.formatterInitialized === 'true' || this.estaEmAreaDeNavegacao(campo)) return;
-        
-        campo.classList.add('money-input');
-        
-        if (!campo.closest('.money-input-container')) {
-            const container = document.createElement('div');
-            container.className = 'money-input-container';
-            campo.parentElement?.insertBefore(container, campo);
-            container.appendChild(campo);
-            
-            const prefix = document.createElement('span');
-            prefix.className = 'money-prefix';
-            prefix.textContent = 'R$';
-            container.insertBefore(prefix, campo);
+        // Verificar se já foi inicializado ou se está em área de navegação
+        if (campo.dataset.formatterInitialized === 'true' || this.estaEmAreaDeNavegacao(campo)) {
+            return;
         }
         
+        // Aplicar a classe money-input caso não tenha
+        if (!campo.classList.contains('money-input')) {
+            campo.classList.add('money-input');
+        }
+        
+        // Verificar se já está em um container
+        const jaTemContainer = campo.closest('.money-input-container') !== null;
+        
+        // Adicionar container se não existir
+        if (!jaTemContainer) {
+            const parent = campo.parentElement;
+            if (parent) {
+                // Envolver o campo em um container
+                const container = document.createElement('div');
+                container.className = 'money-input-container';
+                parent.insertBefore(container, campo);
+                container.appendChild(campo);
+                
+                // Adicionar o prefixo R$
+                const prefix = document.createElement('span');
+                prefix.className = 'money-prefix';
+                prefix.textContent = 'R$';
+                container.insertBefore(prefix, campo);
+            }
+        }
+        
+        // Aplicar formatação inicial se houver valor
         if (campo.value) {
-            const valor = this.extrairNumeros(campo.value);
-            campo.value = valor ? this.formatarValorMonetario(valor) : '';
+            let valor = this.extrairNumeros(campo.value);
+            if (valor) {
+                campo.value = this.formatarValorMonetario(valor);
+            } else {
+                campo.value = '';
+            }
         }
         
-        campo.addEventListener('input', (e) => {
-            const valor = this.extrairNumeros(e.target.value);
-            e.target.value = valor ? this.formatarValorMonetario(valor) : '';
+        // Armazenar referência ao FormatHelper para uso nos eventos
+        const self = this;
+        
+        // Adicionar listeners para formatação em tempo real
+        campo.addEventListener('input', function(e) {
+            let valor = self.extrairNumeros(this.value);
+            
+            // Se não houver valor, deixar vazio
+            if (!valor) {
+                this.value = '';
+                return;
+            }
+            
+            // Formatar e atualizar o campo
+            this.value = self.formatarValorMonetario(valor);
         });
         
-        campo.addEventListener('focus', (e) => e.target.select());
+        // Selecionar todo o conteúdo ao focar
+        campo.addEventListener('focus', function() {
+            this.select();
+        });
+        
+        // Marcar como inicializado
         campo.dataset.formatterInitialized = 'true';
     },
     
     /**
-     * Adiciona formatação percentual a um campo
+     * Adiciona formatação percentual a um campo de entrada
+     * @param {HTMLElement} input - Elemento de input para formatação
      */
     aplicarFormatacaoPercentual: function(input) {
-        if (input.dataset.formatterInitialized === 'true') return;
-        
-        input.addEventListener('blur', () => {
-            let valor = this.extrairValorNumerico(input.value);
-            valor = valor > 1 ? valor / 100 : valor;
-            input.value = this.formatarPercentual(valor);
-        });
-        
-        if (input.value) {
-            let valor = this.extrairValorNumerico(input.value);
-            valor = valor > 1 ? valor / 100 : valor;
-            input.value = this.formatarPercentual(valor);
+        // Verificar se já foi inicializado
+        if (input.dataset.formatterInitialized === 'true') {
+            return;
         }
         
+        // Armazenar referência ao FormatHelper para uso nos eventos
+        const self = this;
+        
+        input.addEventListener('blur', function() {
+            let valor = self.extrairValorNumerico(this.value);
+            
+            // Se o valor estiver entre 0 e 1, consideramos como decimal
+            if (valor > 0 && valor < 1) {
+                valor = valor;  // Já está em decimal
+            } else {
+                valor = valor / 100; // Converter para decimal
+            }
+            
+            this.value = self.formatarPercentual(valor);
+        });
+        
+        // Formatar valor inicial
+        if (input.value) {
+            let valor = self.extrairValorNumerico(input.value);
+            
+            // Se o valor estiver entre 0 e 1, consideramos como decimal
+            if (valor > 0 && valor < 1) {
+                valor = valor;  // Já está em decimal
+            } else {
+                valor = valor / 100; // Converter para decimal
+            }
+            
+            input.value = self.formatarPercentual(valor);
+        }
+        
+        // Marcar como inicializado
         input.dataset.formatterInitialized = 'true';
     }
 };
 
-// Atribuição após declaração para evitar ReferenceError
-window.FormatacaoHelper = FormatHelper;
-
-// Inicialização automática
-document.addEventListener('DOMContentLoaded', () => {
+// Inicializar automaticamente quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', function() {
     FormatHelper.inicializar();
-    setTimeout(() => FormatHelper.corrigirFormatacaoIndevida(), 200);
+    
+    // Executar também após um breve atraso para garantir que
+    // outros scripts já foram executados
+    setTimeout(function() {
+        FormatHelper.corrigirFormatacaoIndevida();
+    }, 200);
 });
 
-// Correção ao trocar abas
-document.addEventListener('click', (e) => {
+// Corrigir formatação indevida quando as abas são trocadas
+document.addEventListener('click', function(e) {
     if (e.target.classList.contains('tab-button')) {
-        setTimeout(() => FormatHelper.corrigirFormatacaoIndevida(), 100);
+        setTimeout(function() {
+            FormatHelper.corrigirFormatacaoIndevida();
+        }, 100);
     }
 });
