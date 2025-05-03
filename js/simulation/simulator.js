@@ -677,6 +677,382 @@ window.SimuladorFluxoCaixa = {
      * Simula o impacto das estratégias de mitigação selecionadas
      */
     function simularEstrategias() {
-        // Implementação para simular estratégias
-        // ...
+        console.log('Iniciando simulação de estratégias...');
+
+        try {
+            // Verificar se há uma simulação principal realizada
+            if (!window.ultimaSimulacao) {
+                alert('É necessário realizar uma simulação principal antes de simular estratégias de mitigação.');
+                // Redirecionar para a aba de simulação
+                TabsManager.mudarPara('simulacao-principal');
+                return;
+            }
+
+            // Coletar dados da última simulação
+            const dados = window.ultimaSimulacao.dados;
+            const impactoBase = window.ultimaSimulacao.resultados.impactoBase;
+
+            // Coletar configurações das estratégias
+            const estrategias = {
+                ajustePrecos: {
+                    ativar: document.getElementById('ap-ativar').value === '1',
+                    percentualAumento: parseFloat(document.getElementById('ap-percentual').value) || 0,
+                    elasticidade: parseFloat(document.getElementById('ap-elasticidade').value) || 0,
+                    impactoVendas: parseFloat(document.getElementById('ap-impacto-vendas').value) || 0,
+                    periodoAjuste: parseInt(document.getElementById('ap-periodo').value) || 0
+                },
+                renegociacaoPrazos: {
+                    ativar: document.getElementById('rp-ativar').value === '1',
+                    aumentoPrazo: parseInt(document.getElementById('rp-aumento-prazo').value) || 0,
+                    percentualFornecedores: parseInt(document.getElementById('rp-percentual').value) || 0,
+                    contrapartidas: document.getElementById('rp-contrapartidas').value || 'nenhuma',
+                    custoContrapartida: parseFloat(document.getElementById('rp-custo').value) || 0
+                },
+                antecipacaoRecebiveis: {
+                    ativar: document.getElementById('ar-ativar').value === '1',
+                    percentualAntecipacao: parseInt(document.getElementById('ar-percentual').value) || 0,
+                    taxaDesconto: parseFloat(document.getElementById('ar-taxa').value) / 100 || 0,
+                    prazoAntecipacao: parseInt(document.getElementById('ar-prazo').value) || 0
+                },
+                capitalGiro: {
+                    ativar: document.getElementById('cg-ativar').value === '1',
+                    valorCaptacao: parseInt(document.getElementById('cg-valor').value) || 0,
+                    taxaJuros: parseFloat(document.getElementById('cg-taxa').value) / 100 || 0,
+                    prazoPagamento: parseInt(document.getElementById('cg-prazo').value) || 0,
+                    carencia: parseInt(document.getElementById('cg-carencia').value) || 0
+                },
+                mixProdutos: {
+                    ativar: document.getElementById('mp-ativar').value === '1',
+                    percentualAjuste: parseInt(document.getElementById('mp-percentual').value) || 0,
+                    focoAjuste: document.getElementById('mp-foco').value || 'ciclo',
+                    impactoReceita: parseFloat(document.getElementById('mp-impacto-receita').value) || 0,
+                    impactoMargem: parseFloat(document.getElementById('mp-impacto-margem').value) || 0
+                },
+                meiosPagamento: {
+                    ativar: document.getElementById('mp-pag-ativar').value === '1',
+                    distribuicaoAtual: {
+                        vista: parseInt(document.getElementById('mp-pag-vista-atual').value) || 0,
+                        prazo: parseInt(document.getElementById('mp-pag-prazo-atual').value) || 0
+                    },
+                    distribuicaoNova: {
+                        vista: parseInt(document.getElementById('mp-pag-vista-novo').value) || 0,
+                        dias30: parseInt(document.getElementById('mp-pag-30-novo').value) || 0,
+                        dias60: parseInt(document.getElementById('mp-pag-60-novo').value) || 0,
+                        dias90: parseInt(document.getElementById('mp-pag-90-novo').value) || 0
+                    },
+                    taxaIncentivo: parseFloat(document.getElementById('mp-pag-taxa-incentivo').value) || 0
+                }
+            };
+
+            // Inicializar resultados das estratégias
+            const resultadosEstrategias = {};
+
+            // Calcular efetividade de cada estratégia ativa
+            if (estrategias.ajustePrecos.ativar) {
+                resultadosEstrategias.ajustePrecos = calcularEfeitividadeAjustePrecos(dados, estrategias.ajustePrecos, impactoBase);
+            }
+
+            if (estrategias.renegociacaoPrazos.ativar) {
+                resultadosEstrategias.renegociacaoPrazos = calcularEfeitividadeRenegociacaoPrazos(dados, estrategias.renegociacaoPrazos, impactoBase);
+            }
+
+            if (estrategias.antecipacaoRecebiveis.ativar) {
+                resultadosEstrategias.antecipacaoRecebiveis = calcularEfeitividadeAntecipacaoRecebiveis(dados, estrategias.antecipacaoRecebiveis, impactoBase);
+            }
+
+            if (estrategias.capitalGiro.ativar) {
+                resultadosEstrategias.capitalGiro = calcularEfeitividadeCapitalGiro(dados, estrategias.capitalGiro, impactoBase);
+            }
+
+            if (estrategias.mixProdutos.ativar) {
+                resultadosEstrategias.mixProdutos = calcularEfeitividadeMixProdutos(dados, estrategias.mixProdutos, impactoBase);
+            }
+
+            if (estrategias.meiosPagamento.ativar) {
+                resultadosEstrategias.meiosPagamento = calcularEfeitividadeMeiosPagamento(dados, estrategias.meiosPagamento, impactoBase);
+            }
+
+            // Calcular efetividade combinada
+            const efeitividadeCombinada = calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias, impactoBase);
+
+            // Identificar combinação ótima
+            const combinacaoOtima = identificarCombinacaoOtima(dados, estrategias, resultadosEstrategias, impactoBase);
+
+            // Consolidar resultados
+            const resultados = {
+                impactoBase,
+                estrategias,
+                resultadosEstrategias,
+                efeitividadeCombinada,
+                combinacaoOtima
+            };
+
+            // Armazenar resultados para uso posterior
+            window.resultadosEstrategias = resultados;
+
+            // Exibir resultados
+            exibirResultadosEstrategias(resultados);
+
+            // Atualizar gráficos
+            gerarGraficoEstrategias(resultados);
+
+            console.log('Simulação de estratégias concluída com sucesso');
+            return resultados;
+        } catch (error) {
+            console.error('Erro ao simular estratégias:', error);
+            alert('Ocorreu um erro durante a simulação das estratégias: ' + error.message);
+        }
+    }
+
+    /**
+     * Exibe os resultados das estratégias de mitigação na interface
+     * 
+     * @param {Object} resultados - Resultados da simulação de estratégias
+     */
+    function exibirResultadosEstrategias(resultados) {
+        const containerResultados = document.getElementById('resultados-estrategias');
+        if (!containerResultados) return;
+
+        // Formatar valores para exibição
+        const formatarMoeda = (valor) => `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const formatarPercent = (valor) => `${valor.toFixed(2)}%`;
+
+        // Construir HTML dos resultados
+        let html = `
+            <div class="result-card">
+                <h3>Resultados das Estratégias de Mitigação</h3>
+
+                <div class="result-section">
+                    <h4>Impacto Original do Split Payment</h4>
+                    <p>Redução no capital de giro: ${formatarMoeda(Math.abs(resultados.impactoBase.diferencaCapitalGiro))}</p>
+                    <p>Necessidade adicional: ${formatarMoeda(resultados.impactoBase.necesidadeAdicionalCapitalGiro)}</p>
+                    <p>Impacto na margem: ${formatarPercent(resultados.impactoBase.impactoMargem)}</p>
+                </div>
+        `;
+
+        // Adicionar resumo de cada estratégia ativa
+        const estrategiasAtivas = Object.entries(resultados.resultadosEstrategias)
+            .filter(([_, resultado]) => resultado !== null);
+
+        if (estrategiasAtivas.length > 0) {
+            html += `
+                <div class="result-section">
+                    <h4>Efetividade das Estratégias</h4>
+                    <table class="result-table">
+                        <tr>
+                            <th>Estratégia</th>
+                            <th>Efetividade</th>
+                            <th>Impacto</th>
+                            <th>Custo</th>
+                        </tr>
+            `;
+
+            estrategiasAtivas.forEach(([nome, resultado]) => {
+                const nomeFormatado = traduzirNomeEstrategia(nome);
+                let impacto = 0;
+                let custo = 0;
+
+                // Extrair impacto e custo específicos de cada estratégia
+                switch (nome) {
+                    case 'ajustePrecos':
+                        impacto = resultado.fluxoCaixaAdicional || 0;
+                        custo = resultado.custoEstrategia || 0;
+                        break;
+                    case 'renegociacaoPrazos':
+                        impacto = resultado.impactoFluxoCaixa || 0;
+                        custo = resultado.custoTotal || 0;
+                        break;
+                    case 'antecipacaoRecebiveis':
+                        impacto = resultado.impactoFluxoCaixa || 0;
+                        custo = resultado.custoTotalAntecipacao || 0;
+                        break;
+                    case 'capitalGiro':
+                        impacto = resultado.valorFinanciamento || 0;
+                        custo = resultado.custoTotalFinanciamento || 0;
+                        break;
+                    case 'mixProdutos':
+                        impacto = resultado.impactoFluxoCaixa || 0;
+                        custo = resultado.custoImplementacao || 0;
+                        break;
+                    case 'meiosPagamento':
+                        impacto = resultado.impactoLiquido || 0;
+                        custo = resultado.custoTotalIncentivo || 0;
+                        break;
+                }
+
+                html += `
+                    <tr>
+                        <td>${nomeFormatado}</td>
+                        <td>${formatarPercent(resultado.efetividadePercentual)}</td>
+                        <td>${formatarMoeda(impacto)}</td>
+                        <td>${formatarMoeda(custo)}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</table></div>`;
+        } else {
+            html += `
+                <div class="result-section">
+                    <p class="warning">Nenhuma estratégia de mitigação foi selecionada. Ative pelo menos uma estratégia para visualizar os resultados.</p>
+                </div>
+            `;
+        }
+
+        // Adicionar resultados combinados se houver estratégias ativas
+        if (estrategiasAtivas.length > 0) {
+            html += `
+                <div class="result-section">
+                    <h4>Resultado Combinado</h4>
+                    <p>Efetividade total: ${formatarPercent(resultados.efeitividadeCombinada.efetividadePercentual)}</p>
+                    <p>Mitigação total: ${formatarMoeda(resultados.efeitividadeCombinada.mitigacaoTotal)}</p>
+                    <p>Custo total: ${formatarMoeda(resultados.efeitividadeCombinada.custoTotal)}</p>
+                    <p>Relação custo-benefício: ${resultados.efeitividadeCombinada.custoBeneficio.toFixed(2)}</p>
+                </div>
+            `;
+
+            // Adicionar combinação ótima
+            html += `
+                <div class="result-section">
+                    <h4>Combinação Ótima de Estratégias</h4>
+                    <p>Estratégias recomendadas: ${resultados.combinacaoOtima.nomeEstrategias.join(', ')}</p>
+                    <p>Efetividade: ${formatarPercent(resultados.combinacaoOtima.efetividadePercentual)}</p>
+                    <p>Custo total: ${formatarMoeda(resultados.combinacaoOtima.custoTotal)}</p>
+                    <p>Relação custo-benefício: ${resultados.combinacaoOtima.custoBeneficio.toFixed(2)}</p>
+                </div>
+            `;
+        }
+
+        html += `</div>`;
+
+        // Inserir HTML no container
+        containerResultados.innerHTML = html;
+    }
+
+    /**
+     * Gera o gráfico comparativo das estratégias de mitigação
+     * 
+     * @param {Object} resultados - Resultados da simulação de estratégias
+     */
+    function gerarGraficoEstrategias(resultados) {
+        // Verificar se o Chart.js está disponível
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js não está disponível para gerar o gráfico de estratégias');
+            return;
+        }
+
+        // Verificar se há um canvas para o gráfico
+        const canvas = document.getElementById('grafico-estrategias');
+        if (!canvas) {
+            console.error('Canvas para gráfico de estratégias não encontrado');
+            return;
+        }
+
+        // Destruir gráfico existente, se houver
+        if (window.graficoEstrategias instanceof Chart) {
+            window.graficoEstrategias.destroy();
+        }
+
+        // Preparar dados para o gráfico
+        const estrategiasAtivas = Object.entries(resultados.resultadosEstrategias)
+            .filter(([_, resultado]) => resultado !== null);
+
+        if (estrategiasAtivas.length === 0) {
+            return;
+        }
+
+        // Extrair efetividade das estratégias
+        const labels = ['Sem Estratégia'];
+        const data = [0]; // Sem estratégia: 0% de mitigação
+        const backgroundColors = ['rgba(220, 53, 69, 0.6)']; // Vermelho para "Sem Estratégia"
+
+        // Adicionar cada estratégia ativa
+        estrategiasAtivas.forEach(([nome, resultado]) => {
+            labels.push(traduzirNomeEstrategia(nome));
+            data.push(resultado.efetividadePercentual);
+
+            // Cores para cada estratégia
+            switch (nome) {
+                case 'ajustePrecos': 
+                    backgroundColors.push('rgba(52, 152, 219, 0.6)'); // Azul
+                    break;
+                case 'renegociacaoPrazos': 
+                    backgroundColors.push('rgba(46, 204, 113, 0.6)'); // Verde
+                    break;
+                case 'antecipacaoRecebiveis': 
+                    backgroundColors.push('rgba(155, 89, 182, 0.6)'); // Roxo
+                    break;
+                case 'capitalGiro': 
+                    backgroundColors.push('rgba(241, 196, 15, 0.6)'); // Amarelo
+                    break;
+                case 'mixProdutos': 
+                    backgroundColors.push('rgba(230, 126, 34, 0.6)'); // Laranja
+                    break;
+                case 'meiosPagamento': 
+                    backgroundColors.push('rgba(52, 73, 94, 0.6)'); // Azul escuro
+                    break;
+                default:
+                    backgroundColors.push('rgba(149, 165, 166, 0.6)'); // Cinza
+            }
+        });
+
+        // Adicionar combinação de estratégias
+        labels.push('Todas Estratégias');
+        data.push(resultados.efeitividadeCombinada.efetividadePercentual);
+        backgroundColors.push('rgba(39, 174, 96, 0.6)'); // Verde escuro
+
+        // Adicionar combinação ótima se diferente de "Todas Estratégias"
+        if (estrategiasAtivas.length !== resultados.combinacaoOtima.estrategiasSelecionadas.length) {
+            labels.push('Combinação Ótima');
+            data.push(resultados.combinacaoOtima.efetividadePercentual);
+            backgroundColors.push('rgba(41, 128, 185, 0.6)'); // Azul médio
+        }
+
+        // Configurar e criar o gráfico
+        window.graficoEstrategias = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Efetividade de Mitigação (%)',
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderColor: backgroundColors.map(color => color.replace('0.6', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Efetividade (%)'
+                        },
+                        max: 100,
+                        ticks: {
+                            callback: value => value + '%'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Comparação de Efetividade das Estratégias de Mitigação',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Efetividade: ' + context.raw.toFixed(2) + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }

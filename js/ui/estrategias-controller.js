@@ -72,32 +72,21 @@ const EstrategiasMitigacaoController = {
             const interfaceState = SimuladorRepository.obterSecao('interfaceState');
             if (!interfaceState.simulacaoRealizada) {
                 alert('É necessário realizar uma simulação principal antes de simular estratégias.');
-                
+
                 // Redirecionar para a aba de simulação
                 document.querySelector('.tab-button[data-tab="simulacao-principal"]').click();
                 return;
             }
-            
-            // Coletar configurações de estratégias do formulário
-            const estrategias = this._coletarEstrategias();
-            
+
             // Exibir indicador de carregamento
             this._mostrarCarregamento(true);
-            
+
             try {
                 // Executar simulação de estratégias
-                const resultados = SimuladorModulo.simularEstrategias(estrategias);
-                
+                const resultados = window.simularEstrategias();
+
                 // Armazenar resultados no repositório
                 SimuladorRepository.atualizarCampo('resultadosSimulacao', 'estrategiasMitigacao', resultados);
-                
-                // Exibir resultados
-                this.exibirResultadosEstrategias(resultados);
-                
-                // Atualizar gráficos
-                if (window.ChartManager && typeof ChartManager.gerarGraficosEstrategias === 'function') {
-                    ChartManager.gerarGraficosEstrategias(resultados);
-                }
             } catch (error) {
                 console.error('Erro ao simular estratégias:', error);
                 alert('Ocorreu um erro durante a simulação de estratégias: ' + error.message);

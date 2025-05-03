@@ -1002,7 +1002,7 @@ function calcularEfeitividadeAjustePrecos(dados, estrategia, impactoBase) {
 }
 
 /**
- * Calcula a efetividade da renegociação de prazos
+ * Calcula a efetividade da renegociação de prazos com fornecedores
  * 
  * @param {Object} dados - Dados da empresa e parâmetros de simulação
  * @param {Object} estrategia - Configuração da estratégia
@@ -1010,8 +1010,69 @@ function calcularEfeitividadeAjustePrecos(dados, estrategia, impactoBase) {
  * @returns {Object} - Análise de efetividade
  */
 function calcularEfeitividadeRenegociacaoPrazos(dados, estrategia, impactoBase) {
-    // Implementação semelhante às demais funções de efetividade...
-    // ...
+    // Extrair parâmetros
+    const aumentoPrazo = estrategia.aumentoPrazo; // Aumento do prazo em dias
+    const percentualFornecedores = estrategia.percentualFornecedores / 100; // Percentual de fornecedores participantes
+    const contrapartidas = estrategia.contrapartidas; // Tipo de contrapartida
+    const custoContrapartida = estrategia.custoContrapartida / 100; // Custo da contrapartida (%)
+    
+    // Estimar pagamentos a fornecedores (baseado no faturamento e margem)
+    const faturamento = dados.faturamento;
+    const margem = dados.margem;
+    const pagamentosFornecedores = faturamento * (1 - margem) * 0.7; // Estimativa: 70% dos custos são com fornecedores
+    
+    // Calcular o impacto no fluxo de caixa
+    const impactoDiario = pagamentosFornecedores / 30; // Valor diário
+    const impactoFluxoCaixa = impactoDiario * aumentoPrazo * percentualFornecedores * (1 - custoContrapartida);
+    
+    // Calcular a duração do efeito (assumindo renegociação com vigência de 12 meses)
+    const duracaoEfeito = 12; // meses
+    
+    // Calcular a mitigação total
+    const mitigacaoTotal = impactoFluxoCaixa * duracaoEfeito;
+    
+    // Calcular efetividade
+    const necessidadeCapitalGiro = Math.abs(impactoBase.diferencaCapitalGiro);
+    const efetividadePercentual = (mitigacaoTotal / necessidadeCapitalGiro) * 100;
+    
+    // Calcular o custo da estratégia (valor da contrapartida)
+    const custoMensal = pagamentosFornecedores * percentualFornecedores * custoContrapartida;
+    const custoTotal = custoMensal * duracaoEfeito;
+    
+    // Calcular relação custo-benefício
+    const custoBeneficio = custoTotal > 0 ? custoTotal / mitigacaoTotal : 0;
+    
+    // Informações adicionais para análise
+    let impactoNovoPMP = dados.pmp + (aumentoPrazo * percentualFornecedores);
+    let impactoCicloFinanceiro = dados.pmr + dados.pme - impactoNovoPMP;
+    let diferençaCiclo = (dados.pmr + dados.pme - dados.pmp) - impactoCicloFinanceiro;
+    
+    return {
+        aumentoPrazo,
+        percentualFornecedores: estrategia.percentualFornecedores,
+        contrapartidas,
+        custoContrapartida: estrategia.custoContrapartida,
+        pagamentosFornecedores,
+        impactoFluxoCaixa,
+        duracaoEfeito,
+        mitigacaoTotal,
+        efetividadePercentual,
+        custoTotal,
+        custoBeneficio,
+        impactoNovoPMP,
+        impactoCicloFinanceiro,
+        diferençaCiclo,
+        memoriaCritica: {
+            tituloCalculo: "Cálculo da Efetividade da Renegociação de Prazos",
+            formulaImpacto: `Impacto no Fluxo de Caixa = (Pagamentos a Fornecedores / 30) × Aumento de Prazo × % Fornecedores × (1 - Custo Contrapartida)`,
+            valorCalculado: `= (${formatarMoeda(pagamentosFornecedores)} / 30) × ${aumentoPrazo} × ${percentualFornecedores} × (1 - ${custoContrapartida}) = ${formatarMoeda(impactoFluxoCaixa)}`,
+            observacoes: [
+                `Esta estratégia aumenta o PMP de ${dados.pmp} para ${impactoNovoPMP.toFixed(1)} dias.`,
+                `O ciclo financeiro é reduzido em ${diferençaCiclo.toFixed(1)} dias.`,
+                `O custo total da contrapartida é de ${formatarMoeda(custoTotal)}.`
+            ]
+        }
+    };
 }
 
 /**
@@ -1023,8 +1084,347 @@ function calcularEfeitividadeRenegociacaoPrazos(dados, estrategia, impactoBase) 
  * @returns {Object} - Análise de efetividade
  */
 function calcularEfeitividadeAntecipacaoRecebiveis(dados, estrategia, impactoBase) {
-    // Implementação semelhante às demais funções de efetividade...
-    // ...
+    // Extrair parâmetros
+    const percentualAntecipacao = estrategia.percentualAntecipacao / 100; // Percentual de recebíveis a antecipar
+    const taxaDesconto = estrategia.taxaDesconto; // Taxa de desconto (% a.m.)
+    const prazoAntecipacao = estrategia.prazoAntecipacao; // Prazo médio antecipado (dias)
+    
+    // Calcular o valor das vendas a prazo
+    const faturamento = dados.faturamento;
+    const percPrazo = dados.percPrazo;
+    const vendasPrazo = faturamento * percPrazo;
+    
+    // Valor a ser antecipado
+    const valorAntecipado = vendasPrazo * percentualAntecipacao;
+    
+    // Calcular o custo da antecipação
+    const custoAntecipacao = valorAntecipado * taxaDesconto * (prazoAntecipacao / 30);
+    
+    // Impacto no fluxo de caixa (valor líquido antecipado)
+    const impactoFluxoCaixa = valorAntecipado - custoAntecipacao;
+    
+    // Duração do efeito (assumindo antecipação contínua por 12 meses)
+    const duracaoEfeito = 12; // meses
+    
+    // Valor total antecipado no período
+    const valorTotalAntecipado = valorAntecipado * duracaoEfeito;
+    
+    // Custo total da antecipação no período
+    const custoTotalAntecipacao = custoAntecipacao * duracaoEfeito;
+    
+    // Calcular efetividade
+    const necessidadeCapitalGiro = Math.abs(impactoBase.diferencaCapitalGiro);
+    const efetividadePercentual = (impactoFluxoCaixa / necessidadeCapitalGiro) * 100;
+    
+    // Impacto no PMR
+    const pmrOriginal = dados.pmr;
+    const pmrAjustado = pmrOriginal * (1 - (percentualAntecipacao * percPrazo));
+    const reducaoPMR = pmrOriginal - pmrAjustado;
+    
+    // Impacto no ciclo financeiro
+    const cicloFinanceiroOriginal = dados.pmr + dados.pme - dados.pmp;
+    const cicloFinanceiroAjustado = pmrAjustado + dados.pme - dados.pmp;
+    const reducaoCiclo = cicloFinanceiroOriginal - cicloFinanceiroAjustado;
+    
+    return {
+        percentualAntecipacao: estrategia.percentualAntecipacao,
+        taxaDesconto: estrategia.taxaDesconto * 100,
+        prazoAntecipacao,
+        vendasPrazo,
+        valorAntecipado,
+        custoAntecipacao,
+        impactoFluxoCaixa,
+        valorTotalAntecipado,
+        custoTotalAntecipacao,
+        efetividadePercentual,
+        pmrAjustado,
+        reducaoPMR,
+        cicloFinanceiroAjustado,
+        reducaoCiclo,
+        custoBeneficio: custoTotalAntecipacao / valorTotalAntecipado,
+        memoriaCritica: {
+            tituloCalculo: "Cálculo da Efetividade da Antecipação de Recebíveis",
+            formulaImpacto: `Impacto no Fluxo de Caixa = Valor Antecipado - Custo da Antecipação`,
+            valorCalculado: `= ${formatarMoeda(valorAntecipado)} - ${formatarMoeda(custoAntecipacao)} = ${formatarMoeda(impactoFluxoCaixa)}`,
+            formulaReducaoPMR: `Redução no PMR = PMR Original × (% Antecipação × % Vendas a Prazo)`,
+            valorReducaoPMR: `= ${pmrOriginal} × (${percentualAntecipacao} × ${percPrazo}) = ${reducaoPMR.toFixed(1)} dias`,
+            observacoes: [
+                `Esta estratégia reduz o PMR de ${pmrOriginal} para ${pmrAjustado.toFixed(1)} dias.`,
+                `O ciclo financeiro é reduzido em ${reducaoCiclo.toFixed(1)} dias.`,
+                `O custo total da antecipação é de ${formatarMoeda(custoTotalAntecipacao)} para um valor antecipado de ${formatarMoeda(valorTotalAntecipado)}.`
+            ]
+        }
+    };
+}
+
+/**
+ * Calcula a efetividade da captação de capital de giro
+ * 
+ * @param {Object} dados - Dados da empresa e parâmetros de simulação
+ * @param {Object} estrategia - Configuração da estratégia
+ * @param {Object} impactoBase - Impacto base do Split Payment
+ * @returns {Object} - Análise de efetividade
+ */
+function calcularEfeitividadeCapitalGiro(dados, estrategia, impactoBase) {
+    // Extrair parâmetros
+    const valorCaptacao = estrategia.valorCaptacao / 100; // Percentual da necessidade a ser captado
+    const taxaJuros = estrategia.taxaJuros; // Taxa de juros (% a.m.)
+    const prazoPagamento = estrategia.prazoPagamento; // Prazo de pagamento (meses)
+    const carencia = estrategia.carencia; // Carência (meses)
+    
+    // Calcular o valor a ser captado
+    const necessidadeCapitalGiro = Math.abs(impactoBase.diferencaCapitalGiro);
+    const valorFinanciamento = necessidadeCapitalGiro * valorCaptacao;
+    
+    // Calcular o custo mensal de juros
+    const custoMensalJuros = valorFinanciamento * taxaJuros;
+    
+    // Calcular o custo total do financiamento
+    // Durante a carência, paga apenas juros
+    const custoCarencia = custoMensalJuros * carencia;
+    
+    // Após a carência, paga juros + principal
+    const valorParcela = valorFinanciamento / (prazoPagamento - carencia);
+    const custoAposCarencia = (valorParcela + custoMensalJuros) * (prazoPagamento - carencia);
+    
+    const custoTotalFinanciamento = custoCarencia + custoAposCarencia;
+    
+    // Calcular efetividade (considerando que disponibiliza o valor total imediatamente)
+    const efetividadePercentual = (valorFinanciamento / necessidadeCapitalGiro) * 100;
+    
+    // Calcular taxa efetiva anual
+    const taxaEfetivaAnual = Math.pow(1 + taxaJuros, 12) - 1;
+    
+    // Calcular o impacto na margem operacional
+    const impactoMargemPP = (custoMensalJuros / dados.faturamento) * 100;
+    
+    return {
+        valorCaptacao: estrategia.valorCaptacao,
+        taxaJuros: estrategia.taxaJuros * 100,
+        prazoPagamento,
+        carencia,
+        valorFinanciamento,
+        custoMensalJuros,
+        valorParcela,
+        custoCarencia,
+        custoAposCarencia,
+        custoTotalFinanciamento,
+        efetividadePercentual,
+        taxaEfetivaAnual,
+        impactoMargemPP,
+        custoBeneficio: custoTotalFinanciamento / valorFinanciamento,
+        memoriaCritica: {
+            tituloCalculo: "Cálculo da Efetividade da Captação de Capital de Giro",
+            formulaValor: `Valor do Financiamento = Necessidade de Capital de Giro × % Captação`,
+            valorCalculado: `= ${formatarMoeda(necessidadeCapitalGiro)} × ${valorCaptacao} = ${formatarMoeda(valorFinanciamento)}`,
+            formulaCusto: `Custo Total = (Juros × Carência) + ((Parcela + Juros) × (Prazo - Carência))`,
+            valorCusto: `= (${formatarMoeda(custoMensalJuros)} × ${carencia}) + ((${formatarMoeda(valorParcela)} + ${formatarMoeda(custoMensalJuros)}) × ${prazoPagamento - carencia}) = ${formatarMoeda(custoTotalFinanciamento)}`,
+            observacoes: [
+                `Esta estratégia disponibiliza imediatamente ${formatarMoeda(valorFinanciamento)} para capital de giro.`,
+                `O custo mensal de juros é de ${formatarMoeda(custoMensalJuros)}, impactando a margem em ${impactoMargemPP.toFixed(2)} pontos percentuais.`,
+                `A taxa efetiva anual do financiamento é de ${(taxaEfetivaAnual * 100).toFixed(2)}%.`
+            ]
+        }
+    };
+}
+
+/**
+ * Calcula a efetividade do ajuste no mix de produtos
+ * 
+ * @param {Object} dados - Dados da empresa e parâmetros de simulação
+ * @param {Object} estrategia - Configuração da estratégia
+ * @param {Object} impactoBase - Impacto base do Split Payment
+ * @returns {Object} - Análise de efetividade
+ */
+function calcularEfeitividadeMixProdutos(dados, estrategia, impactoBase) {
+    // Extrair parâmetros
+    const percentualAjuste = estrategia.percentualAjuste / 100; // Percentual do faturamento a ser ajustado
+    const focoAjuste = estrategia.focoAjuste; // Foco do ajuste (ciclo, margem, vista)
+    const impactoReceita = estrategia.impactoReceita / 100; // Impacto na receita (%)
+    const impactoMargem = estrategia.impactoMargem / 100; // Impacto na margem (p.p.)
+    
+    // Calcular o valor ajustado
+    const faturamento = dados.faturamento;
+    const valorAjustado = faturamento * percentualAjuste;
+    
+    // Calcular o impacto na receita
+    const variacaoReceita = valorAjustado * impactoReceita;
+    const novaReceita = faturamento + variacaoReceita;
+    
+    // Calcular o impacto na margem
+    const margemOriginal = dados.margem;
+    const margemAjustada = margemOriginal + impactoMargem;
+    
+    // Calcular o impacto no fluxo de caixa
+    // Considerando dois componentes: variação na receita e melhoria na margem
+    const impactoFluxoReceita = variacaoReceita * margemOriginal;
+    const impactoFluxoMargem = faturamento * impactoMargem;
+    const impactoFluxoCaixa = impactoFluxoReceita + impactoFluxoMargem;
+    
+    // Calcular efetividade
+    const necessidadeCapitalGiro = Math.abs(impactoBase.diferencaCapitalGiro);
+    const efetividadePercentual = (impactoFluxoCaixa / necessidadeCapitalGiro) * 100;
+    
+    // Impacto no ciclo financeiro (estimativa)
+    let reducaoCiclo = 0;
+    let impactoPMR = 0;
+    
+    if (focoAjuste === 'ciclo') {
+        // Estimar redução no ciclo com base no percentual de ajuste
+        reducaoCiclo = Math.min(dados.pmr * 0.2, 5) * percentualAjuste; // Estimativa: até 20% do PMR ou 5 dias
+        impactoPMR = reducaoCiclo; // Simplificação: redução no ciclo = redução no PMR
+    } else if (focoAjuste === 'vista') {
+        // Estimar impacto no PMR com base no aumento de vendas à vista
+        const aumentoVendaVista = percentualAjuste * 0.5; // Conversão de 50% do ajuste para vendas à vista
+        impactoPMR = dados.pmr * aumentoVendaVista;
+        reducaoCiclo = impactoPMR;
+    }
+    
+    const pmrAjustado = dados.pmr - impactoPMR;
+    const cicloFinanceiroAjustado = (dados.pmr - impactoPMR) + dados.pme - dados.pmp;
+    
+    // Duração do efeito (assumindo implementação permanente com 12 meses de análise)
+    const duracaoEfeito = 12; // meses
+    
+    // Impacto total no período
+    const impactoTotal = impactoFluxoCaixa * duracaoEfeito;
+    
+    // Custo da estratégia (custos de implementação, reposicionamento, etc.)
+    // Estimativa: 10% do valor ajustado como custos de implementação
+    const custoImplementacao = valorAjustado * 0.1;
+    
+    return {
+        percentualAjuste: estrategia.percentualAjuste,
+        focoAjuste,
+        impactoReceita: estrategia.impactoReceita,
+        impactoMargem: estrategia.impactoMargem,
+        valorAjustado,
+        variacaoReceita,
+        novaReceita,
+        margemAjustada,
+        impactoFluxoReceita,
+        impactoFluxoMargem,
+        impactoFluxoCaixa,
+        efetividadePercentual,
+        reducaoCiclo,
+        impactoPMR,
+        pmrAjustado,
+        cicloFinanceiroAjustado,
+        duracaoEfeito,
+        impactoTotal,
+        custoImplementacao,
+        custoBeneficio: custoImplementacao / impactoTotal,
+        memoriaCritica: {
+            tituloCalculo: "Cálculo da Efetividade do Ajuste no Mix de Produtos",
+            formulaImpacto: `Impacto no Fluxo de Caixa = Impacto Receita + Impacto Margem`,
+            valorCalculado: `= ${formatarMoeda(impactoFluxoReceita)} + ${formatarMoeda(impactoFluxoMargem)} = ${formatarMoeda(impactoFluxoCaixa)}`,
+            observacoes: [
+                `Esta estratégia ${impactoReceita >= 0 ? 'aumenta' : 'reduz'} a receita em ${Math.abs(estrategia.impactoReceita).toFixed(1)}% e ${impactoMargem >= 0 ? 'aumenta' : 'reduz'} a margem em ${Math.abs(estrategia.impactoMargem).toFixed(1)} pontos percentuais.`,
+                `O foco em "${focoAjuste}" ${reducaoCiclo > 0 ? 'reduz' : 'aumenta'} o ciclo financeiro em ${Math.abs(reducaoCiclo).toFixed(1)} dias.`,
+                `O custo estimado de implementação é de ${formatarMoeda(custoImplementacao)}.`
+            ]
+        }
+    };
+}
+
+/**
+ * Calcula a efetividade da estratégia de meios de pagamento
+ * 
+ * @param {Object} dados - Dados da empresa e parâmetros de simulação
+ * @param {Object} estrategia - Configuração da estratégia
+ * @param {Object} impactoBase - Impacto base do Split Payment
+ * @returns {Object} - Análise de efetividade
+ */
+function calcularEfeitividadeMeiosPagamento(dados, estrategia, impactoBase) {
+    // Extrair parâmetros
+    const distribuicaoAtual = estrategia.distribuicaoAtual;
+    const distribuicaoNova = estrategia.distribuicaoNova;
+    const taxaIncentivo = estrategia.taxaIncentivo / 100; // Taxa de incentivo para pagamentos à vista (%)
+    
+    // Faturamento e dados originais
+    const faturamento = dados.faturamento;
+    const percVistaAtual = distribuicaoAtual.vista / 100;
+    const percPrazoAtual = distribuicaoAtual.prazo / 100;
+    
+    // Nova distribuição
+    const percVistaNovo = distribuicaoNova.vista / 100;
+    const percDias30Novo = distribuicaoNova.dias30 / 100;
+    const percDias60Novo = distribuicaoNova.dias60 / 100;
+    const percDias90Novo = distribuicaoNova.dias90 / 100;
+    
+    // Verificar se a soma é 100%
+    const somaPerc = percVistaNovo + percDias30Novo + percDias60Novo + percDias90Novo;
+    if (Math.abs(somaPerc - 1) > 0.01) {
+        return {
+            erro: "A soma dos percentuais da nova distribuição deve ser 100%.",
+            efetividadePercentual: 0
+        };
+    }
+    
+    // Calcular o PMR atual e novo
+    const pmrAtual = dados.pmr;
+    const pmrNovo = (0 * percVistaNovo) + (30 * percDias30Novo) + (60 * percDias60Novo) + (90 * percDias90Novo);
+    const variaPMR = pmrNovo - pmrAtual;
+    
+    // Calcular o ciclo financeiro atual e novo
+    const cicloFinanceiroAtual = dados.pmr + dados.pme - dados.pmp;
+    const cicloFinanceiroNovo = pmrNovo + dados.pme - dados.pmp;
+    const variacaoCiclo = cicloFinanceiroNovo - cicloFinanceiroAtual;
+    
+    // Calcular o custo do incentivo
+    const aumento_vista = percVistaNovo - percVistaAtual;
+    const valorIncentivoMensal = faturamento * aumento_vista * taxaIncentivo;
+    
+    // Calcular o impacto no fluxo de caixa
+    // 1. Impacto da redução no PMR
+    const valorDiario = faturamento / 30;
+    const impacto_pmr = valorDiario * (-variaPMR);
+    
+    // 2. Custo do incentivo
+    const impactoLiquido = impacto_pmr - valorIncentivoMensal;
+    
+    // Calcular efetividade
+    const necessidadeCapitalGiro = Math.abs(impactoBase.diferencaCapitalGiro);
+    const efetividadePercentual = (impactoLiquido / necessidadeCapitalGiro) * 100;
+    
+    // Duração do efeito (assumindo implementação permanente com 12 meses de análise)
+    const duracaoEfeito = 12; // meses
+    
+    // Impacto total no período
+    const impactoTotal = impactoLiquido * duracaoEfeito;
+    const custoTotalIncentivo = valorIncentivoMensal * duracaoEfeito;
+    
+    return {
+        distribuicaoAtual,
+        distribuicaoNova,
+        taxaIncentivo: estrategia.taxaIncentivo,
+        pmrAtual,
+        pmrNovo,
+        variaPMR,
+        cicloFinanceiroAtual,
+        cicloFinanceiroNovo,
+        variacaoCiclo,
+        valorIncentivoMensal,
+        impacto_pmr,
+        impactoLiquido,
+        efetividadePercentual,
+        duracaoEfeito,
+        impactoTotal,
+        custoTotalIncentivo,
+        custoBeneficio: variaPMR < 0 ? valorIncentivoMensal / Math.abs(impacto_pmr) : Infinity,
+        memoriaCritica: {
+            tituloCalculo: "Cálculo da Efetividade da Estratégia de Meios de Pagamento",
+            formulaPMR: `PMR Novo = (0 × % Vista) + (30 × % 30 dias) + (60 × % 60 dias) + (90 × % 90 dias)`,
+            valorPMR: `= (0 × ${percVistaNovo}) + (30 × ${percDias30Novo}) + (60 × ${percDias60Novo}) + (90 × ${percDias90Novo}) = ${pmrNovo.toFixed(1)} dias`,
+            formulaImpacto: `Impacto Líquido = Impacto da Redução no PMR - Custo do Incentivo`,
+            valorImpacto: `= ${formatarMoeda(impacto_pmr)} - ${formatarMoeda(valorIncentivoMensal)} = ${formatarMoeda(impactoLiquido)}`,
+            observacoes: [
+                `Esta estratégia ${variaPMR < 0 ? 'reduz' : 'aumenta'} o PMR em ${Math.abs(variaPMR).toFixed(1)} dias.`,
+                `O ciclo financeiro ${variacaoCiclo < 0 ? 'reduz' : 'aumenta'} em ${Math.abs(variacaoCiclo).toFixed(1)} dias.`,
+                `O custo mensal do incentivo para pagamentos à vista é de ${formatarMoeda(valorIncentivoMensal)}.`
+            ]
+        }
+    };
 }
 
 // Demais funções de efetividade...
@@ -1038,9 +1438,146 @@ function calcularEfeitividadeAntecipacaoRecebiveis(dados, estrategia, impactoBas
  * @param {Object} impactoBase - Impacto base do Split Payment
  * @returns {Object} - Análise de efetividade combinada
  */
+/**
+ * Calcula a efetividade combinada das estratégias selecionadas
+ * 
+ * @param {Object} dados - Dados da empresa e parâmetros de simulação
+ * @param {Object} estrategias - Configuração das estratégias
+ * @param {Object} resultadosEstrategias - Resultados individuais das estratégias
+ * @param {Object} impactoBase - Impacto base do Split Payment
+ * @returns {Object} - Análise de efetividade combinada
+ */
 function calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias, impactoBase) {
-    // Implementação da combinação de estratégias...
-    // ...
+    // Filtrar estratégias ativas com resultados
+    const estrategiasAtivas = Object.entries(resultadosEstrategias)
+        .filter(([nome, resultado]) => resultado !== null)
+        .map(([nome, resultado]) => ({
+            nome,
+            resultado
+        }));
+    
+    if (estrategiasAtivas.length === 0) {
+        return {
+            efetividadePercentual: 0,
+            mitigacaoTotal: 0,
+            custoTotal: 0,
+            custoBeneficio: 0,
+            impactosMitigados: {}
+        };
+    }
+    
+    // Inicializar impactos e custos
+    let impactoFluxoCaixaTotal = 0;
+    let custoTotal = 0;
+    let impactosPMR = [];
+    let impactosPMP = [];
+    let impactosMargem = [];
+    
+    // Mapear impactos específicos por estratégia
+    const impactosMitigados = {};
+    
+    // Calcular impactos específicos para cada estratégia
+    estrategiasAtivas.forEach(({ nome, resultado }) => {
+        // Armazenar resultado para referência
+        impactosMitigados[nome] = resultado;
+        
+        switch (nome) {
+            case 'ajustePrecos':
+                impactoFluxoCaixaTotal += resultado.fluxoCaixaAdicional;
+                custoTotal += resultado.custoEstrategia;
+                if (resultado.impactoMargem) impactosMargem.push(resultado.impactoMargem);
+                break;
+                
+            case 'renegociacaoPrazos':
+                impactoFluxoCaixaTotal += resultado.impactoFluxoCaixa;
+                custoTotal += resultado.custoTotal;
+                if (resultado.impactoNovoPMP) impactosPMP.push(resultado.impactoNovoPMP - dados.pmp);
+                break;
+                
+            case 'antecipacaoRecebiveis':
+                impactoFluxoCaixaTotal += resultado.impactoFluxoCaixa;
+                custoTotal += resultado.custoTotalAntecipacao;
+                if (resultado.reducaoPMR) impactosPMR.push(-resultado.reducaoPMR);
+                break;
+                
+            case 'capitalGiro':
+                impactoFluxoCaixaTotal += resultado.valorFinanciamento;
+                custoTotal += resultado.custoTotalFinanciamento;
+                if (resultado.impactoMargemPP) impactosMargem.push(-resultado.impactoMargemPP / 100);
+                break;
+                
+            case 'mixProdutos':
+                impactoFluxoCaixaTotal += resultado.impactoFluxoCaixa;
+                custoTotal += resultado.custoImplementacao;
+                if (resultado.impactoPMR) impactosPMR.push(-resultado.impactoPMR);
+                if (resultado.impactoMargem) impactosMargem.push(resultado.impactoMargem);
+                break;
+                
+            case 'meiosPagamento':
+                impactoFluxoCaixaTotal += resultado.impactoLiquido;
+                custoTotal += resultado.custoTotalIncentivo;
+                if (resultado.variaPMR) impactosPMR.push(resultado.variaPMR);
+                break;
+        }
+    });
+    
+    // Calcular o impacto combinado no PMR
+    // Em vez de somar diretamente, aplicamos um fator de sobreposição
+    const fatorSobreposicaoPMR = 0.8; // 80% do efeito combinado (evita dupla contagem)
+    const impactoPMRCombinado = impactosPMR.length > 0 ? 
+        impactosPMR.reduce((total, atual) => total + atual, 0) * fatorSobreposicaoPMR : 0;
+    
+    // Impacto combinado no PMP
+    const fatorSobreposicaoPMP = 0.9; // 90% do efeito combinado
+    const impactoPMPCombinado = impactosPMP.length > 0 ? 
+        impactosPMP.reduce((total, atual) => total + atual, 0) * fatorSobreposicaoPMP : 0;
+    
+    // Impacto combinado na margem
+    const fatorSobreposicaoMargem = 0.85; // 85% do efeito combinado
+    const impactoMargemCombinado = impactosMargem.length > 0 ? 
+        impactosMargem.reduce((total, atual) => total + atual, 0) * fatorSobreposicaoMargem : 0;
+    
+    // Calcular novo ciclo financeiro
+    const pmrAjustado = dados.pmr + impactoPMRCombinado;
+    const pmpAjustado = dados.pmp + impactoPMPCombinado;
+    const cicloFinanceiroAjustado = pmrAjustado + dados.pme - pmpAjustado;
+    const variacaoCiclo = cicloFinanceiroAjustado - (dados.pmr + dados.pme - dados.pmp);
+    
+    // Calcular nova margem
+    const margemAjustada = dados.margem + impactoMargemCombinado;
+    
+    // Calcular efetividade
+    const necessidadeCapitalGiro = Math.abs(impactoBase.diferencaCapitalGiro);
+    const efetividadePercentual = (impactoFluxoCaixaTotal / necessidadeCapitalGiro) * 100;
+    
+    // Calcular relação custo-benefício
+    const custoBeneficio = custoTotal > 0 ? custoTotal / impactoFluxoCaixaTotal : 0;
+    
+    return {
+        estrategiasAtivas: estrategiasAtivas.length,
+        efetividadePercentual,
+        mitigacaoTotal: impactoFluxoCaixaTotal,
+        custoTotal,
+        custoBeneficio,
+        pmrAjustado,
+        pmpAjustado,
+        cicloFinanceiroAjustado,
+        variacaoCiclo,
+        margemAjustada,
+        impactosMitigados,
+        memoriaCritica: {
+            tituloAnalise: "Análise da Combinação de Estratégias",
+            estrategiasSelecionadas: `${estrategiasAtivas.length} estratégias selecionadas: ${estrategiasAtivas.map(e => traduzirNomeEstrategia(e.nome)).join(', ')}`,
+            formulaEfetividade: `Efetividade Total = (Impacto Combinado / Necessidade de Capital de Giro) × 100`,
+            valorEfetividade: `= (${formatarMoeda(impactoFluxoCaixaTotal)} / ${formatarMoeda(necessidadeCapitalGiro)}) × 100 = ${efetividadePercentual.toFixed(2)}%`,
+            observacoes: [
+                `A combinação de estratégias mitiga ${efetividadePercentual.toFixed(2)}% do impacto do Split Payment.`,
+                `O custo total das estratégias é de ${formatarMoeda(custoTotal)}, com uma relação custo-benefício de ${custoBeneficio.toFixed(2)}.`,
+                `O ciclo financeiro ${variacaoCiclo < 0 ? 'reduz' : 'aumenta'} em ${Math.abs(variacaoCiclo).toFixed(1)} dias.`,
+                `A margem operacional ${impactoMargemCombinado >= 0 ? 'aumenta' : 'diminui'} em ${Math.abs(impactoMargemCombinado * 100).toFixed(2)} pontos percentuais.`
+            ]
+        }
+    };
 }
 
 /**
@@ -1052,9 +1589,182 @@ function calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias
  * @param {Object} impactoBase - Impacto base do Split Payment
  * @returns {Object} - Combinação ótima de estratégias
  */
+/**
+ * Identifica a combinação ótima de estratégias
+ * 
+ * @param {Object} dados - Dados da empresa e parâmetros de simulação
+ * @param {Object} estrategias - Configuração das estratégias
+ * @param {Object} resultadosEstrategias - Resultados individuais das estratégias
+ * @param {Object} impactoBase - Impacto base do Split Payment
+ * @returns {Object} - Combinação ótima de estratégias
+ */
 function identificarCombinacaoOtima(dados, estrategias, resultadosEstrategias, impactoBase) {
-    // Implementação do algoritmo de otimização...
-    // ...
+    // Filtrar estratégias válidas com resultados
+    const estrategiasValidas = Object.entries(resultadosEstrategias)
+        .filter(([_, resultado]) => resultado !== null && resultado.efetividadePercentual > 0)
+        .map(([nome, resultado]) => ({
+            nome,
+            resultado,
+            efetividade: resultado.efetividadePercentual,
+            custo: getFuncaoCusto(nome, resultado),
+            relacaoCB: resultado.custoBeneficio || 0
+        }));
+    
+    if (estrategiasValidas.length === 0) {
+        return {
+            estrategiasSelecionadas: [],
+            efetividadePercentual: 0,
+            custoTotal: 0,
+            custoBeneficio: 0
+        };
+    }
+    
+    // Função auxiliar para obter o custo da estratégia
+    function getFuncaoCusto(nome, resultado) {
+        switch (nome) {
+            case 'ajustePrecos': return resultado.custoEstrategia || 0;
+            case 'renegociacaoPrazos': return resultado.custoTotal || 0;
+            case 'antecipacaoRecebiveis': return resultado.custoTotalAntecipacao || 0;
+            case 'capitalGiro': return resultado.custoTotalFinanciamento || 0;
+            case 'mixProdutos': return resultado.custoImplementacao || 0;
+            case 'meiosPagamento': return resultado.custoTotalIncentivo || 0;
+            default: return 0;
+        }
+    }
+    
+    // Ordenar por relação custo-benefício (do menor para o maior)
+    estrategiasValidas.sort((a, b) => a.relacaoCB - b.relacaoCB);
+    
+    // Abordagem 1: Selecionar a estratégia com melhor relação custo-benefício
+    const melhorEstrategia = estrategiasValidas[0];
+    
+    // Abordagem 2: Encontrar combinação que maximiza efetividade com restrição de custo
+    // Vamos usar um algoritmo simplificado de otimização
+    
+    // Gerar todas as combinações possíveis (usando algoritmo de subconjuntos)
+    const combinacoes = [];
+    const n = estrategiasValidas.length;
+    
+    // Máximo de 5 estratégias para limitar a complexidade computacional
+    const maxEstrategias = Math.min(n, 5);
+    
+    // Gerar todas as combinações possíveis (exceto conjunto vazio)
+    for (let tam = 1; tam <= maxEstrategias; tam++) {
+        // Função para gerar combinações de tamanho 'tam'
+        function gerarCombinacoes(start, combinacaoAtual) {
+            if (combinacaoAtual.length === tam) {
+                combinacoes.push([...combinacaoAtual]);
+                return;
+            }
+            
+            for (let i = start; i < n; i++) {
+                combinacaoAtual.push(estrategiasValidas[i]);
+                gerarCombinacoes(i + 1, combinacaoAtual);
+                combinacaoAtual.pop();
+            }
+        }
+        
+        gerarCombinacoes(0, []);
+    }
+    
+    // Avaliar cada combinação
+    const avaliacoes = combinacoes.map(combinacao => {
+        // Calcular a efetividade combinada
+        const efetividadeCombinada = combinacao.reduce((total, estrategia) => {
+            // Aplicar um fator de desconto para evitar dupla contagem
+            // O desconto aumenta com o número de estratégias na combinação
+            const fatorDesconto = 1 - (0.05 * (combinacao.length - 1));
+            return total + (estrategia.efetividade * fatorDesconto);
+        }, 0);
+        
+        // Limitar a efetividade máxima a 100%
+        const efetividadeAjustada = Math.min(efetividadeCombinada, 100);
+        
+        // Calcular o custo total
+        const custoTotal = combinacao.reduce((total, estrategia) => total + estrategia.custo, 0);
+        
+        // Calcular relação custo-benefício
+        const relacaoCB = custoTotal / efetividadeAjustada;
+        
+        return {
+            estrategias: combinacao,
+            efetividade: efetividadeAjustada,
+            custo: custoTotal,
+            relacaoCB
+        };
+    });
+    
+    // Ordenar por efetividade (decrescente)
+    avaliacoes.sort((a, b) => b.efetividade - a.efetividade);
+    
+    // Selecionar a combinação com maior efetividade
+    const melhorEfetividade = avaliacoes[0];
+    
+    // Ordenar por relação custo-benefício (crescente)
+    avaliacoes.sort((a, b) => a.relacaoCB - b.relacaoCB);
+    
+    // Selecionar a combinação com melhor relação custo-benefício
+    const melhorRelacaoCB = avaliacoes[0];
+    
+    // Ordenar por eficiência da fronteira de Pareto
+    // Uma combinação é eficiente se não existe outra com maior efetividade e menor custo
+    const fronteiraParetoOrdenada = avaliacoes
+        .filter(avaliacao => {
+            // Verificar se é eficiente (não dominado)
+            return !avaliacoes.some(outra => 
+                outra.efetividade > avaliacao.efetividade && outra.custo <= avaliacao.custo);
+        })
+        .sort((a, b) => b.efetividade - a.efetividade);
+    
+    // Selecionar estratégia da fronteira de Pareto com pelo menos 70% de efetividade e menor custo
+    const efetivasFronteira = fronteiraParetoOrdenada.filter(av => av.efetividade >= 70);
+    const estrategiaPareto = efetivasFronteira.length > 0 ? 
+        efetivasFronteira.reduce((menor, atual) => (atual.custo < menor.custo) ? atual : menor, efetivasFronteira[0]) : 
+        fronteiraParetoOrdenada[0];
+    
+    // Selecionar a combinação ótima (considerando diversos fatores)
+    // Prioridade: estratégia da fronteira de Pareto
+    const combinacaoOtima = estrategiaPareto || melhorRelacaoCB;
+    
+    // Formatar resultado
+    return {
+        estrategiasSelecionadas: combinacaoOtima.estrategias.map(e => e.nome),
+        nomeEstrategias: combinacaoOtima.estrategias.map(e => traduzirNomeEstrategia(e.nome)),
+        efetividadePercentual: combinacaoOtima.efetividade,
+        custoTotal: combinacaoOtima.custo,
+        custoBeneficio: combinacaoOtima.relacaoCB,
+        alternativas: {
+            melhorEfetividade: {
+                estrategias: melhorEfetividade.estrategias.map(e => e.nome),
+                efetividade: melhorEfetividade.efetividade,
+                custo: melhorEfetividade.custo
+            },
+            melhorRelacaoCB: {
+                estrategias: melhorRelacaoCB.estrategias.map(e => e.nome),
+                efetividade: melhorRelacaoCB.efetividade,
+                custo: melhorRelacaoCB.custo
+            },
+            melhorUnica: {
+                estrategia: melhorEstrategia.nome,
+                efetividade: melhorEstrategia.efetividade,
+                custo: melhorEstrategia.custo
+            }
+        },
+        memoriaCritica: {
+            tituloAnalise: "Análise de Combinação Ótima de Estratégias",
+            descricaoCombinacao: `A combinação ótima inclui ${combinacaoOtima.estrategias.length} estratégias: ${combinacaoOtima.estrategias.map(e => traduzirNomeEstrategia(e.nome)).join(', ')}`,
+            motivoSelecao: "Esta combinação foi selecionada por apresentar o melhor equilíbrio entre efetividade de mitigação e custo de implementação.",
+            efetividade: `Efetividade Total: ${combinacaoOtima.efetividade.toFixed(2)}%`,
+            custo: `Custo Total: ${formatarMoeda(combinacaoOtima.custo)}`,
+            relacaoCB: `Relação Custo-Benefício: ${combinacaoOtima.relacaoCB.toFixed(2)}`,
+            observacoes: [
+                `Foram analisadas ${combinacoes.length} combinações possíveis de estratégias.`,
+                `A combinação com maior efetividade (${melhorEfetividade.efetividade.toFixed(2)}%) tem um custo de ${formatarMoeda(melhorEfetividade.custo)}.`,
+                `A combinação com melhor relação custo-benefício (${melhorRelacaoCB.relacaoCB.toFixed(2)}) tem uma efetividade de ${melhorRelacaoCB.efetividade.toFixed(2)}%.`,
+                `A melhor estratégia individual é "${traduzirNomeEstrategia(melhorEstrategia.nome)}" com efetividade de ${melhorEstrategia.efetividade.toFixed(2)}%.`
+            ]
+        }
+    };
 }
 
 /**
