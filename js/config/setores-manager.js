@@ -1,6 +1,6 @@
 /**
  * SetoresManager - Gerenciador de setores da aplicação
- * Versão: 3.0.0 - Refatorado para atuar como adaptador para o SetoresRepository
+ * Versão: 2.0.0 - Refatorado para utilizar o SetoresRepository
  */
 const SetoresManager = {
     // Controle de inicialização
@@ -20,13 +20,12 @@ const SetoresManager = {
         }
         
         this.initialized = true;
-        console.log('SetoresManager inicializado (como adaptador)');
+        console.log('SetoresManager inicializado');
     },
     
     /**
      * Exporta os setores para uso em outros componentes
      * @returns {Array} Lista de setores formatados para uso em dropdowns
-     * @deprecated Use SetoresRepository.obterParaDropdown() diretamente
      */
     exportarSetoresParaDropdown: function() {
         if (!this.initialized) this.inicializar();
@@ -47,7 +46,6 @@ const SetoresManager = {
      * @param {string} codigo - Código único do setor
      * @param {Object} setor - Dados do setor
      * @returns {boolean} - Sucesso da operação
-     * @deprecated Use SetoresRepository.salvarSetor() diretamente
      */
     salvarSetor: function(codigo, setor) {
         if (!this.initialized) this.inicializar();
@@ -58,7 +56,6 @@ const SetoresManager = {
      * Remove um setor
      * @param {string} codigo - Código do setor a remover
      * @returns {boolean} - Sucesso da operação
-     * @deprecated Use SetoresRepository.removerSetor() diretamente
      */
     removerSetor: function(codigo) {
         if (!this.initialized) this.inicializar();
@@ -68,10 +65,9 @@ const SetoresManager = {
     /**
      * Salva os setores no localStorage
      * @returns {boolean} - Sucesso da operação
-     * @deprecated Esta função não é mais necessária
      */
     salvarNoStorage: function() {
-        console.warn('SetoresManager.salvarNoStorage() está obsoleto. O repositório gerencia o armazenamento automaticamente.');
+        // Não faz nada, agora essa responsabilidade é do repositório
         return true;
     },
     
@@ -102,7 +98,20 @@ const SetoresManager = {
      */
     obterCronogramaSetorial: function(codigo) {
         if (!this.initialized) this.inicializar();
-        return SetoresRepository.obterCronogramaImplementacao(codigo);
+        const setor = SetoresRepository.obterSetor(codigo);
+        if (!setor || !setor.cronogramaProprio) return null;
+        
+        // Implementação simplificada - no futuro poderia ser ampliada
+        return {
+            2026: setor.implementacaoInicial / 100,
+            2027: 0.15,
+            2028: 0.30,
+            2029: 0.45,
+            2030: 0.60,
+            2031: 0.75,
+            2032: 0.90,
+            2033: 1.00
+        };
     },
     
     /**
@@ -123,7 +132,8 @@ const SetoresManager = {
      * @returns {boolean} - Sucesso da operação
      */
     restaurarPadroes: function() {
-        if (!this.initialized) this.inicializar();
-        return SetoresRepository.restaurarPadroes();
+        this.initialized = false;
+        this.inicializar();
+        return true;
     }
 };

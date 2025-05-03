@@ -11,8 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-   <!-- Replace all existing CSS references with: -->
-	<link rel="stylesheet" href="css/main.css">
+    <!-- Arquivos CSS próprios -->
+    <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/tabs.css">
     <link rel="stylesheet" href="css/forms.css">
     <link rel="stylesheet" href="css/charts.css">
@@ -1015,17 +1015,14 @@
     
     <!-- Importação dos scripts JavaScript -->
     
+    <!-- Scripts principais -->
 	<!-- Primeiro os utilitários -->
-	<script src="js/utils/dom-utils.js"></script>
 	<script src="js/utils/formatters.js"></script>
 	<script src="js/utils/validators.js"></script>
 	<script src="js/utils/export-tools.js"></script>
+	<script src="js/utils/currency-formatter.js"></script>
 
-	<!-- Scripts de núcleo -->
-	<script src="js/core/state-manager.js"></script>
-	<script src="js/core/event-bus.js"></script>
-    
-		<!-- Depois os repositórios e gerenciadores de configuração -->
+	<!-- Depois os repositórios e gerenciadores de configuração -->
 	<script src="js/config/setores-repository.js"></script>
 	<script src="js/repository/simulador-repository.js"></script>
 	<script src="js/config/configuracoes-setoriais.js"></script>
@@ -1044,18 +1041,14 @@
 	<script src="js/ui/memoria-controller.js"></script>
 	<script src="js/ui/estrategias-controller.js"></script>
 
-	<!-- Módulos de cálculo -->
-    <script src="js/simulation/calculation.js"></script>
-    <script src="js/simulation/simulator.js"></script>
-    <script src="js/simulation/credit-compensation.js"></script>
-    <script src="js/simulation/sensitivity-analysis.js"></script>
-    <script src="js/simulation/mitigation-strategies.js"></script>
-    <script src="js/simulation/simulador-modulo.js"></script>
+	<!-- Depois os módulos de simulação -->
+	<script src="js/simulation/calculation.js"></script>
+	<script src="js/simulation/simulator.js"></script>
+	<script src="js/simulation/simulador-modulo.js"></script>
+	<script src="js/simulation/strategies.js"></script>
 
-	<!-- Por último, a integração e inicialização -->
-	<script src="js/core/app-integrator.js"></script>
+	<!-- Por último, o script principal e integração -->
 	<script src="js/integration.js"></script>
-	<script src="js/app.js"></script>
 	<script src="js/main.js"></script>
 	
     <!-- Script direto para atualização dos campos -->

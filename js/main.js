@@ -34,11 +34,11 @@ document.addEventListener('DOMContentLoaded', function() {
         ModalManager.inicializar();
     }
     
-    // Adicionar observadores para mudanças de aba
-    observarMudancasDeAba();
-    
     // Inicializar eventos específicos da página principal
     inicializarEventosPrincipais();
+    
+    // Adicionar observadores para mudanças de aba
+    observarMudancasDeAba();
     
     console.log('Simulador de Split Payment inicializado com sucesso');
 });
@@ -59,22 +59,9 @@ function inicializarEventosPrincipais() {
             if (window.SimuladorFluxoCaixa && typeof window.SimuladorFluxoCaixa.simularImpacto === 'function') {
                 // Chamada explícita usando window
                 window.SimuladorFluxoCaixa.simularImpacto();
-                
-                // Publicar evento de simulação solicitada
-                if (typeof EventBus !== 'undefined') {
-                    EventBus.publish('simulacaoSolicitada', {
-                        timestamp: new Date().getTime()
-                    });
-                }
             } else {
                 console.error('SimuladorFluxoCaixa não está definido corretamente', window.SimuladorFluxoCaixa);
-                
-                // Usar DOMUtils para notificação, se disponível
-                if (typeof DOMUtils !== 'undefined') {
-                    DOMUtils.notify('Erro ao iniciar a simulação. Verifique o console para mais detalhes.', 'error');
-                } else {
-                    alert('Erro ao iniciar a simulação. Verifique o console para mais detalhes.');
-                }
+                alert('Erro ao iniciar a simulação. Verifique o console para mais detalhes.');
             }
         });
     }
@@ -85,11 +72,6 @@ function inicializarEventosPrincipais() {
         btnExportarPDF.addEventListener('click', function() {
             if (typeof ExportTools !== 'undefined') {
                 ExportTools.exportarParaPDF();
-                
-                // Publicar evento
-                if (typeof EventBus !== 'undefined') {
-                    EventBus.publish('exportacaoSolicitada', { tipo: 'pdf' });
-                }
             }
         });
     }
@@ -99,11 +81,6 @@ function inicializarEventosPrincipais() {
         btnExportarExcel.addEventListener('click', function() {
             if (typeof ExportTools !== 'undefined') {
                 ExportTools.exportarParaExcel();
-                
-                // Publicar evento
-                if (typeof EventBus !== 'undefined') {
-                    EventBus.publish('exportacaoSolicitada', { tipo: 'excel' });
-                }
             }
         });
     }
@@ -113,11 +90,6 @@ function inicializarEventosPrincipais() {
         btnExportarMemoria.addEventListener('click', function() {
             if (typeof ExportTools !== 'undefined') {
                 ExportTools.exportarMemoriaCalculo();
-                
-                // Publicar evento
-                if (typeof EventBus !== 'undefined') {
-                    EventBus.publish('exportacaoSolicitada', { tipo: 'memoriaCalculo' });
-                }
             }
         });
     }
@@ -127,13 +99,6 @@ function inicializarEventosPrincipais() {
     if (btnAtualizarMemoria) {
         btnAtualizarMemoria.addEventListener('click', function() {
             atualizarExibicaoMemoriaCalculo();
-            
-            // Publicar evento
-            if (typeof EventBus !== 'undefined') {
-                EventBus.publish('memoriaCalculoAtualizada', {
-                    ano: document.getElementById('select-ano-memoria')?.value
-                });
-            }
         });
     }
     
@@ -142,13 +107,6 @@ function inicializarEventosPrincipais() {
     if (selectAnoMemoria) {
         selectAnoMemoria.addEventListener('change', function() {
             atualizarExibicaoMemoriaCalculo();
-            
-            // Publicar evento
-            if (typeof EventBus !== 'undefined') {
-                EventBus.publish('anoMemoriaAlterado', {
-                    ano: this.value
-                });
-            }
         });
     }
     
@@ -164,14 +122,7 @@ function inicializarEventosPrincipais() {
             window.SimuladorFluxoCaixa.exibirMemoriaCalculo(anoSelecionado);
         } else {
             console.error('Não há memória de cálculo disponível ou o simulador não está inicializado');
-            
-            // Usar DOMUtils para mostrar mensagem, se disponível
-            if (typeof DOMUtils !== 'undefined') {
-                DOMUtils.setValue('memoria-calculo', '<p>Realize uma simulação antes de visualizar a memória de cálculo.</p>');
-                DOMUtils.notify('Realize uma simulação antes de visualizar a memória de cálculo', 'warning');
-            } else {
-                document.getElementById('memoria-calculo').innerHTML = '<p>Realize uma simulação antes de visualizar a memória de cálculo.</p>';
-            }
+            document.getElementById('memoria-calculo').innerHTML = '<p>Realize uma simulação antes de visualizar a memória de cálculo.</p>';
         }
     }
     
@@ -179,40 +130,7 @@ function inicializarEventosPrincipais() {
     const btnSimularEstrategias = document.getElementById('btn-simular-estrategias');
     if (btnSimularEstrategias) {
         btnSimularEstrategias.addEventListener('click', function() {
-            // Verificar se há módulo específico para simulação de estratégias
-            if (typeof EstrategiasMitigacaoController !== 'undefined' && 
-                typeof EstrategiasMitigacaoController.simularEstrategias === 'function') {
-                
-                EstrategiasMitigacaoController.simularEstrategias();
-                
-                // Publicar evento
-                if (typeof EventBus !== 'undefined') {
-                    EventBus.publish('estrategiasSolicitadas', {
-                        timestamp: new Date().getTime()
-                    });
-                }
-            } else {
-                // Fallback para função global
-                if (typeof simularEstrategias === 'function') {
-                    simularEstrategias();
-                    
-                    // Publicar evento
-                    if (typeof EventBus !== 'undefined') {
-                        EventBus.publish('estrategiasSolicitadas', {
-                            timestamp: new Date().getTime()
-                        });
-                    }
-                } else {
-                    console.error('Função de simulação de estratégias não encontrada');
-                    
-                    // Usar DOMUtils para notificação, se disponível
-                    if (typeof DOMUtils !== 'undefined') {
-                        DOMUtils.notify('Função de simulação de estratégias não encontrada', 'error');
-                    } else {
-                        alert('Função de simulação de estratégias não encontrada');
-                    }
-                }
-            }
+            simularEstrategias();
         });
     }
     
@@ -222,139 +140,18 @@ function inicializarEventosPrincipais() {
         btnSalvarSetor.addEventListener('click', function() {
             // Após salvar o setor, atualizar dropdown na aba de simulação
             setTimeout(function() {
-                if (typeof SetoresManager !== 'undefined') {
-                    SetoresManager.preencherDropdownSetores('setor');
-                    
-                    // Publicar evento
-                    if (typeof EventBus !== 'undefined') {
-                        EventBus.publish('setoresSalvos', {
-                            timestamp: new Date().getTime()
-                        });
-                    }
-                }
+                SetoresManager.preencherDropdownSetores('setor');
             }, 100);
         });
     }
     
-    // Inicialização do formatador de moeda
+    // No final da função inicializarEventosPrincipais() no main.js
+    // Adicionar:
     if (window.CurrencyFormatter) {
         CurrencyFormatter.inicializar();
     }
     
-    // Evento para limpeza de formulário
-    const btnLimpar = document.getElementById('btn-limpar');
-    if (btnLimpar) {
-        btnLimpar.addEventListener('click', function() {
-            // Limpar formulário de simulação
-            limparFormularioSimulacao();
-            
-            // Publicar evento
-            if (typeof EventBus !== 'undefined') {
-                EventBus.publish('formularioLimpo', {
-                    formulario: 'simulacao'
-                });
-            }
-            
-            // Notificar usuário
-            if (typeof DOMUtils !== 'undefined') {
-                DOMUtils.notify('Formulário limpo com sucesso', 'info');
-            }
-        });
-    }
-    
-    // Inicializar gerenciador de estado, se disponível
-    if (typeof StateManager !== 'undefined') {
-        // Carregar estado do localStorage
-        if (StateManager.loadFromLocalStorage()) {
-            console.log('Estado carregado do localStorage');
-            
-            // Publicar evento
-            if (typeof EventBus !== 'undefined') {
-                EventBus.publish('estadoCarregado', {
-                    origem: 'localStorage'
-                });
-            }
-        }
-    }
-    
     console.log('Eventos principais inicializados');
-}
-
-/**
- * Limpa o formulário de simulação, restaurando valores padrão
- */
-function limparFormularioSimulacao() {
-    // Empresa
-    document.getElementById('empresa').value = '';
-    document.getElementById('setor').value = '';
-    document.getElementById('regime').value = '';
-    document.getElementById('faturamento').value = '0';
-    document.getElementById('margem').value = '15';
-    
-    // Ciclo financeiro
-    document.getElementById('pmr').value = '30';
-    document.getElementById('pmp').value = '30';
-    document.getElementById('pme').value = '30';
-    document.getElementById('perc-vista').value = '30';
-    document.getElementById('ciclo-financeiro').value = '30';
-    
-    // Tributação
-    document.getElementById('aliquota').value = '26.5';
-    document.getElementById('reducao').value = '0.0';
-    document.getElementById('tipo-operacao').value = 'b2b';
-    document.getElementById('creditos').value = '0';
-    
-    // Parâmetros da simulação
-    document.getElementById('data-inicial').value = '2026-01-01';
-    document.getElementById('data-final').value = '2033-12-31';
-    document.getElementById('cenario').value = '';
-    
-    // Atualizar estado se disponível
-    if (typeof StateManager !== 'undefined') {
-        // Resetar seções específicas
-        StateManager.resetState(['empresa', 'cicloFinanceiro', 'parametrosFiscais', 'parametrosSimulacao']);
-    }
-    
-    // Recalcular valores derivados
-    if (typeof FormsManager !== 'undefined') {
-        // Recalcular ciclo financeiro
-        FormsManager.calcularCicloFinanceiro();
-        
-        // Atualizar percentual a prazo
-        FormsManager.atualizarPercPrazo();
-    } else {
-        // Calcular ciclo financeiro manualmente
-        document.getElementById('ciclo-financeiro').value = 
-            (parseInt(document.getElementById('pmr').value) || 0) + 
-            (parseInt(document.getElementById('pme').value) || 0) - 
-            (parseInt(document.getElementById('pmp').value) || 0);
-        
-        // Calcular percentual a prazo manualmente
-        const valorPercVista = parseInt(document.getElementById('perc-vista').value) || 0;
-        document.getElementById('perc-prazo').value = (100 - valorPercVista) + '%';
-    }
-    
-    // Formatar campos monetários
-    if (typeof CurrencyFormatter !== 'undefined') {
-        CurrencyFormatter.inicializar();
-    }
-    
-    // Limpar área de resultados
-    const containerResultados = document.getElementById('resultados');
-    if (containerResultados) {
-        containerResultados.innerHTML = '<p class="text-muted">Preencha os dados e clique em "Simular" para visualizar os resultados.</p>';
-    }
-    
-    // Limpar gráficos
-    if (window.graficos) {
-        Object.values(window.graficos).forEach(grafico => {
-            if (grafico && typeof grafico.destroy === 'function') {
-                grafico.destroy();
-            }
-        });
-        
-        window.graficos = {};
-    }
 }
 
 /**
@@ -367,62 +164,8 @@ function observarMudancasDeAba() {
         
         // Se a aba de simulação for ativada, garantir que o dropdown esteja atualizado
         if (tabId === 'simulacao') {
-            if (typeof SetoresManager !== 'undefined') {
-                SetoresManager.preencherDropdownSetores('setor');
-                console.log('Dropdown de setores atualizado na aba de simulação');
-            }
-            
-            // Verificar se há simulação prévia
-            if (window.ultimaSimulacao) {
-                // Reexibir gráficos, caso tenham sido destruídos
-                if (typeof SimuladorFluxoCaixa !== 'undefined' && 
-                    typeof SimuladorFluxoCaixa.gerarGraficos === 'function') {
-                    SimuladorFluxoCaixa.gerarGraficos(window.ultimaSimulacao.resultados);
-                }
-            }
-        }
-        
-        // Se a aba de memória for ativada, atualizar exibição
-        if (tabId === 'memoria') {
-            if (typeof MemoriaCalculoController !== 'undefined') {
-                MemoriaCalculoController.inicializar();
-            } else {
-                const selectAno = document.getElementById('select-ano-memoria');
-                if (selectAno && selectAno.options.length > 0) {
-                    atualizarExibicaoMemoriaCalculo();
-                }
-            }
-        }
-        
-        // Se a aba de estratégias for ativada, atualizar controlador
-        if (tabId === 'estrategias') {
-            if (typeof EstrategiasMitigacaoController !== 'undefined') {
-                EstrategiasMitigacaoController.inicializar();
-            }
-        }
-        
-        // Publicar evento
-        if (typeof EventBus !== 'undefined') {
-            EventBus.publish('tabMudada', {
-                tabId: tabId
-            });
-        }
-    });
-    
-    // Observar eventos de estratégia
-    document.addEventListener('strategyTabChange', function(event) {
-        const tabId = event.detail.tab;
-        
-        // Publicar evento
-        if (typeof EventBus !== 'undefined') {
-            EventBus.publish('estrategiaMudada', {
-                estrategiaId: tabId
-            });
-        }
-        
-        // Atualizar estado
-        if (typeof StateManager !== 'undefined') {
-            StateManager.updateField('interfaceState', 'estrategiaAtiva', tabId);
+            SetoresManager.preencherDropdownSetores('setor');
+            console.log('Dropdown de setores atualizado na aba de simulação');
         }
     });
 }
