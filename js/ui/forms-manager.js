@@ -33,17 +33,11 @@ const FormsManager = {
      * Inicializa campos monetários
      */
     inicializarCamposMonetarios: function() {
-		const camposMonetarios = document.querySelectorAll('.money-input');
-		camposMonetarios.forEach(campo => {
-			// VERIFICAR SE FORMATHELPER EXISTE ANTES DE USAR
-			if (typeof FormatHelper !== 'undefined') {
-				// FormatHelper.formatarInputMonetario(campo); // método original
-				FormatHelper.aplicarFormatacaoMonetaria(campo); // método correto
-			} else {
-				console.error('FormatHelper não disponível');
-			}
-		});
-	},
+        const camposMonetarios = document.querySelectorAll('.money-input');
+        camposMonetarios.forEach(campo => {
+            FormatacaoHelper.formatarInputMonetario(campo);
+        });
+    },
     
     /**
      * Inicializa campos percentuais
@@ -51,7 +45,7 @@ const FormsManager = {
     inicializarCamposPercentuais: function() {
         const camposPercentuais = document.querySelectorAll('.percent-input');
         camposPercentuais.forEach(campo => {
-            FormatHelper.formatarInputPercentual(campo);
+            FormatacaoHelper.formatarInputPercentual(campo);
         });
     },
     
@@ -59,7 +53,7 @@ const FormsManager = {
 	inicializarCalculoCicloFinanceiro: function() {
 		const self = this;
 		const campos = ['pmr', 'pmp', 'pme'];
-
+		
 		campos.forEach(id => {
 			const campo = document.getElementById(id);
 			if (campo) {
@@ -68,27 +62,21 @@ const FormsManager = {
 				});
 			}
 		});
-
+		
 		// Adicionar evento para o checkbox de split payment
 		const checkSplit = document.getElementById('considerar-split');
 		if (checkSplit) {
 			checkSplit.addEventListener('change', function() {
 				self.calcularCicloFinanceiro();
-
+				
 				// Mostrar ou ocultar campos de NCG
 				const camposNCG = document.getElementById('campos-ncg');
 				if (camposNCG) {
 					camposNCG.style.display = this.checked ? 'block' : 'none';
 				}
 			});
-
-			// Definir visibilidade inicial com base no estado atual do checkbox
-			const camposNCG = document.getElementById('campos-ncg');
-			if (camposNCG) {
-				camposNCG.style.display = checkSplit.checked ? 'block' : 'none';
-			}
 		}
-
+		
 		// Adicionar eventos para campos adicionais que afetam o cálculo com split payment
 		const camposAdicionais = ['faturamento', 'aliquota', 'perc-vista', 'perc-prazo', 'data-inicial'];
 		camposAdicionais.forEach(id => {
@@ -101,7 +89,7 @@ const FormsManager = {
 						self.calcularCicloFinanceiro();
 					}
 				});
-
+				
 				// Para selects e campos de data
 				if (campo.tagName === 'SELECT' || campo.type === 'date') {
 					campo.addEventListener('change', function() {
@@ -113,10 +101,53 @@ const FormsManager = {
 				}
 			}
 		});
-
+		
 		// Calcular valor inicial
 		this.calcularCicloFinanceiro();
 	},
+
+        // Adicionar evento para o checkbox de split payment
+        const checkSplit = document.getElementById('considerar-split');
+        if (checkSplit) {
+            checkSplit.addEventListener('change', () => {
+                this.calcularCicloFinanceiro();
+
+                // Mostrar ou ocultar campos de NCG
+                const camposNCG = document.getElementById('campos-ncg');
+                if (camposNCG) {
+                    camposNCG.style.display = checkSplit.checked ? 'block' : 'none';
+                }
+            });
+        }
+
+        // Adicionar eventos para campos adicionais que afetam o cálculo com split payment
+        const camposAdicionais = ['faturamento', 'aliquota', 'perc-vista', 'perc-prazo', 'data-inicial'];
+        camposAdicionais.forEach(id => {
+            const campo = document.getElementById(id);
+            if (campo) {
+                // Para inputs de texto e número
+                campo.addEventListener('input', () => {
+                    // Só recalcular se o split payment estiver ativado
+                    if (document.getElementById('considerar-split')?.checked) {
+                        this.calcularCicloFinanceiro();
+                    }
+                });
+
+                // Para selects e campos de data
+                if (campo.tagName === 'SELECT' || campo.type === 'date') {
+                    campo.addEventListener('change', () => {
+                        // Só recalcular se o split payment estiver ativado
+                        if (document.getElementById('considerar-split')?.checked) {
+                            this.calcularCicloFinanceiro();
+                        }
+                    });
+                }
+            }
+        });
+
+        // Calcular valor inicial
+        this.calcularCicloFinanceiro();
+    },
     
     /**
      * Calcula o ciclo financeiro
@@ -180,7 +211,7 @@ const FormsManager = {
 			
 			// Extrair valores com fallbacks
 			const faturamento = faturamentoElem ? 
-				FormatHelper.extrairValorNumerico(faturamentoElem.value) : 0;
+				FormatacaoHelper.extrairValorNumerico(faturamentoElem.value) : 0;
 			const aliquota = aliquotaElem ? 
 				parseFloat(aliquotaElem.value) / 100 : 0.265;
 			const percVista = percVistaElem ? 
@@ -239,10 +270,10 @@ const FormsManager = {
 			const campoNCGAjustada = document.getElementById('ncg-ajustada');
 			const campoDiferencaNCG = document.getElementById('diferenca-ncg');
 
-			if (campoNCGAtual) campoNCGAtual.value = FormatHelper.formatarMoeda(ncgAtual);
-			if (campoNCGAjustada) campoNCGAjustada.value = FormatHelper.formatarMoeda(ncgAjustada);
+			if (campoNCGAtual) campoNCGAtual.value = FormatacaoHelper.formatarMoeda(ncgAtual);
+			if (campoNCGAjustada) campoNCGAjustada.value = FormatacaoHelper.formatarMoeda(ncgAjustada);
 			if (campoDiferencaNCG) {
-				campoDiferencaNCG.value = FormatHelper.formatarMoeda(diferencaNCG);
+				campoDiferencaNCG.value = FormatacaoHelper.formatarMoeda(diferencaNCG);
 				// Adicionar classe para formatação visual (negativo em vermelho, positivo em verde)
 				campoDiferencaNCG.classList.remove('positive-impact', 'negative-impact');
 				campoDiferencaNCG.classList.add(diferencaNCG >= 0 ? 'positive-impact' : 'negative-impact');
@@ -285,10 +316,10 @@ const FormsManager = {
         const campoPercPrazo = document.getElementById('perc-prazo');
         
         if (campoPercVista && campoPercPrazo) {
-            const valorPercVista = FormatHelper.extrairValorNumerico(campoPercVista.value) / 100;
+            const valorPercVista = FormatacaoHelper.extrairValorNumerico(campoPercVista.value) / 100;
             const valorPercPrazo = Math.max(0, Math.min(1, 1 - valorPercVista));
             
-            campoPercPrazo.value = FormatHelper.formatarPercentual(valorPercPrazo);
+            campoPercPrazo.value = FormatacaoHelper.formatarPercentual(valorPercPrazo);
         }
     },
     

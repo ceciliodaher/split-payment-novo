@@ -3,87 +3,19 @@
  * Gerencia a interação do usuário com a memória de cálculo
  */
 const MemoriaCalculoController = {
-    // Em memoria-controller.js, corrija o método inicializar
     inicializar: function() {
-        console.log('Inicializando MemoriaController...');
-
-        // Registrar evento para alteração do ano na memória de cálculo
-        const selectAno = document.getElementById('select-ano-memoria');
-        if (selectAno) {
-            selectAno.addEventListener('change', () => {
-                this.exibirMemoriaAno(selectAno.value);
-            });
-        }
-
-        // Verificar se temos dados de memória no repositório
-        const resultadosSimulacao = SimuladorRepository.obterSecao('resultadosSimulacao');
-
-        if (resultadosSimulacao && resultadosSimulacao.memoriaCalculo) {
-            // Preencher o select com os anos disponíveis
-            this.atualizarAnosDisponiveis(resultadosSimulacao.memoriaCalculo);
-
-            // Exibir a memória para o primeiro ano disponível
-            const anosDisponiveis = Object.keys(resultadosSimulacao.memoriaCalculo);
-            if (anosDisponiveis.length > 0) {
-                const primeiroAno = anosDisponiveis[0];
-                this.exibirMemoriaAno(primeiroAno);
-            }
-        } else {
-            // Sem dados para exibir
-            const container = document.getElementById('memoria-calculo');
-            if (container) {
-                container.innerHTML = '<div class="alerta info">Nenhuma simulação encontrada. Execute uma simulação primeiro.</div>';
-            }
-        }
-    },
-
-    // Adicione este método para atualizar anos disponíveis
-    atualizarAnosDisponiveis: function(memoriaCalculo) {
-        if (!memoriaCalculo) return;
-
-        const selectAno = document.getElementById('select-ano-memoria');
-        if (selectAno) {
-            // Limpar options existentes
-            selectAno.innerHTML = '';
-
-            // Adicionar uma option para cada ano disponível
-            Object.keys(memoriaCalculo).forEach(ano => {
-                const option = document.createElement('option');
-                option.value = ano;
-                option.textContent = ano;
-                selectAno.appendChild(option);
-            });
-        }
-    },
-    
-    // Adicione o novo método exibirMemoriaAno
-    exibirMemoriaAno: function(ano) {
-        try {
-            const resultadosSimulacao = SimuladorRepository.obterSecao('resultadosSimulacao');
-
-            if (!resultadosSimulacao || !resultadosSimulacao.memoriaCalculo || !resultadosSimulacao.memoriaCalculo[ano]) {
-                // Sem dados para este ano
-                const container = document.getElementById('memoria-calculo');
-                if (container) {
-                    container.innerHTML = `<div class="alerta info">Não há memória de cálculo disponível para o ano ${ano}.</div>`;
-                }
-                return;
-            }
-
-            // Exibir a memória de cálculo para o ano selecionado
-            const container = document.getElementById('memoria-calculo');
-            if (container) {
-                container.innerHTML = `<pre>${resultadosSimulacao.memoriaCalculo[ano]}</pre>`;
-            }
-        } catch (error) {
-            console.error('Erro ao exibir memória de cálculo:', error);
-
-            // Exibir mensagem de erro para o usuário
-            const container = document.getElementById('memoria-calculo');
-            if (container) {
-                container.innerHTML = `<div class="alerta erro">Erro ao carregar memória de cálculo: ${error.message}</div>`;
-            }
-        }
+        console.log('Inicializando controlador de Memória de Cálculo');
+        
+        // Verificar se há uma simulação realizada
+        this.verificarSimulacaoRealizada();
+        
+        // Inicializar eventos
+        this.inicializarEventos();
+        
+        // Atualizar dropdown de anos
+        this.atualizarDropdownAnos();
+        
+        console.log('Controlador de Memória de Cálculo inicializado');
     },
     
     verificarSimulacaoRealizada: function() {

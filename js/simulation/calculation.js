@@ -58,14 +58,6 @@ const CalculationModule = (function() {
         // Métodos novos
         simular,
         gerarMemoriaCalculo,
-        
-        // Adicionar referência à função privada para uso interno
-        _obterParametrosSetoriais: _obterParametrosSetoriais,
-        
-        // Método público para acessar parâmetros setoriais
-        obterParametrosSetoriais: function(setor) {
-            return _obterParametrosSetoriais(setor);
-        },
 
         // Getters para resultados intermediários (para depuração)
         getResultadoAtual: function() { return _resultadoAtual; },
@@ -111,43 +103,6 @@ function simular(dados) {
         memoriaCalculo,
         dadosUtilizados: dados,
         parametrosSetoriais
-    };
-}
-
-/**
- * Obtém parâmetros específicos para um determinado setor
- * @param {string} setor - Código do setor
- * @returns {Object|null} - Parâmetros do setor ou null se não encontrado
- * @private
- */
-function _obterParametrosSetoriais(setor) {
-    // Se não houver setor definido, retornar null
-    if (!setor) return null;
-    
-    // Verificar se o repositório de setores está disponível
-    if (typeof SetoresRepository !== 'undefined') {
-        try {
-            // Obter dados do setor
-            const dadosSetor = SetoresRepository.obterSetor(setor);
-            
-            if (dadosSetor) {
-                return {
-                    aliquotaEfetiva: dadosSetor.aliquotaEfetiva,
-                    reducaoEspecial: dadosSetor.reducaoEspecial,
-                    cronogramaProprio: dadosSetor.cronogramaProprio || false,
-                    // Outros parâmetros específicos do setor
-                };
-            }
-        } catch (error) {
-            console.error('Erro ao obter parâmetros setoriais:', error);
-        }
-    }
-    
-    // Se não encontrar o setor ou ocorrer erro, retornar valores padrão
-    return {
-        aliquotaEfetiva: 0.265, // 26,5% (IBS + CBS)
-        reducaoEspecial: 0,
-        cronogramaProprio: false
     };
 }
 
@@ -961,8 +916,8 @@ function calcularAnaliseElasticidade(dados, anoInicial, anoFinal, parametrosSeto
     const elasticidades = {};
     
     // Usar o cenário "Moderado" como referência
-    const referenciaImpacto = resultados.Moderado.impactoAcumulado;
-    const referenciaTaxa = resultados.Moderado.taxa;
+    const referenciaImpacto = resultados["Moderado"].impactoAcumulado;
+    const referenciaTaxa = resultados["Moderado"].taxa;
     
     cenarios.forEach(cenario => {
         if (cenario.nome !== "Moderado") {
@@ -1159,8 +1114,8 @@ function calcularEfeitividadeCapitalGiro(dados, estrategia, impactoBase) {
     const valorAposCarencia = valorCaptado + juroDuranteCarencia;
     
     // Cálculo da parcela usando fórmula de financiamento
-    const parcela = valorAposCarencia * (taxaJuros * Math.pow(1 + taxaJuros, prazoPagamento - carencia)) /  
-                   (Math.pow(1 + taxaJuros, prazoPagamento - carencia) - 1);
+    const parcela = valorAposCarencia * (taxaJuros * Math.pow(1 + taxaJuros, prazoPagamento - carencia)) 
+                   / (Math.pow(1 + taxaJuros, prazoPagamento - carencia) - 1);
     
     // Custo total do financiamento
     const custoTotal = (parcela * (prazoPagamento - carencia)) - valorCaptado;
@@ -1352,116 +1307,6 @@ function calcularEfeitividadeMeiosPagamento(dados, estrategia, impactoBase) {
         custoBeneficio: custoIncentivo > 0 ? custoIncentivo / reducaoNCG : 0
     };
 }
-
-// Módulo de cálculos para o simulador
-(function() {
-    'use strict';
-    
-    // Namespace global
-    window.SimuladorSplitPayment = window.SimuladorSplitPayment || {};
-    
-    // Calcular impacto no capital de giro
-    function calcularImpactoCapitalGiro(valorTributario, prazoMedioRecebimentoAtual, prazoRecolhimento, prazoMedioRecebimentoNovo) {
-        if (isNaN(valorTributario) || isNaN(prazoMedioRecebimentoAtual) || 
-            isNaN(prazoRecolhimento) || isNaN(prazoMedioRecebimentoNovo)) {
-            throw new Error("Parâmetros inválidos para cálculo do impacto no capital de giro");
-        }
-        
-        // ΔCG = VT × (PMR + PR - PMR')
-        return valorTributario * (prazoMedioRecebimentoAtual + prazoRecolhimento - prazoMedioRecebimentoNovo);
-    }
-    
-    // Calcular necessidade de capital de giro
-    function calcularNCG(ativosCirculantesOperacionais, passivosCirculantesOperacionais) {
-        if (isNaN(ativosCirculantesOperacionais) || isNaN(passivosCirculantesOperacionais)) {
-            throw new Error("Parâmetros inválidos para cálculo da NCG");
-        }
-        
-        // NCG = AC_op - PC_op
-        return ativosCirculantesOperacionais - passivosCirculantesOperacionais;
-    }
-    
-    // Calcular necessidade de capital de giro no regime de split payment
-    function calcularNCGComSplitPayment(ativosCirculantesOperacionais, passivosCirculantesOperacionais, 
-                                      obrigacoesFiscaisAtuais, obrigacoesFiscaisSplitPayment) {
-        if (isNaN(ativosCirculantesOperacionais) || isNaN(passivosCirculantesOperacionais) || 
-            isNaN(obrigacoesFiscaisAtuais) || isNaN(obrigacoesFiscaisSplitPayment)) {
-            throw new Error("Parâmetros inválidos para cálculo da NCG com Split Payment");
-        }
-        
-        // NCG_split = AC_op - (PC_op - OF_atual + OF_split)
-        return ativosCirculantesOperacionais - (passivosCirculantesOperacionais - obrigacoesFiscaisAtuais + obrigacoesFiscaisSplitPayment);
-    }
-    
-    // Calcular alíquota efetiva setorial
-    function calcularAliquotaEfetivaSetorial(aliquotaPadrao, reducaoEspecial) {
-        if (isNaN(aliquotaPadrao) || isNaN(reducaoEspecial)) {
-            throw new Error("Parâmetros inválidos para cálculo da alíquota efetiva");
-        }
-        
-        // AE_s = AP × (1 - RE_s)
-        return aliquotaPadrao * (1 - reducaoEspecial);
-    }
-    
-    // Calcular valor tributário retido
-    function calcularValorTributarioRetido(faturamentoTributavelBruto, aliquotaEfetiva, creditosTributarios) {
-        if (isNaN(faturamentoTributavelBruto) || isNaN(aliquotaEfetiva) || isNaN(creditosTributarios)) {
-            throw new Error("Parâmetros inválidos para cálculo do valor tributário retido");
-        }
-        
-        // VTR = FTB × AE_s - CT
-        return faturamentoTributavelBruto * aliquotaEfetiva - creditosTributarios;
-    }
-    
-    // Calcular impacto percentual na necessidade de capital de giro
-    function calcularImpactoPercentualNCG(valorTributarioRetido, fluxoCaixaLiquido, fatorProgressaoImplementacao) {
-        if (isNaN(valorTributarioRetido) || isNaN(fluxoCaixaLiquido) || isNaN(fatorProgressaoImplementacao)) {
-            throw new Error("Parâmetros inválidos para cálculo do impacto percentual na NCG");
-        }
-        
-        if (fluxoCaixaLiquido === 0) {
-            throw new Error("Fluxo de caixa líquido não pode ser zero");
-        }
-        
-        // INCG = (VTR / FCL) × 100 × FPI
-        return (valorTributarioRetido / fluxoCaixaLiquido) * 100 * fatorProgressaoImplementacao;
-    }
-    
-    // Calcular ciclo financeiro
-    function calcularCicloFinanceiro(prazoMedioEstoque, prazoMedioRecebimento, prazoMedioPagamento) {
-        if (isNaN(prazoMedioEstoque) || isNaN(prazoMedioRecebimento) || isNaN(prazoMedioPagamento)) {
-            throw new Error("Parâmetros inválidos para cálculo do ciclo financeiro");
-        }
-        
-        // CF = PME + PMR - PMP
-        return prazoMedioEstoque + prazoMedioRecebimento - prazoMedioPagamento;
-    }
-    
-    // Calcular ciclo financeiro com split payment
-    function calcularCicloFinanceiroSplitPayment(prazoMedioEstoque, prazoMedioRecebimento, prazoMedioPagamento, 
-                                              valorTributarioRetido, valorTributarioTotal) {
-        if (isNaN(prazoMedioEstoque) || isNaN(prazoMedioRecebimento) || isNaN(prazoMedioPagamento) || 
-            isNaN(valorTributarioRetido) || isNaN(valorTributarioTotal) || valorTributarioTotal === 0) {
-            throw new Error("Parâmetros inválidos para cálculo do ciclo financeiro com Split Payment");
-        }
-        
-        // CF_split = PME + PMR - PMP - (PMR × VTR/VT)
-        return prazoMedioEstoque + prazoMedioRecebimento - prazoMedioPagamento - 
-               (prazoMedioRecebimento * (valorTributarioRetido / valorTributarioTotal));
-    }
-    
-    // Exportar funções
-    SimuladorSplitPayment.calculation = {
-        calcularImpactoCapitalGiro: calcularImpactoCapitalGiro,
-        calcularNCG: calcularNCG,
-        calcularNCGComSplitPayment: calcularNCGComSplitPayment,
-        calcularAliquotaEfetivaSetorial: calcularAliquotaEfetivaSetorial,
-        calcularValorTributarioRetido: calcularValorTributarioRetido,
-        calcularImpactoPercentualNCG: calcularImpactoPercentualNCG,
-        calcularCicloFinanceiro: calcularCicloFinanceiro,
-        calcularCicloFinanceiroSplitPayment: calcularCicloFinanceiroSplitPayment
-    };
-})();
 
 // Demais funções de efetividade...
 
