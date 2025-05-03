@@ -58,6 +58,14 @@ const CalculationModule = (function() {
         // Métodos novos
         simular,
         gerarMemoriaCalculo,
+        
+        // Adicionar referência à função privada para uso interno
+        _obterParametrosSetoriais: _obterParametrosSetoriais,
+        
+        // Método público para acessar parâmetros setoriais
+        obterParametrosSetoriais: function(setor) {
+            return _obterParametrosSetoriais(setor);
+        },
 
         // Getters para resultados intermediários (para depuração)
         getResultadoAtual: function() { return _resultadoAtual; },
@@ -103,6 +111,43 @@ function simular(dados) {
         memoriaCalculo,
         dadosUtilizados: dados,
         parametrosSetoriais
+    };
+}
+
+/**
+ * Obtém parâmetros específicos para um determinado setor
+ * @param {string} setor - Código do setor
+ * @returns {Object|null} - Parâmetros do setor ou null se não encontrado
+ * @private
+ */
+function _obterParametrosSetoriais(setor) {
+    // Se não houver setor definido, retornar null
+    if (!setor) return null;
+    
+    // Verificar se o repositório de setores está disponível
+    if (typeof SetoresRepository !== 'undefined') {
+        try {
+            // Obter dados do setor
+            const dadosSetor = SetoresRepository.obterSetor(setor);
+            
+            if (dadosSetor) {
+                return {
+                    aliquotaEfetiva: dadosSetor.aliquotaEfetiva,
+                    reducaoEspecial: dadosSetor.reducaoEspecial,
+                    cronogramaProprio: dadosSetor.cronogramaProprio || false,
+                    // Outros parâmetros específicos do setor
+                };
+            }
+        } catch (error) {
+            console.error('Erro ao obter parâmetros setoriais:', error);
+        }
+    }
+    
+    // Se não encontrar o setor ou ocorrer erro, retornar valores padrão
+    return {
+        aliquotaEfetiva: 0.265, // 26,5% (IBS + CBS)
+        reducaoEspecial: 0,
+        cronogramaProprio: false
     };
 }
 
@@ -916,8 +961,8 @@ function calcularAnaliseElasticidade(dados, anoInicial, anoFinal, parametrosSeto
     const elasticidades = {};
     
     // Usar o cenário "Moderado" como referência
-    const referenciaImpacto = resultados["Moderado"].impactoAcumulado;
-    const referenciaTaxa = resultados["Moderado"].taxa;
+    const referenciaImpacto = resultados.Moderado.impactoAcumulado;
+    const referenciaTaxa = resultados.Moderado.taxa;
     
     cenarios.forEach(cenario => {
         if (cenario.nome !== "Moderado") {
@@ -1114,8 +1159,8 @@ function calcularEfeitividadeCapitalGiro(dados, estrategia, impactoBase) {
     const valorAposCarencia = valorCaptado + juroDuranteCarencia;
     
     // Cálculo da parcela usando fórmula de financiamento
-    const parcela = valorAposCarencia * (taxaJuros * Math.pow(1 + taxaJuros, prazoPagamento - carencia)) 
-                   / (Math.pow(1 + taxaJuros, prazoPagamento - carencia) - 1);
+    const parcela = valorAposCarencia * (taxaJuros * Math.pow(1 + taxaJuros, prazoPagamento - carencia)) /  
+                   (Math.pow(1 + taxaJuros, prazoPagamento - carencia) - 1);
     
     // Custo total do financiamento
     const custoTotal = (parcela * (prazoPagamento - carencia)) - valorCaptado;

@@ -282,3 +282,108 @@ document.addEventListener('DOMContentLoaded', function() {
         App.initialize();
     }, 500);
 });
+
+// Em app.js, adicione um sistema de tratamento de erros global
+(function() {
+    // Captador de erros global
+    window.onerror = function(mensagem, arquivo, linha, coluna, erro) {
+        console.error('Erro global capturado:', {
+            mensagem: mensagem,
+            arquivo: arquivo,
+            linha: linha,
+            coluna: coluna,
+            erro: erro
+        });
+        
+        // Verificar se o erro já foi tratado
+        if (erro && erro.tratado) {
+            return true;
+        }
+        
+        // Exibir mensagem ao usuário
+        mostrarErro(mensagem);
+        
+        // Marcar como tratado para evitar duplicação
+        if (erro) {
+            erro.tratado = true;
+        }
+        
+        return true; // Impede propagação do erro
+    };
+    
+    // Função para exibir mensagens de erro
+    function mostrarErro(mensagem) {
+        // Verificar se já existe um container de erro
+        let containerErro = document.getElementById('container-erro-global');
+        
+        if (!containerErro) {
+            containerErro = document.createElement('div');
+            containerErro.id = 'container-erro-global';
+            containerErro.className = 'erro-global';
+            containerErro.style.position = 'fixed';
+            containerErro.style.top = '10px';
+            containerErro.style.right = '10px';
+            containerErro.style.backgroundColor = '#f8d7da';
+            containerErro.style.color = '#721c24';
+            containerErro.style.padding = '10px';
+            containerErro.style.borderRadius = '5px';
+            containerErro.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
+            containerErro.style.zIndex = '9999';
+            
+            document.body.appendChild(containerErro);
+        }
+        
+        // Limitar a quantidade de erros exibidos
+        if (containerErro.children.length >= 3) {
+            containerErro.removeChild(containerErro.firstChild);
+        }
+        
+        // Criar mensagem de erro
+        const msgErro = document.createElement('div');
+        msgErro.textContent = mensagem;
+        msgErro.style.marginBottom = '5px';
+        msgErro.style.padding = '5px';
+        msgErro.style.borderBottom = '1px solid #ddd';
+        
+        // Adicionar botão para fechar
+        const btnFechar = document.createElement('span');
+        btnFechar.textContent = '×';
+        btnFechar.style.float = 'right';
+        btnFechar.style.cursor = 'pointer';
+        btnFechar.style.marginLeft = '10px';
+        btnFechar.onclick = function() {
+            containerErro.removeChild(msgErro);
+            
+            // Se não houver mais mensagens, remover o container
+            if (containerErro.children.length === 0) {
+                document.body.removeChild(containerErro);
+            }
+        };
+        
+        msgErro.appendChild(btnFechar);
+        containerErro.appendChild(msgErro);
+        
+        // Auto-remover após 10 segundos
+        setTimeout(function() {
+            if (msgErro.parentNode === containerErro) {
+                containerErro.removeChild(msgErro);
+                
+                // Se não houver mais mensagens, remover o container
+                if (containerErro.children.length === 0) {
+                    document.body.removeChild(containerErro);
+                }
+            }
+        }, 10000);
+    }
+    
+    // Adicionar tratamento para Promises não tratadas
+    window.addEventListener('unhandledrejection', function(event) {
+        console.error('Promise não tratada:', event.reason);
+        mostrarErro(`Erro assíncrono: ${event.reason.message || 'Promise não tratada'}`);
+        
+        // Marcar como tratado
+        event.preventDefault();
+    });
+    
+    console.log('Sistema de tratamento de erros global inicializado');
+})();
