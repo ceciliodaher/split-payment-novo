@@ -1353,6 +1353,116 @@ function calcularEfeitividadeMeiosPagamento(dados, estrategia, impactoBase) {
     };
 }
 
+// Módulo de cálculos para o simulador
+(function() {
+    'use strict';
+    
+    // Namespace global
+    window.SimuladorSplitPayment = window.SimuladorSplitPayment || {};
+    
+    // Calcular impacto no capital de giro
+    function calcularImpactoCapitalGiro(valorTributario, prazoMedioRecebimentoAtual, prazoRecolhimento, prazoMedioRecebimentoNovo) {
+        if (isNaN(valorTributario) || isNaN(prazoMedioRecebimentoAtual) || 
+            isNaN(prazoRecolhimento) || isNaN(prazoMedioRecebimentoNovo)) {
+            throw new Error("Parâmetros inválidos para cálculo do impacto no capital de giro");
+        }
+        
+        // ΔCG = VT × (PMR + PR - PMR')
+        return valorTributario * (prazoMedioRecebimentoAtual + prazoRecolhimento - prazoMedioRecebimentoNovo);
+    }
+    
+    // Calcular necessidade de capital de giro
+    function calcularNCG(ativosCirculantesOperacionais, passivosCirculantesOperacionais) {
+        if (isNaN(ativosCirculantesOperacionais) || isNaN(passivosCirculantesOperacionais)) {
+            throw new Error("Parâmetros inválidos para cálculo da NCG");
+        }
+        
+        // NCG = AC_op - PC_op
+        return ativosCirculantesOperacionais - passivosCirculantesOperacionais;
+    }
+    
+    // Calcular necessidade de capital de giro no regime de split payment
+    function calcularNCGComSplitPayment(ativosCirculantesOperacionais, passivosCirculantesOperacionais, 
+                                      obrigacoesFiscaisAtuais, obrigacoesFiscaisSplitPayment) {
+        if (isNaN(ativosCirculantesOperacionais) || isNaN(passivosCirculantesOperacionais) || 
+            isNaN(obrigacoesFiscaisAtuais) || isNaN(obrigacoesFiscaisSplitPayment)) {
+            throw new Error("Parâmetros inválidos para cálculo da NCG com Split Payment");
+        }
+        
+        // NCG_split = AC_op - (PC_op - OF_atual + OF_split)
+        return ativosCirculantesOperacionais - (passivosCirculantesOperacionais - obrigacoesFiscaisAtuais + obrigacoesFiscaisSplitPayment);
+    }
+    
+    // Calcular alíquota efetiva setorial
+    function calcularAliquotaEfetivaSetorial(aliquotaPadrao, reducaoEspecial) {
+        if (isNaN(aliquotaPadrao) || isNaN(reducaoEspecial)) {
+            throw new Error("Parâmetros inválidos para cálculo da alíquota efetiva");
+        }
+        
+        // AE_s = AP × (1 - RE_s)
+        return aliquotaPadrao * (1 - reducaoEspecial);
+    }
+    
+    // Calcular valor tributário retido
+    function calcularValorTributarioRetido(faturamentoTributavelBruto, aliquotaEfetiva, creditosTributarios) {
+        if (isNaN(faturamentoTributavelBruto) || isNaN(aliquotaEfetiva) || isNaN(creditosTributarios)) {
+            throw new Error("Parâmetros inválidos para cálculo do valor tributário retido");
+        }
+        
+        // VTR = FTB × AE_s - CT
+        return faturamentoTributavelBruto * aliquotaEfetiva - creditosTributarios;
+    }
+    
+    // Calcular impacto percentual na necessidade de capital de giro
+    function calcularImpactoPercentualNCG(valorTributarioRetido, fluxoCaixaLiquido, fatorProgressaoImplementacao) {
+        if (isNaN(valorTributarioRetido) || isNaN(fluxoCaixaLiquido) || isNaN(fatorProgressaoImplementacao)) {
+            throw new Error("Parâmetros inválidos para cálculo do impacto percentual na NCG");
+        }
+        
+        if (fluxoCaixaLiquido === 0) {
+            throw new Error("Fluxo de caixa líquido não pode ser zero");
+        }
+        
+        // INCG = (VTR / FCL) × 100 × FPI
+        return (valorTributarioRetido / fluxoCaixaLiquido) * 100 * fatorProgressaoImplementacao;
+    }
+    
+    // Calcular ciclo financeiro
+    function calcularCicloFinanceiro(prazoMedioEstoque, prazoMedioRecebimento, prazoMedioPagamento) {
+        if (isNaN(prazoMedioEstoque) || isNaN(prazoMedioRecebimento) || isNaN(prazoMedioPagamento)) {
+            throw new Error("Parâmetros inválidos para cálculo do ciclo financeiro");
+        }
+        
+        // CF = PME + PMR - PMP
+        return prazoMedioEstoque + prazoMedioRecebimento - prazoMedioPagamento;
+    }
+    
+    // Calcular ciclo financeiro com split payment
+    function calcularCicloFinanceiroSplitPayment(prazoMedioEstoque, prazoMedioRecebimento, prazoMedioPagamento, 
+                                              valorTributarioRetido, valorTributarioTotal) {
+        if (isNaN(prazoMedioEstoque) || isNaN(prazoMedioRecebimento) || isNaN(prazoMedioPagamento) || 
+            isNaN(valorTributarioRetido) || isNaN(valorTributarioTotal) || valorTributarioTotal === 0) {
+            throw new Error("Parâmetros inválidos para cálculo do ciclo financeiro com Split Payment");
+        }
+        
+        // CF_split = PME + PMR - PMP - (PMR × VTR/VT)
+        return prazoMedioEstoque + prazoMedioRecebimento - prazoMedioPagamento - 
+               (prazoMedioRecebimento * (valorTributarioRetido / valorTributarioTotal));
+    }
+    
+    // Exportar funções
+    SimuladorSplitPayment.calculation = {
+        calcularImpactoCapitalGiro: calcularImpactoCapitalGiro,
+        calcularNCG: calcularNCG,
+        calcularNCGComSplitPayment: calcularNCGComSplitPayment,
+        calcularAliquotaEfetivaSetorial: calcularAliquotaEfetivaSetorial,
+        calcularValorTributarioRetido: calcularValorTributarioRetido,
+        calcularImpactoPercentualNCG: calcularImpactoPercentualNCG,
+        calcularCicloFinanceiro: calcularCicloFinanceiro,
+        calcularCicloFinanceiroSplitPayment: calcularCicloFinanceiroSplitPayment
+    };
+})();
+
 // Demais funções de efetividade...
 
 /**
