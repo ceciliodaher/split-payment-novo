@@ -35,7 +35,7 @@ const FormsManager = {
     inicializarCamposMonetarios: function() {
         const camposMonetarios = document.querySelectorAll('.money-input');
         camposMonetarios.forEach(campo => {
-            FormatacaoHelper.formatarInputMonetario(campo);
+            FormatHelper.formatarInputMonetario(campo);
         });
     },
     
@@ -45,7 +45,7 @@ const FormsManager = {
     inicializarCamposPercentuais: function() {
         const camposPercentuais = document.querySelectorAll('.percent-input');
         camposPercentuais.forEach(campo => {
-            FormatacaoHelper.formatarInputPercentual(campo);
+            FormatHelper.formatarInputPercentual(campo);
         });
     },
     
@@ -174,7 +174,7 @@ const FormsManager = {
 			
 			// Extrair valores com fallbacks
 			const faturamento = faturamentoElem ? 
-				FormatacaoHelper.extrairValorNumerico(faturamentoElem.value) : 0;
+				FormatHelper.extrairValorNumerico(faturamentoElem.value) : 0;
 			const aliquota = aliquotaElem ? 
 				parseFloat(aliquotaElem.value) / 100 : 0.265;
 			const percVista = percVistaElem ? 
@@ -233,10 +233,10 @@ const FormsManager = {
 			const campoNCGAjustada = document.getElementById('ncg-ajustada');
 			const campoDiferencaNCG = document.getElementById('diferenca-ncg');
 
-			if (campoNCGAtual) campoNCGAtual.value = FormatacaoHelper.formatarMoeda(ncgAtual);
-			if (campoNCGAjustada) campoNCGAjustada.value = FormatacaoHelper.formatarMoeda(ncgAjustada);
+			if (campoNCGAtual) campoNCGAtual.value = FormatHelper.formatarMoeda(ncgAtual);
+			if (campoNCGAjustada) campoNCGAjustada.value = FormatHelper.formatarMoeda(ncgAjustada);
 			if (campoDiferencaNCG) {
-				campoDiferencaNCG.value = FormatacaoHelper.formatarMoeda(diferencaNCG);
+				campoDiferencaNCG.value = FormatHelper.formatarMoeda(diferencaNCG);
 				// Adicionar classe para formatação visual (negativo em vermelho, positivo em verde)
 				campoDiferencaNCG.classList.remove('positive-impact', 'negative-impact');
 				campoDiferencaNCG.classList.add(diferencaNCG >= 0 ? 'positive-impact' : 'negative-impact');
@@ -279,10 +279,10 @@ const FormsManager = {
         const campoPercPrazo = document.getElementById('perc-prazo');
         
         if (campoPercVista && campoPercPrazo) {
-            const valorPercVista = FormatacaoHelper.extrairValorNumerico(campoPercVista.value) / 100;
+            const valorPercVista = FormatHelper.extrairValorNumerico(campoPercVista.value) / 100;
             const valorPercPrazo = Math.max(0, Math.min(1, 1 - valorPercVista));
             
-            campoPercPrazo.value = FormatacaoHelper.formatarPercentual(valorPercPrazo);
+            campoPercPrazo.value = FormatHelper.formatarPercentual(valorPercPrazo);
         }
     },
     
