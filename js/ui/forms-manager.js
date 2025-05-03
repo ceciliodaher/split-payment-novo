@@ -33,11 +33,17 @@ const FormsManager = {
      * Inicializa campos monetários
      */
     inicializarCamposMonetarios: function() {
-        const camposMonetarios = document.querySelectorAll('.money-input');
-        camposMonetarios.forEach(campo => {
-            FormatHelper.formatarInputMonetario(campo);
-        });
-    },
+		const camposMonetarios = document.querySelectorAll('.money-input');
+		camposMonetarios.forEach(campo => {
+			// VERIFICAR SE FORMATHELPER EXISTE ANTES DE USAR
+			if (typeof FormatHelper !== 'undefined') {
+				// FormatHelper.formatarInputMonetario(campo); // método original
+				FormatHelper.aplicarFormatacaoMonetaria(campo); // método correto
+			} else {
+				console.error('FormatHelper não disponível');
+			}
+		});
+	},
     
     /**
      * Inicializa campos percentuais

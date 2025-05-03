@@ -42,6 +42,13 @@ const AppIntegrator = {
 
         console.log('AppIntegrator inicializado com sucesso');
     },
+    
+    /**
+     * Método alias para compatibilidade
+     */
+    initialize: function() {
+        return this.inicializar();
+    },    
 
     // Adicione este método auxiliar para inicializar módulos de forma segura
     inicializarModuloSeExistir: function(nomeModulo) {
@@ -388,8 +395,8 @@ const AppIntegrator = {
 
 // Inicializar quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar após um pequeno atraso para garantir que todos os outros módulos foram carregados
     setTimeout(function() {
-        AppIntegrator.initialize();
+        // ALTERAÇÃO: usar o método inicializar em vez de initialize
+        AppIntegrator.inicializar();  // ou manter AppIntegrator.initialize() e adicionar o método alias acima
     }, 500);
 });
