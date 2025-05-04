@@ -1258,7 +1258,9 @@ window.SimuladorFluxoCaixa = {
         if (!containerResultados) return;
 
         // Formatar valores para exibição
-        const formatarMoeda = (valor) => `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const formatarMoeda = (valor) => (valor !== undefined && valor !== null) 
+			? `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+			: "R$ 0,00";
         const formatarPercent = (valor) => `${valor.toFixed(2)}%`;
 
         // Construir HTML dos resultados
