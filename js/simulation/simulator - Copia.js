@@ -1,3 +1,134 @@
+// Adicione este código no início do arquivo simulator.js ou em um novo arquivo debug.js
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Iniciando diagnóstico do simulador...');
+    
+    // Verificar se os elementos críticos existem no DOM
+    const elementos = [
+        'resultados',
+        'grafico-fluxo-caixa',
+        'grafico-capital-giro', 
+        'grafico-projecao',
+        'grafico-sensibilidade',
+        'grafico-decomposicao'
+    ];
+    
+    elementos.forEach(id => {
+        const el = document.getElementById(id);
+        console.log(`Elemento '${id}': ${el ? 'encontrado' : 'NÃO ENCONTRADO'}`);
+    });
+    
+    // Verificar se as funções críticas existem
+    if (window.SimuladorFluxoCaixa) {
+        console.log('SimuladorFluxoCaixa está definido');
+        const metodos = [
+            'simularImpacto',
+            'exibirResultados',
+            'gerarGraficos',
+            'gerarGraficoSensibilidade',
+            'adicionarEventosBotoes',
+            'limparSimulacao'
+        ];
+        
+        metodos.forEach(metodo => {
+            console.log(`Método '${metodo}': ${typeof SimuladorFluxoCaixa[metodo] === 'function' ? 'definido' : 'NÃO DEFINIDO'}`);
+        });
+    } else {
+        console.error('SimuladorFluxoCaixa NÃO está definido!');
+    }
+    
+    // Restaurar funcionalidade básica de simulação
+    restaurarFuncionalidadeBasica();
+});
+
+// Função para restaurar a funcionalidade básica
+function restaurarFuncionalidadeBasica() {
+    // Verificar se o botão de simulação existe
+    const btnSimular = document.getElementById('btn-simular');
+    if (!btnSimular) {
+        console.error('Botão de simulação não encontrado!');
+        return;
+    }
+    
+    // Remover todos os event listeners existentes
+    const novoBtn = btnSimular.cloneNode(true);
+    btnSimular.parentNode.replaceChild(novoBtn, btnSimular);
+    
+    // Adicionar listener básico
+    novoBtn.addEventListener('click', function() {
+        console.log('Executando simulação de emergência...');
+        simularEmergencia();
+    });
+    
+    console.log('Funcionalidade básica de simulação restaurada');
+}
+
+// Função de simulação de emergência
+function simularEmergencia() {
+    // Obter dados básicos do formulário
+    const empresa = document.getElementById('empresa')?.value || 'Empresa Teste';
+    const faturamento = parseFloat(document.getElementById('faturamento')?.value.replace(/[^\d,.-]/g, '').replace(',', '.')) || 100000;
+    const aliquota = parseFloat(document.getElementById('aliquota')?.value) / 100 || 0.265;
+    
+    // Calcular resultados básicos
+    const valorImposto = faturamento * aliquota;
+    const impactoCG = -valorImposto * 0.10; // assumindo 10% de implementação em 2026
+    
+    // Exibir resultados simplificados
+    const containerResultados = document.getElementById('resultados');
+    if (containerResultados) {
+        containerResultados.innerHTML = `
+            <div class="alert alert-warning">
+                <strong>Modo de Emergência Ativado</strong>
+                <p>Exibindo resultados simplificados devido a problemas técnicos.</p>
+            </div>
+            
+            <div class="result-card">
+                <h3>Resultados Simplificados</h3>
+                <table class="result-table">
+                    <tr>
+                        <td>Empresa:</td>
+                        <td>${empresa}</td>
+                    </tr>
+                    <tr>
+                        <td>Faturamento:</td>
+                        <td>R$ ${faturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                    <tr>
+                        <td>Alíquota:</td>
+                        <td>${(aliquota * 100).toFixed(2)}%</td>
+                    </tr>
+                    <tr>
+                        <td>Valor do Imposto:</td>
+                        <td>R$ ${valorImposto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                    <tr>
+                        <td>Impacto no Capital de Giro (2026):</td>
+                        <td>R$ ${impactoCG.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="action-buttons-container">
+                <button id="btn-ir-para-estrategias" class="btn btn-primary">Simular Estratégias de Mitigação</button>
+                <button id="btn-limpar-simulacao" class="btn btn-secondary">Limpar Simulação</button>
+            </div>
+        `;
+        
+        // Adicionar eventos aos botões
+        document.getElementById('btn-ir-para-estrategias')?.addEventListener('click', function() {
+            const tabEstrategias = document.querySelector('.tab-button[data-tab="estrategias"]');
+            if (tabEstrategias) tabEstrategias.click();
+        });
+        
+        document.getElementById('btn-limpar-simulacao')?.addEventListener('click', function() {
+            const camposTexto = document.querySelectorAll('input[type="text"], input[type="number"]');
+            camposTexto.forEach(campo => campo.value = '');
+            
+            containerResultados.innerHTML = '<p class="text-muted">Preencha os dados e clique em "Simular" para visualizar os resultados.</p>';
+        });
+    }
+}
+
 /**
  * Simulador de Fluxo de Caixa
  * Responsável pelos cálculos do impacto do Split Payment
@@ -119,12 +250,7 @@ window.SimuladorFluxoCaixa = {
 		if (!containerResultados) return;
 
 		// Formatar valores para exibição
-		const formatarMoeda = (valor) => {
-			if (valor === undefined || valor === null) {
-				return 'R$ 0,00';
-			}
-			return `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-		};
+		const formatarMoeda = (valor) => `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 		const formatarPercent = (valor) => `${(valor * 100).toFixed(2)}%`;
 
 		// Extrair dados principais
@@ -556,110 +682,89 @@ window.SimuladorFluxoCaixa = {
 			window.graficoSensibilidade.destroy();
 		}
 		
-		// Obter o container do gráfico
-		const container = document.getElementById('grafico-sensibilidade');
-		if (!container) {
-			console.error('Container para gráfico de sensibilidade não encontrado');
-			return;
-		}
+		const ctx = document.getElementById('grafico-sensibilidade');
+		if (!ctx) return;
 		
-		try {
-			// Limpar qualquer conteúdo anterior
-			container.innerHTML = '';
-			
-			// Criar um novo elemento canvas
-			const canvas = document.createElement('canvas');
-			canvas.id = 'canvas-sensibilidade';
-			
-			// Adicionar o canvas ao container
-			container.appendChild(canvas);
-			
-			// Obter o contexto de desenho
-			const ctx = canvas.getContext('2d');
-			
-			// Dados para o gráfico de sensibilidade (simulados)
-			const cenarios = [
-				{ nome: 'Recessão', taxa: -0.02, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 0.85 },
-				{ nome: 'Estagnação', taxa: 0.00, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 0.92 },
-				{ nome: 'Conservador', taxa: 0.02, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 1.0 },
-				{ nome: 'Moderado', taxa: 0.05, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 1.15 },
-				{ nome: 'Otimista', taxa: 0.08, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 1.35 },
-				{ nome: 'Acelerado', taxa: 0.12, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 1.6 }
-			];
-			
-			window.graficoSensibilidade = new Chart(ctx, {
-				type: 'bar',
-				data: {
-					labels: cenarios.map(c => c.nome),
-					datasets: [{
-						label: 'Necessidade Total de Capital (R$)',
-						data: cenarios.map(c => c.impacto),
-						backgroundColor: [
-							'rgba(75, 192, 192, 0.7)',
-							'rgba(54, 162, 235, 0.7)',
-							'rgba(153, 102, 255, 0.7)',
-							'rgba(255, 206, 86, 0.7)',
-							'rgba(255, 159, 64, 0.7)',
-							'rgba(255, 99, 132, 0.7)'
-						],
-						borderColor: [
-							'rgba(75, 192, 192, 1)',
-							'rgba(54, 162, 235, 1)',
-							'rgba(153, 102, 255, 1)',
-							'rgba(255, 206, 86, 1)',
-							'rgba(255, 159, 64, 1)',
-							'rgba(255, 99, 132, 1)'
-						],
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					scales: {
-						y: {
-							beginAtZero: true,
-							title: {
-								display: true,
-								text: 'Necessidade de Capital (R$)'
-							},
-							ticks: {
-								callback: function(value) {
-									return 'R$ ' + value.toLocaleString('pt-BR', {
-										minimumFractionDigits: 0,
-										maximumFractionDigits: 0
-									});
-								}
-							}
+		// Dados para o gráfico de sensibilidade (simulados)
+		const cenarios = [
+			{ nome: 'Recessão', taxa: -0.02, impacto: resultados.impactoBase.necesidadeAdicionalCapitalGiro * 0.85 },
+			{ nome: 'Estagnação', taxa: 0.00, impacto: resultados.impactoBase.necesidadeAdicionalCapitalGiro * 0.92 },
+			{ nome: 'Conservador', taxa: 0.02, impacto: resultados.impactoBase.necesidadeAdicionalCapitalGiro * 1.0 },
+			{ nome: 'Moderado', taxa: 0.05, impacto: resultados.impactoBase.necesidadeAdicionalCapitalGiro * 1.15 },
+			{ nome: 'Otimista', taxa: 0.08, impacto: resultados.impactoBase.necesidadeAdicionalCapitalGiro * 1.35 },
+			{ nome: 'Acelerado', taxa: 0.12, impacto: resultados.impactoBase.necesidadeAdicionalCapitalGiro * 1.6 }
+		];
+		
+		window.graficoSensibilidade = new Chart(ctx.getContext('2d'), {
+			type: 'bar',
+			data: {
+				labels: cenarios.map(c => c.nome),
+				datasets: [{
+					label: 'Necessidade Total de Capital (R$)',
+					data: cenarios.map(c => c.impacto),
+					backgroundColor: [
+						'rgba(75, 192, 192, 0.7)',
+						'rgba(54, 162, 235, 0.7)',
+						'rgba(153, 102, 255, 0.7)',
+						'rgba(255, 206, 86, 0.7)',
+						'rgba(255, 159, 64, 0.7)',
+						'rgba(255, 99, 132, 0.7)'
+					],
+					borderColor: [
+						'rgba(75, 192, 192, 1)',
+						'rgba(54, 162, 235, 1)',
+						'rgba(153, 102, 255, 1)',
+						'rgba(255, 206, 86, 1)',
+						'rgba(255, 159, 64, 1)',
+						'rgba(255, 99, 132, 1)'
+					],
+					borderWidth: 1
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				scales: {
+					y: {
+						beginAtZero: true,
+						title: {
+							display: true,
+							text: 'Necessidade de Capital (R$)'
 						},
-						x: {
-							title: {
-								display: true,
-								text: 'Cenário de Crescimento'
+						ticks: {
+							callback: function(value) {
+								return 'R$ ' + value.toLocaleString('pt-BR', {
+									minimumFractionDigits: 0,
+									maximumFractionDigits: 0
+								});
 							}
 						}
 					},
-					plugins: {
-						tooltip: {
-							callbacks: {
-								label: function(context) {
-									return 'Necessidade: R$ ' + context.raw.toLocaleString('pt-BR', {
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2
-									});
-								},
-								afterLabel: function(context) {
-									const idx = context.dataIndex;
-									return 'Taxa de Crescimento: ' + (cenarios[idx].taxa * 100).toFixed(1) + '%';
-								}
+					x: {
+						title: {
+							display: true,
+							text: 'Cenário de Crescimento'
+						}
+					}
+				},
+				plugins: {
+					tooltip: {
+						callbacks: {
+							label: function(context) {
+								return 'Necessidade: R$ ' + context.raw.toLocaleString('pt-BR', {
+									minimumFractionDigits: 2,
+									maximumFractionDigits: 2
+								});
+							},
+							afterLabel: function(context) {
+								const idx = context.dataIndex;
+								return 'Taxa de Crescimento: ' + (cenarios[idx].taxa * 100).toFixed(1) + '%';
 							}
 						}
 					}
 				}
-			});
-		} catch (error) {
-			console.error('Erro ao criar gráfico de sensibilidade:', error);
-		}
+			}
+		});
 	},
 
 	/**

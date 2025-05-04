@@ -115,641 +115,197 @@ window.SimuladorFluxoCaixa = {
      * Exibe os resultados na interface
      */
     exibirResultados: function(resultados, dados) {
-		const containerResultados = document.getElementById('resultados');
-		if (!containerResultados) return;
+        const containerResultados = document.getElementById('resultados');
+        if (!containerResultados) return;
 
-		// Formatar valores para exibição
-		const formatarMoeda = (valor) => {
-			if (valor === undefined || valor === null) {
-				return 'R$ 0,00';
-			}
-			return `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-		};
-		const formatarPercent = (valor) => `${(valor * 100).toFixed(2)}%`;
+        // Formatar valores para exibição
+        const formatarMoeda = (valor) => `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const formatarPercent = (valor) => `${(valor * 100).toFixed(2)}%`;
 
-		// Extrair dados principais
-		const impacto = resultados.impactoBase;
-		const projecao = resultados.projecaoTemporal;
+        // Extrair dados principais
+        const impacto = resultados.impactoBase;
+        const projecao = resultados.projecaoTemporal;
 
-		// Construir HTML dos resultados com layout ampliado
-		let html = `
-			<div class="result-container">
-				<div class="result-card">
-					<h3>Síntese do Impacto <span class="info-icon" title="Resumo dos principais indicadores da simulação">i</span></h3>
+        // Construir HTML dos resultados
+        let html = `
+            <div class="result-card">
+                <h3>Resultados da Simulação</h3>
 
-					<div class="result-section">
-						<h4>Impacto Inicial (${projecao.parametros.anoInicial})</h4>
-						<table class="result-table">
-							<tr>
-								<td>Percentual de Implementação:</td>
-								<td><span class="value-highlight">${formatarPercent(impacto.resultadoSplitPayment.percentualImplementacao)}</span></td>
-							</tr>
-							<tr>
-								<td>Diferença no Capital de Giro:</td>
-								<td class="${impacto.diferencaCapitalGiro >= 0 ? 'positive-value' : 'negative-value'}">
-									${formatarMoeda(impacto.diferencaCapitalGiro)}
-								</td>
-							</tr>
-							<tr>
-								<td>Impacto Percentual:</td>
-								<td class="${impacto.percentualImpacto >= 0 ? 'positive-value' : 'negative-value'}">
-									${formatarPercent(impacto.percentualImpacto/100)}
-								</td>
-							</tr>
-							<tr>
-								<td>Necessidade Adicional de Capital:</td>
-								<td>${formatarMoeda(impacto.necessidadeAdicionalCapitalGiro)}</td>
-							</tr>
-							<tr>
-								<td>Impacto na Margem Operacional:</td>
-								<td>De <span class="value-original">${formatarPercent(impacto.margemOperacionalOriginal)}</span> para <span class="value-adjusted">${formatarPercent(impacto.margemOperacionalAjustada)}</span></td>
-							</tr>
-						</table>
-					</div>
-				</div>
+                <div class="result-section">
+                    <h4>Impacto Inicial (${projecao.parametros.anoInicial})</h4>
+                    <table class="result-table">
+                        <tr>
+                            <td>Percentual de Implementação:</td>
+                            <td>${formatarPercent(impacto.resultadoSplitPayment.percentualImplementacao)}</td>
+                        </tr>
+                        <tr>
+                            <td>Diferença no Capital de Giro:</td>
+                            <td class="${impacto.diferencaCapitalGiro >= 0 ? 'positive-value' : 'negative-value'}">
+                                ${formatarMoeda(impacto.diferencaCapitalGiro)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Impacto Percentual:</td>
+                            <td class="${impacto.percentualImpacto >= 0 ? 'positive-value' : 'negative-value'}">
+                                ${formatarPercent(impacto.percentualImpacto/100)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Necessidade Adicional de Capital:</td>
+                            <td>${formatarMoeda(impacto.necessidadeAdicionalCapitalGiro)}</td>
+                        </tr>
+                        <tr>
+                            <td>Impacto na Margem Operacional:</td>
+                            <td>De ${formatarPercent(impacto.margemOperacionalOriginal)} para ${formatarPercent(impacto.margemOperacionalAjustada)}</td>
+                        </tr>
+                    </table>
+                </div>
 
-				<div class="result-card">
-					<h3>Projeção do Impacto <span class="info-icon" title="Impacto projetado ao longo do período de transição">i</span></h3>
-					<p>Impacto acumulado no período ${projecao.parametros.anoInicial}-${projecao.parametros.anoFinal}:</p>
-					<table class="result-table">
-						<tr>
-							<td>Necessidade Total de Capital:</td>
-							<td><strong>${formatarMoeda(projecao.impactoAcumulado.totalNecessidadeCapitalGiro)}</strong></td>
-						</tr>
-						<tr>
-							<td>Custo Financeiro Total:</td>
-							<td><strong>${formatarMoeda(projecao.impactoAcumulado.custoFinanceiroTotal)}</strong></td>
-						</tr>
-						<tr>
-							<td>Impacto Médio na Margem:</td>
-							<td><strong>${formatarPercent(projecao.impactoAcumulado.impactoMedioMargem/100)}</strong></td>
-						</tr>
-					</table>
-				</div>
-			</div>
+                <div class="result-section">
+                    <h4>Projeção do Impacto</h4>
+                    <p>Impacto acumulado ao longo do período ${projecao.parametros.anoInicial}-${projecao.parametros.anoFinal}:</p>
+                    <table class="result-table">
+                        <tr>
+                            <td>Necessidade Total de Capital:</td>
+                            <td>${formatarMoeda(projecao.impactoAcumulado.totalNecessidadeCapitalGiro)}</td>
+                        </tr>
+                        <tr>
+                            <td>Custo Financeiro Total:</td>
+                            <td>${formatarMoeda(projecao.impactoAcumulado.custoFinanceiroTotal)}</td>
+                        </tr>
+                        <tr>
+                            <td>Impacto Médio na Margem:</td>
+                            <td>${formatarPercent(projecao.impactoAcumulado.impactoMedioMargem/100)}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        `;
 
-			<div class="result-card">
-				<h3>Detalhamento Anual <span class="info-icon" title="Detalhamento do impacto para cada ano de implementação">i</span></h3>
-				<div class="scrollable-table">
-					<table class="detail-table">
-						<thead>
-							<tr>
-								<th>Ano</th>
-								<th>% Implementação</th>
-								<th>Impacto no Capital de Giro</th>
-								<th>% do Impacto</th>
-								<th>Necessidade Adicional</th>
-								<th>Margem Ajustada</th>
-							</tr>
-						</thead>
-						<tbody>
-		`;
+        // Inserir HTML no container
+        containerResultados.innerHTML = html;
 
-		// Adicionar linhas para cada ano da projeção
-		Object.keys(projecao.resultadosAnuais).forEach(ano => {
-			const resultado = projecao.resultadosAnuais[ano];
-			html += `
-				<tr>
-					<td>${ano}</td>
-					<td>${formatarPercent(resultado.resultadoSplitPayment.percentualImplementacao)}</td>
-					<td>${formatarMoeda(resultado.diferencaCapitalGiro)}</td>
-					<td>${formatarPercent(resultado.percentualImpacto/100)}</td>
-					<td>${formatarMoeda(resultado.necesidadeAdicionalCapitalGiro)}</td>
-					<td>${formatarPercent(resultado.margemOperacionalAjustada)}</td>
-				</tr>
-			`;
-		});
-
-		html += `
-						</tbody>
-					</table>
-				</div>
-			</div>
-			
-			<div class="result-card">
-				<h3>Análise de Sensibilidade <span class="info-icon" title="Impacto de diferentes taxas de crescimento na necessidade de capital">i</span></h3>
-				<p>Esta análise demonstra como diferentes cenários de crescimento afetam a necessidade de capital adicional.</p>
-				<div id="grafico-sensibilidade" class="chart-container"></div>
-			</div>
-		`;
-
-		// Adicionar botões de navegação após os resultados
-		html += `
-			<div class="action-buttons-container">
-				<button id="btn-ir-para-estrategias" class="btn btn-primary">Simular Estratégias de Mitigação</button>
-				<button id="btn-limpar-simulacao" class="btn btn-secondary">Limpar Simulação</button>
-			</div>
-		`;
-
-		// Inserir HTML no container
-		containerResultados.innerHTML = html;
-
-		// Gerar gráficos
-		this.gerarGraficos(resultados);
-		
-		// Gerar gráfico de sensibilidade
-		this.gerarGraficoSensibilidade(resultados);
-		
-		// Adicionar eventos aos novos botões
-		this.adicionarEventosBotoes();
-	},
+        // Gerar gráficos
+        this.gerarGraficos(resultados);
+    },
 
     /**
      * Gera gráficos para visualização dos resultados
      */
     gerarGraficos: function(resultados) {
-		// Destruir gráficos existentes para evitar duplicação
-		if (window.graficos) {
-			Object.values(window.graficos).forEach(grafico => {
-				if (grafico && typeof grafico.destroy === 'function') {
-					grafico.destroy();
-				}
-			});
-		}
+        // Destruir gráficos existentes para evitar duplicação
+        if (window.graficos) {
+            Object.values(window.graficos).forEach(grafico => {
+                if (grafico && typeof grafico.destroy === 'function') {
+                    grafico.destroy();
+                }
+            });
+        }
 
-		window.graficos = {};
+        window.graficos = {};
 
-		// 1. Gráfico de fluxo de caixa comparativo (barra)
-		const ctxFluxoCaixa = document.getElementById('grafico-fluxo-caixa');
-		if (ctxFluxoCaixa) {
-			window.graficos.fluxoCaixa = new Chart(ctxFluxoCaixa.getContext('2d'), {
-				type: 'bar',
-				data: {
-					labels: ['Regime Atual', 'Split Payment'],
-					datasets: [{
-						label: 'Capital de Giro Disponível',
-						data: [
-							resultados.impactoBase.resultadoAtual.capitalGiroDisponivel,
-							resultados.impactoBase.resultadoSplitPayment.capitalGiroDisponivel
-						],
-						backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)'],
-						borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						title: {
-							display: true,
-							text: 'Comparativo de Capital de Giro',
-							font: { size: 14, weight: 'bold' }
-						},
-						tooltip: {
-							callbacks: {
-								label: function(context) {
-									return 'R$ ' + context.raw.toLocaleString('pt-BR', {
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2
-									});
-								}
-							}
-						}
-					},
-					scales: {
-						y: {
-							beginAtZero: true,
-							title: {
-								display: true,
-								text: 'Capital de Giro (R$)'
-							},
-							ticks: {
-								callback: function(value) {
-									return 'R$ ' + value.toLocaleString('pt-BR', {
-										minimumFractionDigits: 0,
-										maximumFractionDigits: 0
-									});
-								}
-							}
-						}
-					}
-				}
-			});
-		}
+        // Gráfico de fluxo de caixa
+        const ctxFluxoCaixa = document.getElementById('grafico-fluxo-caixa');
+        if (ctxFluxoCaixa) {
+            window.graficos.fluxoCaixa = new Chart(ctxFluxoCaixa.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Regime Atual', 'Split Payment'],
+                    datasets: [{
+                        label: 'Capital de Giro Disponível',
+                        data: [
+                            resultados.impactoBase.resultadoAtual.capitalGiroDisponivel,
+                            resultados.impactoBase.resultadoSplitPayment.capitalGiroDisponivel
+                        ],
+                        backgroundColor: ['rgba(54, 162, 235, 0.5)', 'rgba(255, 99, 132, 0.5)'],
+                        borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'R$'
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
-		// 2. Gráfico de evolução do capital de giro (linha)
-		const ctxCapitalGiro = document.getElementById('grafico-capital-giro');
-		if (ctxCapitalGiro) {
-			// Preparar dados para gráfico de evolução
-			const anos = Object.keys(resultados.projecaoTemporal.resultadosAnuais);
-			const capitalGiroValores = anos.map(ano => 
-				resultados.projecaoTemporal.resultadosAnuais[ano].resultadoSplitPayment.capitalGiroDisponivel
-			);
-			
-			window.graficos.capitalGiro = new Chart(ctxCapitalGiro.getContext('2d'), {
-				type: 'line',
-				data: {
-					labels: anos,
-					datasets: [{
-						label: 'Capital de Giro Disponível',
-						data: capitalGiroValores,
-						borderColor: 'rgba(75, 192, 192, 1)',
-						backgroundColor: 'rgba(75, 192, 192, 0.1)',
-						borderWidth: 2,
-						fill: true,
-						tension: 0.4
-					}]
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						title: {
-							display: true,
-							text: 'Evolução do Capital de Giro durante o Split Payment',
-							font: { size: 14, weight: 'bold' }
-						},
-						tooltip: {
-							callbacks: {
-								label: function(context) {
-									return 'R$ ' + context.raw.toLocaleString('pt-BR', {
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2
-									});
-								}
-							}
-						}
-					},
-					scales: {
-						y: {
-							title: {
-								display: true,
-								text: 'Capital de Giro (R$)'
-							},
-							ticks: {
-								callback: function(value) {
-									return 'R$ ' + value.toLocaleString('pt-BR', {
-										minimumFractionDigits: 0,
-										maximumFractionDigits: 0
-									});
-								}
-							}
-						},
-						x: {
-							title: {
-								display: true,
-								text: 'Ano'
-							}
-						}
-					}
-				}
-			});
-		}
+        // Gráfico de capital de giro
+        const ctxCapitalGiro = document.getElementById('grafico-capital-giro');
+        if (ctxCapitalGiro) {
+            window.graficos.capitalGiro = new Chart(ctxCapitalGiro.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Mantido', 'Reduzido'],
+                    datasets: [{
+                        data: [
+                            resultados.impactoBase.resultadoSplitPayment.capitalGiroDisponivel,
+                            Math.abs(resultados.impactoBase.diferencaCapitalGiro)
+                        ],
+                        backgroundColor: ['rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)'],
+                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Impacto no Capital de Giro'
+                        }
+                    }
+                }
+            });
+        }
 
-		// 3. Gráfico de impacto na margem (dual axis)
-		const ctxProjecao = document.getElementById('grafico-projecao');
-		if (ctxProjecao) {
-			// Preparar dados para o gráfico de projeção
-			const anos = Object.keys(resultados.projecaoTemporal.resultadosAnuais);
-			const impactosMargem = anos.map(ano => 
-				resultados.projecaoTemporal.resultadosAnuais[ano].impactoMargem
-			);
-			const margensAjustadas = anos.map(ano => 
-				resultados.projecaoTemporal.resultadosAnuais[ano].margemOperacionalAjustada * 100
-			);
+        // Gráfico de projeção
+        const ctxProjecao = document.getElementById('grafico-projecao');
+        if (ctxProjecao) {
+            // Preparar dados para o gráfico de projeção
+            const anos = Object.keys(resultados.projecaoTemporal.resultadosAnuais);
+            const impactosPorAno = anos.map(ano => 
+                Math.abs(resultados.projecaoTemporal.resultadosAnuais[ano].diferencaCapitalGiro)
+            );
 
-			window.graficos.projecao = new Chart(ctxProjecao.getContext('2d'), {
-				type: 'line',
-				data: {
-					labels: anos,
-					datasets: [
-						{
-							label: 'Impacto na Margem (p.p.)',
-							data: impactosMargem,
-							borderColor: 'rgba(255, 99, 132, 1)',
-							backgroundColor: 'rgba(255, 99, 132, 0.1)',
-							borderWidth: 2,
-							yAxisID: 'y',
-							tension: 0.4
-						},
-						{
-							label: 'Margem Operacional (%)',
-							data: margensAjustadas,
-							borderColor: 'rgba(54, 162, 235, 1)',
-							backgroundColor: 'rgba(54, 162, 235, 0.1)',
-							borderWidth: 2,
-							yAxisID: 'y1',
-							tension: 0.4
-						}
-					]
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						title: {
-							display: true,
-							text: 'Projeção do Impacto na Margem Operacional',
-							font: { size: 14, weight: 'bold' }
-						}
-					},
-					scales: {
-						y: {
-							type: 'linear',
-							position: 'left',
-							title: {
-								display: true,
-								text: 'Impacto na Margem (p.p.)'
-							},
-							ticks: {
-								callback: function(value) {
-									return value.toFixed(2) + ' p.p.';
-								}
-							}
-						},
-						y1: {
-							type: 'linear',
-							position: 'right',
-							title: {
-								display: true,
-								text: 'Margem Operacional (%)'
-							},
-							ticks: {
-								callback: function(value) {
-									return value.toFixed(2) + '%';
-								}
-							},
-							grid: {
-								drawOnChartArea: false
-							}
-						},
-						x: {
-							title: {
-								display: true,
-								text: 'Ano'
-							}
-						}
-					}
-				}
-			});
-		}
-		
-		// 4. Novo gráfico: Decomposição do impacto (gráfico de pizza)
-		const ctxDecomposicao = document.getElementById('grafico-decomposicao');
-		if (ctxDecomposicao) {
-			const impactoOriginal = Math.abs(resultados.impactoBase.diferencaCapitalGiro);
-			const custoFinanceiro = resultados.impactoBase.impactoMargem.custoMensalCapitalGiro * 12;
-			const percImplementacao = resultados.impactoBase.resultadoSplitPayment.percentualImplementacao;
-			
-			window.graficos.decomposicao = new Chart(ctxDecomposicao.getContext('2d'), {
-				type: 'pie',
-				data: {
-					labels: [
-						'Redução no Capital Disponível',
-						'Custo Financeiro Anual',
-						'Capital Remanescente'
-					],
-					datasets: [{
-						data: [
-							impactoOriginal,
-							custoFinanceiro,
-							impactoOriginal * (1 - percImplementacao)
-						],
-						backgroundColor: [
-							'rgba(255, 99, 132, 0.7)',
-							'rgba(255, 159, 64, 0.7)',
-							'rgba(75, 192, 192, 0.7)'
-						],
-						borderColor: [
-							'rgba(255, 99, 132, 1)',
-							'rgba(255, 159, 64, 1)',
-							'rgba(75, 192, 192, 1)'
-						],
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						title: {
-							display: true,
-							text: 'Decomposição do Impacto Financeiro',
-							font: { size: 14, weight: 'bold' }
-						},
-						tooltip: {
-							callbacks: {
-								label: function(context) {
-									const label = context.label || '';
-									const value = context.raw;
-									const percentage = context.parsed / context.dataset.data.reduce((a, b) => a + b, 0) * 100;
-									return label + ': R$ ' + value.toLocaleString('pt-BR', {
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2
-									}) + ' (' + percentage.toFixed(1) + '%)';
-								}
-							}
-						}
-					}
-				}
-			});
-		}
-	},
-
-	/**
-	 * Gera gráfico de análise de sensibilidade
-	 */
-	gerarGraficoSensibilidade: function(resultados) {
-		// Destruir gráfico existente se houver
-		if (window.graficoSensibilidade) {
-			window.graficoSensibilidade.destroy();
-		}
-		
-		// Obter o container do gráfico
-		const container = document.getElementById('grafico-sensibilidade');
-		if (!container) {
-			console.error('Container para gráfico de sensibilidade não encontrado');
-			return;
-		}
-		
-		try {
-			// Limpar qualquer conteúdo anterior
-			container.innerHTML = '';
-			
-			// Criar um novo elemento canvas
-			const canvas = document.createElement('canvas');
-			canvas.id = 'canvas-sensibilidade';
-			
-			// Adicionar o canvas ao container
-			container.appendChild(canvas);
-			
-			// Obter o contexto de desenho
-			const ctx = canvas.getContext('2d');
-			
-			// Dados para o gráfico de sensibilidade (simulados)
-			const cenarios = [
-				{ nome: 'Recessão', taxa: -0.02, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 0.85 },
-				{ nome: 'Estagnação', taxa: 0.00, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 0.92 },
-				{ nome: 'Conservador', taxa: 0.02, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 1.0 },
-				{ nome: 'Moderado', taxa: 0.05, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 1.15 },
-				{ nome: 'Otimista', taxa: 0.08, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 1.35 },
-				{ nome: 'Acelerado', taxa: 0.12, impacto: resultados.impactoBase.necessidadeAdicionalCapitalGiro * 1.6 }
-			];
-			
-			window.graficoSensibilidade = new Chart(ctx, {
-				type: 'bar',
-				data: {
-					labels: cenarios.map(c => c.nome),
-					datasets: [{
-						label: 'Necessidade Total de Capital (R$)',
-						data: cenarios.map(c => c.impacto),
-						backgroundColor: [
-							'rgba(75, 192, 192, 0.7)',
-							'rgba(54, 162, 235, 0.7)',
-							'rgba(153, 102, 255, 0.7)',
-							'rgba(255, 206, 86, 0.7)',
-							'rgba(255, 159, 64, 0.7)',
-							'rgba(255, 99, 132, 0.7)'
-						],
-						borderColor: [
-							'rgba(75, 192, 192, 1)',
-							'rgba(54, 162, 235, 1)',
-							'rgba(153, 102, 255, 1)',
-							'rgba(255, 206, 86, 1)',
-							'rgba(255, 159, 64, 1)',
-							'rgba(255, 99, 132, 1)'
-						],
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					scales: {
-						y: {
-							beginAtZero: true,
-							title: {
-								display: true,
-								text: 'Necessidade de Capital (R$)'
-							},
-							ticks: {
-								callback: function(value) {
-									return 'R$ ' + value.toLocaleString('pt-BR', {
-										minimumFractionDigits: 0,
-										maximumFractionDigits: 0
-									});
-								}
-							}
-						},
-						x: {
-							title: {
-								display: true,
-								text: 'Cenário de Crescimento'
-							}
-						}
-					},
-					plugins: {
-						tooltip: {
-							callbacks: {
-								label: function(context) {
-									return 'Necessidade: R$ ' + context.raw.toLocaleString('pt-BR', {
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2
-									});
-								},
-								afterLabel: function(context) {
-									const idx = context.dataIndex;
-									return 'Taxa de Crescimento: ' + (cenarios[idx].taxa * 100).toFixed(1) + '%';
-								}
-							}
-						}
-					}
-				}
-			});
-		} catch (error) {
-			console.error('Erro ao criar gráfico de sensibilidade:', error);
-		}
-	},
-
-	/**
-	 * Adiciona eventos aos botões de ação nos resultados
-	 */
-	adicionarEventosBotoes: function() {
-		const btnIrParaEstrategias = document.getElementById('btn-ir-para-estrategias');
-		if (btnIrParaEstrategias) {
-			btnIrParaEstrategias.addEventListener('click', function() {
-				// Utilizar o TabsManager para navegar para a aba de estratégias
-				if (typeof TabsManager !== 'undefined' && typeof TabsManager.mudarPara === 'function') {
-					TabsManager.mudarPara('estrategias');
-				} else {
-					// Fallback se o TabsManager não estiver disponível
-					const tabEstrategias = document.querySelector('.tab-button[data-tab="estrategias"]');
-					if (tabEstrategias) {
-						tabEstrategias.click();
-					}
-				}
-			});
-		}
-		
-		const btnLimparSimulacao = document.getElementById('btn-limpar-simulacao');
-		if (btnLimparSimulacao) {
-			btnLimparSimulacao.addEventListener('click', () => {
-				this.limparSimulacao();
-			});
-		}
-	},
-
-	/**
-	 * Limpa os dados da simulação e reseta os campos
-	 */
-	limparSimulacao: function() {
-		// Limpar campos do formulário
-		const campos = [
-			'empresa', 'faturamento', 'margem', 'pmr', 'pmp', 'pme',
-			'perc-vista', 'aliquota', 'creditos'
-		];
-		
-		campos.forEach(id => {
-			const campo = document.getElementById(id);
-			if (campo) {
-				if (campo.type === 'select-one') {
-					campo.selectedIndex = 0;
-				} else {
-					campo.value = '';
-				}
-			}
-		});
-		
-		// Redefinir valores padrão
-		document.getElementById('perc-vista').value = '30';
-		document.getElementById('pmr').value = '30';
-		document.getElementById('pmp').value = '30';
-		document.getElementById('pme').value = '30';
-		
-		// Atualizar campos dependentes
-		if (typeof FormsManager !== 'undefined') {
-			FormsManager.atualizarPercPrazo();
-			FormsManager.calcularCicloFinanceiro();
-		}
-		
-		// Limpar resultados
-		const containerResultados = document.getElementById('resultados');
-		if (containerResultados) {
-			containerResultados.innerHTML = '<p class="text-muted">Preencha os dados e clique em "Simular" para visualizar os resultados.</p>';
-		}
-		
-		// Limpar gráficos
-		if (window.graficos) {
-			Object.values(window.graficos).forEach(grafico => {
-				if (grafico && typeof grafico.destroy === 'function') {
-					grafico.destroy();
-				}
-			});
-			window.graficos = {};
-		}
-		
-		if (window.graficoSensibilidade) {
-			window.graficoSensibilidade.destroy();
-			window.graficoSensibilidade = null;
-		}
-		
-		// Limpar memória de simulação
-		window.ultimaSimulacao = null;
-		window.memoriaCalculoSimulacao = null;
-		
-		console.log('Simulação limpa com sucesso');
-	},
+            window.graficos.projecao = new Chart(ctxProjecao.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: anos,
+                    datasets: [{
+                        label: 'Impacto no Capital de Giro (R$)',
+                        data: impactosPorAno,
+                        backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 2,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'R$'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    },
 
     /**
      * Atualiza a memória de cálculo na interface

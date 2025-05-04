@@ -140,76 +140,72 @@ const FormsManager = {
      * Calcula o ciclo financeiro
      */
     calcularCicloFinanceiro: function() {
-        // Recuperar valores básicos
-        const pmr = parseInt(document.getElementById('pmr')?.value) || 0;
-        const pmp = parseInt(document.getElementById('pmp')?.value) || 0;
-        const pme = parseInt(document.getElementById('pme')?.value) || 0;
-        
-        // Verificar se estamos calculando com split payment
-        const comSplitPayment = document.getElementById('considerar-split')?.checked || false;
-        
-        // Cálculo tradicional do ciclo financeiro (sem Split Payment)
-        const cicloFinanceiroAtual = pmr + pme - pmp;
-        let cicloAjustado = cicloFinanceiroAtual;
-        
-        // Inicializar valores para NCG
-        let ncgAtual = 0;
-        let ncgAjustada = 0;
-        
-        if (comSplitPayment) {
-            // Recuperar dados financeiros
-            const faturamento = FormatacaoHelper.extrairValorNumerico(document.getElementById('faturamento')?.value) || 0;
-            const aliquota = parseFloat(document.getElementById('aliquota')?.value) / 100 || 0;
-            const percVista = parseFloat(document.getElementById('perc-vista')?.value) / 100 || 0;
-            const percPrazo = parseFloat(document.getElementById('perc-prazo')?.value) / 100 || 0;
-            
-            // Recuperar ano de referência para percentual de implementação
-            const anoReferencia = document.getElementById('data-inicial')?.value.split('-')[0] || '2026';
-            
-            // Obter percentual de implementação para o ano
-            const percentualImplementacao = this.obterPercentualImplementacao(anoReferencia);
-            
-            // Valor tributário total
-            const valorTributarioTotal = faturamento * aliquota;
-            
-            // Valor tributário retido via split payment
-            const valorTributarioRetido = valorTributarioTotal * percentualImplementacao;
-            
-            // Ajustar o impacto considerando a proporção de vendas a prazo
-            const proporcaoAfetada = percPrazo > 0 ? percPrazo / (percVista + percPrazo) : 1;
-            
-            // Impacto no PMR conforme a fórmula da metodologia
-            const impactoPMR = pmr * (valorTributarioRetido / valorTributarioTotal) * proporcaoAfetada;
-            
-            // Ciclo financeiro ajustado
-            cicloAjustado = pmr + pme - pmp - impactoPMR;
-            
-            // Calcular necessidade de capital de giro (NCG)
-            ncgAtual = (faturamento / 30) * cicloFinanceiroAtual;
-            ncgAjustada = (faturamento / 30) * cicloAjustado;
-        } else {
-            // Sem Split Payment, usar o ciclo financeiro tradicional
-            ncgAtual = 0; // Não calculamos se não tiver Split Payment
-            ncgAjustada = 0;
-        }
-        
-        // Atualizar campo de ciclo financeiro
-        const campoCiclo = document.getElementById('ciclo-financeiro');
-        if (campoCiclo) {
-            campoCiclo.value = comSplitPayment ? cicloAjustado.toFixed(2) : cicloFinanceiroAtual;
-        }
-        
-        // Atualizar campos de NCG se existirem
-        const diferencaNCG = ncgAjustada - ncgAtual;
-        
-        const campoNCGAtual = document.getElementById('ncg-atual');
-        const campoNCGAjustada = document.getElementById('ncg-ajustada');
-        const campoDiferencaNCG = document.getElementById('diferenca-ncg');
-        
-        if (campoNCGAtual) campoNCGAtual.value = FormatacaoHelper.formatarMoeda(ncgAtual);
-        if (campoNCGAjustada) campoNCGAjustada.value = FormatacaoHelper.formatarMoeda(ncgAjustada);
-        if (campoDiferencaNCG) campoDiferencaNCG.value = FormatacaoHelper.formatarMoeda(diferencaNCG);
-    },
+		// Recuperar valores básicos
+		const pmr = parseInt(document.getElementById('pmr')?.value) || 0;
+		const pmp = parseInt(document.getElementById('pmp')?.value) || 0;
+		const pme = parseInt(document.getElementById('pme')?.value) || 0;
+		
+		// Verificar se estamos calculando com split payment
+		const comSplitPayment = document.getElementById('considerar-split')?.checked || false;
+		
+		// Cálculo tradicional do ciclo financeiro (sem Split Payment)
+		const cicloFinanceiroAtual = pmr + pme - pmp;
+		let cicloAjustado = cicloFinanceiroAtual;
+		
+		// Inicializar valores para NCG
+		let ncgAtual = 0;
+		let ncgAjustada = 0;
+		
+		if (comSplitPayment) {
+			// Recuperar dados financeiros
+			const faturamento = FormatacaoHelper.extrairValorNumerico(document.getElementById('faturamento')?.value) || 0;
+			const aliquota = parseFloat(document.getElementById('aliquota')?.value) / 100 || 0;
+			
+			// Recuperar ano de referência para percentual de implementação
+			const anoReferencia = document.getElementById('data-inicial')?.value.split('-')[0] || '2026';
+			
+			// Obter percentual de implementação para o ano
+			const percentualImplementacao = this.obterPercentualImplementacao(anoReferencia);
+			
+			// Valor tributário total
+			const valorTributarioTotal = faturamento * aliquota;
+			
+			// Valor tributário retido via split payment
+			const valorTributarioRetido = valorTributarioTotal * percentualImplementacao;
+			
+			// Dias adicionais no ciclo financeiro devido ao Split Payment
+			const diasAdicionais = (valorTributarioRetido / faturamento) * 30;
+			
+			// Ciclo financeiro ajustado (AUMENTADO pelo Split Payment)
+			cicloAjustado = cicloFinanceiroAtual + diasAdicionais;
+			
+			// Calcular necessidade de capital de giro (NCG)
+			ncgAtual = (faturamento / 30) * cicloFinanceiroAtual;
+			ncgAjustada = (faturamento / 30) * cicloAjustado;
+			// Alternativa: ncgAjustada = ncgAtual + valorTributarioRetido;
+		} else {
+			// Sem Split Payment, usar o ciclo financeiro tradicional
+			ncgAtual = 0; // Não calculamos se não tiver Split Payment
+			ncgAjustada = 0;
+		}
+		
+		// Atualizar campo de ciclo financeiro
+		const campoCiclo = document.getElementById('ciclo-financeiro');
+		if (campoCiclo) {
+			campoCiclo.value = comSplitPayment ? cicloAjustado.toFixed(2) : cicloFinanceiroAtual;
+		}
+		
+		// Atualizar campos de NCG se existirem
+		const diferencaNCG = ncgAjustada - ncgAtual;
+		
+		const campoNCGAtual = document.getElementById('ncg-atual');
+		const campoNCGAjustada = document.getElementById('ncg-ajustada');
+		const campoDiferencaNCG = document.getElementById('diferenca-ncg');
+		
+		if (campoNCGAtual) campoNCGAtual.value = FormatacaoHelper.formatarMoeda(ncgAtual);
+		if (campoNCGAjustada) campoNCGAjustada.value = FormatacaoHelper.formatarMoeda(ncgAjustada);
+		if (campoDiferencaNCG) campoDiferencaNCG.value = FormatacaoHelper.formatarMoeda(diferencaNCG);
+	},
 
     /**
      * Inicializa atualização automática de percentuais
@@ -236,16 +232,19 @@ const FormsManager = {
      * Atualiza o percentual de vendas a prazo
      */
     atualizarPercPrazo: function() {
-        const campoPercVista = document.getElementById('perc-vista');
-        const campoPercPrazo = document.getElementById('perc-prazo');
-        
-        if (campoPercVista && campoPercPrazo) {
-            const valorPercVista = FormatacaoHelper.extrairValorNumerico(campoPercVista.value) / 100;
-            const valorPercPrazo = Math.max(0, Math.min(1, 1 - valorPercVista));
-            
-            campoPercPrazo.value = FormatacaoHelper.formatarPercentual(valorPercPrazo);
-        }
-    },
+		const campoPercVista = document.getElementById('perc-vista');
+		const campoPercPrazo = document.getElementById('perc-prazo');
+		
+		if (campoPercVista && campoPercPrazo) {
+			// Pegar o valor como número diretamente, sem extrair com a função
+			const valorPercVista = parseFloat(campoPercVista.value) || 0;
+			// Calcular diretamente em percentual (sem converter para decimal)
+			const valorPercPrazo = Math.max(0, Math.min(100, 100 - valorPercVista));
+			
+			// Formatar diretamente como percentual
+			campoPercPrazo.value = valorPercPrazo.toFixed(1) + '%';
+		}
+	},
 
     /**
      * Inicializa cálculo de elasticidade

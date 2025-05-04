@@ -533,48 +533,43 @@ function calcularImpactoCicloFinanceiro(dados, ano = 2026, parametrosSetoriais =
     const valorImpostoTotal = faturamento * aliquota;
     const impostoSplit = valorImpostoTotal * percentualImplementacao;
     
-    // Impacto DIRETO na NCG (AUMENTO)
-    // Aqui modifique o cálculo sem redeclarar as variáveis
-    ncgAtual = (faturamento / 30) * cicloFinanceiroAtual;
-    ncgAjustada = ncgAtual + impostoSplit; // Adiciona o Split Payment à NCG
+    // Impacto em dias adicionais no ciclo financeiro devido ao Split Payment
+    // Aqui consideramos que o Split Payment aumenta o ciclo financeiro
+    const diasAdicionais = (impostoSplit / faturamento) * 30; // Convertendo para equivalente em dias de faturamento
     
-    // Diferença na necessidade de capital de giro (POSITIVA)
-    diferencaNCG = ncgAjustada - ncgAtual;
+    // Ciclo financeiro ajustado (AUMENTA com o Split Payment)
+    const cicloFinanceiroAjustado = cicloFinanceiroAtual + diasAdicionais;
     
-    // Impacto em dias de PMR (considerando a retenção no momento do recebimento)
-    const impactoPMR = (impostoSplit / faturamento) * pmr;
-    
-    // Ciclo financeiro ajustado
-    const cicloFinanceiroAjustado = cicloFinanceiroAtual - impactoPMR;
-    
-     // Necessidade de capital de giro antes e depois
+    // Necessidade de capital de giro antes e depois
     const ncgAtual = (faturamento / 30) * cicloFinanceiroAtual;
     const ncgAjustada = (faturamento / 30) * cicloFinanceiroAjustado;
+    // Alternativa: ncgAjustada = ncgAtual + impostoSplit;
     
-    // Diferença na necessidade de capital de giro
+    // Diferença na necessidade de capital de giro (será positiva, indicando aumento)
     const diferencaNCG = ncgAjustada - ncgAtual;
     
     // Resultado completo
     return {
         cicloFinanceiroAtual,
         cicloFinanceiroAjustado,
-        impactoPMR,
+        diasAdicionais,
         percentualImplementacao,
         ncgAtual,
         ncgAjustada,
         diferencaNCG,
+        // Resto do código...
         memoriaCritica: {
             tituloCalculo: "Cálculo do Impacto no Ciclo Financeiro",
             formulaCicloAtual: `Ciclo Financeiro Atual = PMR + PME - PMP = ${pmr} + ${pme} - ${pmp} = ${cicloFinanceiroAtual} dias`,
-            formulaImpactoPMR: `Impacto no PMR = (Imposto Split / Faturamento) × PMR = (${formatarMoeda(impostoSplit)} / ${formatarMoeda(faturamento)}) × ${pmr} = ${impactoPMR.toFixed(2)} dias`,
-            formulaCicloAjustado: `Ciclo Financeiro Ajustado = Ciclo Atual - Impacto PMR = ${cicloFinanceiroAtual} - ${impactoPMR.toFixed(2)} = ${cicloFinanceiroAjustado.toFixed(2)} dias`,
+            formulaImpactoDias: `Impacto em Dias Adicionais = (Imposto Split / Faturamento) × 30 = (${formatarMoeda(impostoSplit)} / ${formatarMoeda(faturamento)}) × 30 = ${diasAdicionais.toFixed(2)} dias`,
+            formulaCicloAjustado: `Ciclo Financeiro Ajustado = Ciclo Atual + Dias Adicionais = ${cicloFinanceiroAtual} + ${diasAdicionais.toFixed(2)} = ${cicloFinanceiroAjustado.toFixed(2)} dias`,
             tituloImpactoNCG: "Impacto na Necessidade de Capital de Giro (NCG)",
             formulaNCGAtual: `NCG Atual = (Faturamento / 30) × Ciclo Atual = (${formatarMoeda(faturamento)} / 30) × ${cicloFinanceiroAtual} = ${formatarMoeda(ncgAtual)}`,
             formulaNCGAjustada: `NCG Ajustada = (Faturamento / 30) × Ciclo Ajustado = (${formatarMoeda(faturamento)} / 30) × ${cicloFinanceiroAjustado.toFixed(2)} = ${formatarMoeda(ncgAjustada)}`,
             observacoes: [
-                `O Split Payment reduz o ciclo financeiro em ${impactoPMR.toFixed(2)} dias.`,
-                `A necessidade de capital de giro é reduzida em ${formatarMoeda(Math.abs(diferencaNCG))}.`,
-                `No entanto, essa redução é compensada pela necessidade adicional de capital para cobrir o valor dos impostos retidos imediatamente.`
+                `O Split Payment aumenta o ciclo financeiro em ${diasAdicionais.toFixed(2)} dias.`,
+                `A necessidade de capital de giro aumenta em ${formatarMoeda(diferencaNCG)}.`,
+                `Este aumento ocorre porque a empresa deixa de ter disponível o valor dos impostos como capital de giro.`
             ]
         }
     };
