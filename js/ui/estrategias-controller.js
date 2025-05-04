@@ -49,12 +49,16 @@ const EstrategiasMitigacaoController = {
     
     inicializarEventos: function() {
         // Botão simular estratégias
-        const btnSimularEstrategias = document.getElementById('btn-simular-estrategias');
-        if (btnSimularEstrategias) {
-            btnSimularEstrategias.addEventListener('click', () => {
-                this.simularEstrategias();
-            });
-        }
+        // Em estrategias-controller.js, método inicializarEventos():
+		// Remover ou comentar esse código
+		/*
+		const btnSimularEstrategias = document.getElementById('btn-simular-estrategias');
+		if (btnSimularEstrategias) {
+			btnSimularEstrategias.addEventListener('click', () => {
+				this.simularEstrategias();
+			});
+		}
+		*/
         
         // Eventos para elasticidade
         const campoPercAjuste = document.getElementById('ap-percentual');
@@ -79,43 +83,29 @@ const EstrategiasMitigacaoController = {
     },
     
     simularEstrategias: function() {
-        try {
-            // Verificar se a simulação principal foi realizada
-            const interfaceState = SimuladorRepository.obterSecao('interfaceState');
-            if (!interfaceState || !interfaceState.simulacaoRealizada) {
-                alert('É necessário realizar uma simulação principal antes de simular estratégias.');
-
-                // Redirecionar para a aba de simulação
-                document.querySelector('.tab-button[data-tab="simulacao-principal"]').click();
-                return;
-            }
-
-            // Exibir indicador de carregamento
-            this._mostrarCarregamento(true);
-
-            try {
-                // Executar simulação de estratégias
-                if (typeof window.simularEstrategias === 'function') {
-                    const resultados = window.simularEstrategias();
-
-                    // Armazenar resultados no repositório
-                    SimuladorRepository.atualizarCampo('resultadosSimulacao', 'estrategiasMitigacao', resultados);
-                } else {
-                    console.error('Função simularEstrategias não encontrada');
-                    alert('Erro: Função de simulação de estratégias não encontrada.');
-                }
-            } catch (error) {
-                console.error('Erro ao simular estratégias:', error);
-                alert('Ocorreu um erro durante a simulação de estratégias: ' + error.message);
-            } finally {
-                // Ocultar indicador de carregamento
-                this._mostrarCarregamento(false);
-            }
-        } catch (error) {
-            console.error('Erro ao preparar simulação de estratégias:', error);
-            alert('Ocorreu um erro ao preparar a simulação de estratégias: ' + error.message);
-        }
-    },
+		try {
+			// Verificar se a simulação principal foi realizada
+			const interfaceState = SimuladorRepository.obterSecao('interfaceState');
+			if (!interfaceState || !interfaceState.simulacaoRealizada) {
+				alert('É necessário realizar uma simulação principal antes de simular estratégias.');
+				
+				// Redirecionar para a aba de simulação
+				document.querySelector('.tab-button[data-tab="simulacao"]').click();
+				return;
+			}
+			
+			// Chamar a implementação em simulator.js
+			if (typeof window.simularEstrategias === 'function') {
+				window.simularEstrategias();
+			} else {
+				console.error('Função simularEstrategias não encontrada em window');
+				alert('Erro: Função de simulação de estratégias não encontrada.');
+			}
+		} catch (error) {
+			console.error('Erro ao preparar simulação de estratégias:', error);
+			alert('Ocorreu um erro ao preparar a simulação de estratégias: ' + error.message);
+		}
+	},
 
     // Método auxiliar para coletar configurações de estratégias
     _coletarEstrategias: function() {

@@ -94,6 +94,25 @@ function inicializarEventosPrincipais() {
         });
     }
     
+    // Eventos para exportação de estratégias
+    const btnExportarEstrategiasPDF = document.getElementById('btn-exportar-estrategias-pdf');
+    if (btnExportarEstrategiasPDF) {
+        btnExportarEstrategiasPDF.addEventListener('click', function() {
+            if (typeof ExportTools !== 'undefined') {
+                ExportTools.exportarEstrategiasParaPDF();
+            }
+        });
+    }
+
+    const btnExportarEstrategiasExcel = document.getElementById('btn-exportar-estrategias-excel');
+    if (btnExportarEstrategiasExcel) {
+        btnExportarEstrategiasExcel.addEventListener('click', function() {
+            if (typeof ExportTools !== 'undefined') {
+                ExportTools.exportarEstrategiasParaExcel();
+            }
+        });
+    }
+    
     // Evento para atualização da memória de cálculo
     const btnAtualizarMemoria = document.getElementById('btn-atualizar-memoria');
     if (btnAtualizarMemoria) {
