@@ -185,6 +185,11 @@ button:hover {
     margin-bottom: 20px;
 }
 
+.chart-container {
+    min-height: 250px;
+    position: relative;
+}
+
 .result-card {
     background-color: #fff;
     padding: 15px;
@@ -286,6 +291,36 @@ button:hover {
     padding: 12px 25px;
     font-size: 16px;
     font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #0056b3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.alert {
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
 }
 
 #btn-ir-para-estrategias {

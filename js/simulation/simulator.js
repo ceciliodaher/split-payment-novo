@@ -550,32 +550,43 @@ window.SimuladorFluxoCaixa = {
 	/**
 	 * Gera gráfico de análise de sensibilidade
 	 */
-	gerarGraficoSensibilidade: function(resultados) {
-		// Destruir gráfico existente se houver
-		if (window.graficoSensibilidade) {
-			window.graficoSensibilidade.destroy();
-		}
-		
-		// Obter o container do gráfico
-		const container = document.getElementById('grafico-sensibilidade');
-		if (!container) {
-			console.error('Container para gráfico de sensibilidade não encontrado');
-			return;
-		}
-		
+	function gerarGraficoSensibilidade(dadosSensibilidade) {
 		try {
-			// Limpar qualquer conteúdo anterior
-			container.innerHTML = '';
+			// Obter o container para o gráfico
+			const container = document.querySelector('.chart-container') || 
+							 document.querySelector('.charts-grid') ||
+							 document.getElementById('container-graficos');
 			
-			// Criar um novo elemento canvas
+			if (!container) {
+				console.error('Container para gráfico não encontrado');
+				return;
+			}
+			
+			// Verificar se já existe um canvas e removê-lo para evitar duplicações
+			const canvasExistente = document.getElementById('grafico-sensibilidade');
+			if (canvasExistente) {
+				canvasExistente.remove();
+			}
+			
+			// Criar um novo canvas
 			const canvas = document.createElement('canvas');
-			canvas.id = 'canvas-sensibilidade';
+			canvas.id = 'grafico-sensibilidade';
+			canvas.width = 400;  // Definir dimensões apropriadas
+			canvas.height = 300;
 			
 			// Adicionar o canvas ao container
 			container.appendChild(canvas);
 			
-			// Obter o contexto de desenho
+			// Verificar se o canvas foi criado corretamente
+			if (!canvas || typeof canvas.getContext !== 'function') {
+				throw new Error('Canvas não é um elemento válido ou não possui o método getContext');
+			}
+			
+			// Obter o contexto 2D
 			const ctx = canvas.getContext('2d');
+			
+			// Continuar com o código existente para desenhar o gráfico...
+			console.log('Contexto de canvas criado com sucesso:', ctx);
 			
 			// Dados para o gráfico de sensibilidade (simulados)
 			const cenarios = [
@@ -1254,8 +1265,16 @@ window.SimuladorFluxoCaixa = {
      * @param {Object} resultados - Resultados da simulação de estratégias
      */
     function exibirResultadosEstrategias(resultados) {
-        const containerResultados = document.getElementById('resultados-estrategias');
-        if (!containerResultados) return;
+		try {
+			// Verificar se resultados e combinacaoOtima existem
+			if (!resultados || !resultados.combinacaoOtima) {
+				console.error('Resultados ou combinação ótima não definidos');
+				return;
+			}
+			
+			// Verificar se nomeEstrategias existe, caso contrário criar um array vazio
+			const nomeEstrategias = resultados.combinacaoOtima.nomeEstrategias || [];			
+			
 
         // Formatar valores para exibição
         const formatarMoeda = (valor) => (valor !== undefined && valor !== null) 
