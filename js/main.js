@@ -43,51 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Simulador de Split Payment inicializado com sucesso');
 });
 
-// Adicionar ao arquivo main.js, próximo à função inicializarEventosPrincipais
-function inicializarInterfaceGraficos() {
-    // Aplicar grid ao container de gráficos
-    const containerGraficos = document.querySelector('.group-box .chart-container');
-    if (containerGraficos && containerGraficos.parentNode) {
-        containerGraficos.parentNode.className = 'charts-grid';
-    }
-    
-    // Verificar e criar elementos ausentes, se necessário
-    const graficos = [
-        'grafico-fluxo-caixa',
-        'grafico-capital-giro',
-        'grafico-projecao',
-        'grafico-decomposicao',
-        'grafico-sensibilidade'
-    ];
-    
-    const containerPai = document.querySelector('.charts-grid') || 
-                         document.querySelector('.group-box') || 
-                         document.querySelector('.results-container');
-    
-    if (containerPai) {
-        graficos.forEach(id => {
-            if (!document.getElementById(id)) {
-                const container = document.createElement('div');
-                container.className = 'chart-container';
-                
-                const canvas = document.createElement('canvas');
-                canvas.id = id;
-                
-                container.appendChild(canvas);
-                containerPai.appendChild(container);
-                
-                console.log(`Elemento criado: ${id}`);
-            }
-        });
-    }
-}
-
-// Adicionar à parte do código onde as funções de inicialização são chamadas
-document.addEventListener('DOMContentLoaded', function() {
-    // Outras funções de inicialização já existentes...
-    inicializarInterfaceGraficos();
-});
-
 /**
  * Inicializa eventos específicos da página principal
  */
