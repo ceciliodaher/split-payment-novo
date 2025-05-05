@@ -1425,15 +1425,6 @@ function calcularEfeitividadeMeiosPagamento(dados, estrategia, impactoBase) {
 // Demais funções de efetividade...
 
 /**
- * Calcula a efetividade combinada das estratégias
- * 
- * @param {Object} dados - Dados da empresa e parâmetros de simulação
- * @param {Object} estrategias - Configuração das estratégias
- * @param {Object} resultadosEstrategias - Resultados individuais das estratégias
- * @param {Object} impactoBase - Impacto base do Split Payment
- * @returns {Object} - Análise de efetividade combinada
- */
-/**
  * Calcula a efetividade combinada das estratégias selecionadas
  * 
  * @param {Object} dados - Dados da empresa e parâmetros de simulação
@@ -1575,15 +1566,6 @@ function calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias
     };
 }
 
-/**
- * Identifica a combinação ótima de estratégias
- * 
- * @param {Object} dados - Dados da empresa e parâmetros de simulação
- * @param {Object} estrategias - Configuração das estratégias
- * @param {Object} resultadosEstrategias - Resultados individuais das estratégias
- * @param {Object} impactoBase - Impacto base do Split Payment
- * @returns {Object} - Combinação ótima de estratégias
- */
 /**
  * Identifica a combinação ótima de estratégias
  * 
@@ -1759,6 +1741,211 @@ function identificarCombinacaoOtima(dados, estrategias, resultadosEstrategias, i
                 `A melhor estratégia individual é "${traduzirNomeEstrategia(melhorEstrategia.nome)}" com efetividade de ${melhorEstrategia.efetividade.toFixed(2)}%.`
             ]
         }
+    };
+}
+
+/**
+ * Calcula o impacto do split payment no capital de giro usando o modelo matemático ampliado
+ * ΔCG = VT × (PMR + PR - PMR')
+ * @param {Object} dados - Dados da simulação
+ * @param {number} ano - Ano de referência para o cálculo
+ * @returns {Object} Resultado do impacto no capital de giro
+ */
+function calcularImpactoCapitalGiroAmpliado(dados, ano) {
+    console.log('Calculando impacto ampliado no capital de giro para o ano:', ano);
+    
+    // Extrair parâmetros dos dados
+    const faturamentoMensal = parseFloat(dados.faturamentoMensal);
+    const setorSelecionado = this.obterConfiguracoesSetor(dados.setor);
+    const aliquotaEfetiva = setorSelecionado.aliquota;
+    const prazoMedioRecebimento = parseFloat(dados.prazoMedioRecebimento);
+    const prazoRecolhimento = 25; // Prazo de recolhimento no regime atual (25 do mês seguinte)
+    
+    // Valor tributário sujeito ao split payment
+    const valorTributario = faturamentoMensal * aliquotaEfetiva;
+    
+    // Prazo médio de recebimento ajustado para o split payment (geralmente zero, pois o tributo é retido imediatamente)
+    const prazoMedioRecebimentoAjustado = 0;
+    
+    // Calcular o impacto no capital de giro usando a fórmula ampliada
+    const impactoCapitalGiro = valorTributario * (prazoMedioRecebimento + prazoRecolhimento - prazoMedioRecebimentoAjustado) / 30;
+    
+    // Calcular o percentual de implementação para o ano
+    const percentualImplementacao = this.obterPercentualImplementacao(ano);
+    
+    // Aplicar o percentual de implementação
+    const impactoEfetivo = impactoCapitalGiro * percentualImplementacao;
+    
+    // Impacto em dias de faturamento
+    const impactoDiasFaturamento = (prazoMedioRecebimento * percentualImplementacao);
+    
+    return {
+        valorTributario: valorTributario,
+        impactoBruto: impactoCapitalGiro,
+        percentualImplementacao: percentualImplementacao,
+        impactoEfetivo: impactoEfetivo,
+        impactoDiasFaturamento: impactoDiasFaturamento
+    };
+},
+
+/**
+ * Calcula o impacto no ciclo financeiro da empresa
+ * CF_split = PME + PMR - PMP - (PMR × VTR/VT)
+ * @param {Object} dados - Dados da simulação
+ * @param {number} ano - Ano de referência para o cálculo
+ * @returns {Object} Resultado do impacto no ciclo financeiro
+ */
+function calcularImpactoCicloFinanceiro(dados, ano) {
+    console.log('Calculando impacto no ciclo financeiro para o ano:', ano);
+    
+    // Extrair parâmetros dos dados
+    const prazoMedioEstoque = parseFloat(dados.prazoMedioEstoque) || 0;
+    const prazoMedioRecebimento = parseFloat(dados.prazoMedioRecebimento) || 0;
+    const prazoMedioPagamento = parseFloat(dados.prazoMedioPagamento) || 0;
+    const setorSelecionado = this.obterConfiguracoesSetor(dados.setor);
+    const aliquotaEfetiva = setorSelecionado.aliquota;
+    
+    // Percentual de implementação para o ano
+    const percentualImplementacao = this.obterPercentualImplementacao(ano);
+    
+    // Ciclo financeiro atual
+    const cicloFinanceiroAtual = prazoMedioEstoque + prazoMedioRecebimento - prazoMedioPagamento;
+    
+    // Redução do ciclo devido ao split payment
+    const reducaoCiclo = prazoMedioRecebimento * aliquotaEfetiva * percentualImplementacao;
+    
+    // Ciclo financeiro após implementação do split payment
+    const cicloFinanceiroSplit = cicloFinanceiroAtual - reducaoCiclo;
+    
+    return {
+        cicloFinanceiroAtual: cicloFinanceiroAtual,
+        reducaoCiclo: reducaoCiclo,
+        cicloFinanceiroSplit: cicloFinanceiroSplit,
+        percentualReducao: (reducaoCiclo / cicloFinanceiroAtual) * 100
+    };
+},
+
+/**
+ * Calcula o Fluxo de Caixa Descontado Ajustado para o split payment
+ * FCDaj = Σ(FCO_t - VTR_t × (1 - CT_t/VTR_t))/(1 + TMA)^t
+ * @param {Object} dados - Dados da simulação
+ * @param {number} anoInicial - Ano inicial da projeção
+ * @param {number} anoFinal - Ano final da projeção
+ * @returns {Array} Array de objetos com os valores do FCD Ajustado por ano
+ */
+function calcularFluxoCaixaDescontadoAjustado(dados, anoInicial, anoFinal) {
+    console.log('Calculando FCD Ajustado de', anoInicial, 'a', anoFinal);
+    
+    const faturamentoMensal = parseFloat(dados.faturamentoMensal);
+    const taxaCrescimento = parseFloat(dados.taxaCrescimento) / 100;
+    const setorSelecionado = this.obterConfiguracoesSetor(dados.setor);
+    const aliquotaEfetiva = setorSelecionado.aliquota;
+    const margemOperacional = parseFloat(dados.margemOperacional) / 100;
+    const taxaMinAtrat = 0.1; // Taxa mínima de atratividade (10% a.a.)
+    
+    const resultado = [];
+    
+    for (let ano = anoInicial; ano <= anoFinal; ano++) {
+        // Fator de crescimento acumulado
+        const fatorCrescimento = Math.pow(1 + taxaCrescimento, ano - anoInicial);
+        
+        // Faturamento anual ajustado pelo crescimento
+        const faturamentoAnual = faturamentoMensal * 12 * fatorCrescimento;
+        
+        // Fluxo de caixa operacional (simplificado como faturamento * margem)
+        const fco = faturamentoAnual * margemOperacional;
+        
+        // Valor tributário retido
+        const valorTributario = faturamentoAnual * aliquotaEfetiva;
+        
+        // Créditos tributários (simplificado como percentual do valor tributário)
+        const creditosTributarios = valorTributario * 0.3; // 30% de créditos
+        
+        // Percentual de implementação
+        const percentualImplementacao = this.obterPercentualImplementacao(ano);
+        
+        // Valor efetivamente retido considerando implementação gradual
+        const valorRetido = (valorTributario - creditosTributarios) * percentualImplementacao;
+        
+        // Fator de desconto
+        const fatorDesconto = Math.pow(1 + taxaMinAtrat, ano - anoInicial);
+        
+        // Fluxo de caixa descontado ajustado
+        const fcdAjustado = (fco - valorRetido) / fatorDesconto;
+        
+        resultado.push({
+            ano: ano,
+            faturamentoAnual: faturamentoAnual,
+            fco: fco,
+            valorTributario: valorTributario,
+            creditosTributarios: creditosTributarios,
+            valorRetido: valorRetido,
+            fatorDesconto: fatorDesconto,
+            fcdAjustado: fcdAjustado
+        });
+    }
+    
+    return resultado;
+},
+
+/**
+ * Obtém o percentual de implementação do split payment para um determinado ano
+ * @param {number} ano - Ano de referência
+ * @returns {number} Percentual de implementação
+ */
+function obterPercentualImplementacao(ano) {
+    const cronograma = {
+        2026: 0.10, // 10% em 2026
+        2027: 0.25, // 25% em 2027
+        2028: 0.40, // 40% em 2028
+        2029: 0.55, // 55% em 2029
+        2030: 0.70, // 70% em 2030
+        2031: 0.85, // 85% em 2031
+        2032: 0.95, // 95% em 2032
+        2033: 1.00  // 100% em 2033
+    };
+    
+    return cronograma[ano] || 0;
+},
+
+/**
+ * Calcula o Índice de Sensibilidade Setorial
+ * IS = (AE_s × PMR)/(CO × ML × 100)
+ * @param {Object} dados - Dados da simulação
+ * @returns {Object} Resultado do cálculo do índice de sensibilidade
+ */
+function calcularIndiceSensibilidadeSetorial(dados) {
+    const setorSelecionado = this.obterConfiguracoesSetor(dados.setor);
+    const aliquotaEfetiva = setorSelecionado.aliquota;
+    const prazoMedioRecebimento = parseFloat(dados.prazoMedioRecebimento) || 0;
+    const cicloOperacional = parseFloat(dados.prazoMedioEstoque || 0) + prazoMedioRecebimento;
+    const margemLiquida = parseFloat(dados.margemLiquida || dados.margemOperacional) / 100;
+    
+    // Calcular o índice de sensibilidade
+    let indiceSensibilidade = 0;
+    if (cicloOperacional > 0 && margemLiquida > 0) {
+        indiceSensibilidade = (aliquotaEfetiva * prazoMedioRecebimento) / (cicloOperacional * margemLiquida * 100);
+    }
+    
+    // Classificar o índice
+    let classificacao = 'Baixo';
+    if (indiceSensibilidade > 0.3) {
+        classificacao = 'Alto';
+    } else if (indiceSensibilidade > 0.15) {
+        classificacao = 'Médio-Alto';
+    } else if (indiceSensibilidade > 0.05) {
+        classificacao = 'Médio';
+    } else if (indiceSensibilidade > 0.02) {
+        classificacao = 'Médio-Baixo';
+    }
+    
+    return {
+        valor: indiceSensibilidade,
+        classificacao: classificacao,
+        aliquotaEfetiva: aliquotaEfetiva,
+        prazoMedioRecebimento: prazoMedioRecebimento,
+        cicloOperacional: cicloOperacional,
+        margemLiquida: margemLiquida
     };
 }
 
