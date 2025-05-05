@@ -253,6 +253,25 @@ window.SimuladorFluxoCaixa = {
 		// Adicionar eventos aos novos botões
 		this.adicionarEventosBotoes();
 	},
+	
+	// Exemplo de função que exibe resultados e chama os gráficos
+	exibirResultadosAvancados: function(resultados) {
+		// Código existente para exibir resultados
+
+		// Chamar os gráficos avançados
+		if (typeof ChartsManager !== 'undefined') {
+			// Preparar dados para o gráfico de fluxo de caixa
+			const dadosFluxo = {
+				periodos: resultados.projecaoTemporal.map(p => p.ano),
+				fluxoAtual: resultados.projecaoTemporal.map(p => p.fluxoCaixaAtual),
+				fluxoSplit: resultados.projecaoTemporal.map(p => p.fluxoCaixaSplit)
+			};
+
+			ChartsManager.gerarGraficoFluxoCaixaComparativo('chart-fluxo-comparativo', dadosFluxo);
+
+			// Outros gráficos conforme necessário
+		}
+	},
 
     /**
      * Gera gráficos para visualização dos resultados
