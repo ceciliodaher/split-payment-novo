@@ -309,3 +309,120 @@ button:hover {
         flex-direction: column;
     }
 }
+
+/* Estilos para estratégias de mitigação */
+.strategy-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.strategy-tab-button {
+    padding: 8px 12px;
+    margin-right: 5px;
+    margin-bottom: -1px;
+    border: 1px solid transparent;
+    border-radius: 4px 4px 0 0;
+    background-color: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.strategy-tab-button:hover {
+    background-color: #f8f9fa;
+    border-color: #ddd #ddd transparent;
+}
+
+.strategy-tab-button.active {
+    background-color: #fff;
+    border-color: #ddd #ddd #fff;
+    font-weight: bold;
+}
+
+.strategy-tab-content {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    margin-bottom: 20px;
+}
+
+/* Estilos para resultados de estratégias */
+.result-section {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #4285F4;
+}
+
+.result-section h4 {
+    margin-top: 0;
+    color: #333;
+    font-weight: bold;
+}
+
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.result-item:last-child {
+    border-bottom: none;
+}
+
+.result-label {
+    font-weight: 500;
+    color: #555;
+}
+
+.result-value {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Estilos para análise avançada */
+.indice-sensibilidade {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 150px;
+    position: relative;
+}
+
+.indice-valor {
+    position: absolute;
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.indice-classificacao {
+    position: absolute;
+    bottom: 10px;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.classificacao-alto {
+    color: #e74c3c;
+}
+
+.classificacao-medio-alto {
+    color: #e67e22;
+}
+
+.classificacao-medio {
+    color: #f39c12;
+}
+
+.classificacao-medio-baixo {
+    color: #2ecc71;
+}
+
+.classificacao-baixo {
+    color: #27ae60;
+}

@@ -34,11 +34,19 @@ document.addEventListener('DOMContentLoaded', function() {
         ModalManager.inicializar();
     }
     
+    // Inicializar gerenciador de gráficos
+    if (typeof ChartsManager !== 'undefined') {
+        ChartsManager.init();
+    }
+    
     // Inicializar eventos específicos da página principal
     inicializarEventosPrincipais();
     
     // Adicionar observadores para mudanças de aba
     observarMudancasDeAba();
+    
+    // Inicializar estratégias de mitigação
+    inicializarEstrategiasMitigacao();
     
     console.log('Simulador de Split Payment inicializado com sucesso');
 });
@@ -174,6 +182,79 @@ function inicializarEventosPrincipais() {
 }
 
 /**
+ * Inicialização das estratégias de mitigação
+ */
+function inicializarEstrategiasMitigacao() {
+    console.log('Inicializando gerenciador de estratégias de mitigação');
+    
+    // Configuração dos botões de estratégias
+    document.querySelectorAll('.strategy-tab-button').forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover classe ativa de todos os botões
+            document.querySelectorAll('.strategy-tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Adicionar classe ativa ao botão clicado
+            this.classList.add('active');
+            
+            // Esconder todos os conteúdos
+            document.querySelectorAll('.strategy-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Mostrar o conteúdo correspondente
+            const estrategiaId = this.getAttribute('data-strategy-tab');
+            document.getElementById('strategy-' + estrategiaId).style.display = 'block';
+        });
+    });
+    
+    // Inicializar botões de cálculo de estratégias
+    inicializarBotaoAjustePrecos();
+    inicializarBotaoRenegociacaoPrazos();
+    
+    console.log('Gerenciador de estratégias de mitigação inicializado');
+}
+
+/**
+ * Inicializa o botão de ajuste de preços
+ */
+function inicializarBotaoAjustePrecos() {
+    const btnAjustePrecos = document.getElementById('btn-calcular-ajuste-precos');
+    if (btnAjustePrecos) {
+        btnAjustePrecos.addEventListener('click', function() {
+            console.log('Calculando estratégia de ajuste de preços');
+            
+            // Verificar se ChartsManager está disponível
+            if (typeof ChartsManager !== 'undefined') {
+                ChartsManager.renderizarGraficoAjustePrecos();
+            } else {
+                console.error('ChartsManager não está disponível');
+            }
+        });
+    }
+}
+
+/**
+ * Inicializa o botão de renegociação de prazos
+ */
+function inicializarBotaoRenegociacaoPrazos() {
+    const btnRenegociacaoPrazos = document.getElementById('btn-calcular-renegociacao-prazos');
+    if (btnRenegociacaoPrazos) {
+        btnRenegociacaoPrazos.addEventListener('click', function() {
+            console.log('Calculando estratégia de renegociação de prazos');
+            
+            // Verificar se ChartsManager está disponível
+            if (typeof ChartsManager !== 'undefined') {
+                ChartsManager.renderizarGraficoRenegociacaoPrazos();
+            } else {
+                console.error('ChartsManager não está disponível');
+            }
+        });
+    }
+}
+
+/**
  * Observar mudanças de aba para atualizar dados quando necessário
  */
 function observarMudancasDeAba() {
@@ -185,6 +266,14 @@ function observarMudancasDeAba() {
         if (tabId === 'simulacao') {
             SetoresManager.preencherDropdownSetores('setor');
             console.log('Dropdown de setores atualizado na aba de simulação');
+        }
+        
+        // Se a aba de estratégias for ativada, atualizar os gráficos
+        if (tabId === 'estrategias') {
+            if (typeof ChartsManager !== 'undefined') {
+                ChartsManager.atualizarTodosGraficos();
+                console.log('Gráficos de estratégias atualizados');
+            }
         }
     });
 }
