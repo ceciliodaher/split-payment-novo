@@ -1786,7 +1786,7 @@ function calcularImpactoCapitalGiroAmpliado(dados, ano) {
         impactoEfetivo: impactoEfetivo,
         impactoDiasFaturamento: impactoDiasFaturamento
     };
-},
+}
 
 /**
  * Calcula o impacto no ciclo financeiro da empresa
@@ -1823,7 +1823,7 @@ function calcularImpactoCicloFinanceiro(dados, ano) {
         cicloFinanceiroSplit: cicloFinanceiroSplit,
         percentualReducao: (reducaoCiclo / cicloFinanceiroAtual) * 100
     };
-},
+}
 
 /**
  * Calcula o Fluxo de Caixa Descontado Ajustado para o split payment
@@ -1886,7 +1886,7 @@ function calcularFluxoCaixaDescontadoAjustado(dados, anoInicial, anoFinal) {
     }
     
     return resultado;
-},
+}
 
 /**
  * Obtém o percentual de implementação do split payment para um determinado ano
@@ -1906,7 +1906,7 @@ function obterPercentualImplementacao(ano) {
     };
     
     return cronograma[ano] || 0;
-},
+}
 
 /**
  * Calcula o Índice de Sensibilidade Setorial

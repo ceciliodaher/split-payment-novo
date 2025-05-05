@@ -9,6 +9,33 @@ const ChartsManager = {
     init: function() {
         console.log('Inicializando gerenciador de gráficos avançados');
     },
+    
+    // Adicionar ao arquivo js/ui/charts-manager.js
+    // Localizar a definição do objeto ChartsManager e adicionar a seguinte função:
+
+    atualizarTodosGraficos: function() {
+        console.log("Atualizando todos os gráficos");
+
+        // Verificar se há resultados de simulação disponíveis
+        if (!window.interfaceState || !window.interfaceState.resultadosSimulacao) {
+            console.log("Nenhum resultado de simulação disponível para atualizar gráficos");
+            return;
+        }
+
+        // Atualizar cada tipo de gráfico se a função correspondente existir
+        if (typeof this.atualizarGraficoFluxoCaixa === 'function') {
+            this.atualizarGraficoFluxoCaixa(window.interfaceState.resultadosSimulacao);
+        }
+
+        if (typeof this.atualizarGraficoImpactoAnual === 'function') {
+            this.atualizarGraficoImpactoAnual(window.interfaceState.resultadosSimulacao);
+        }
+
+        if (typeof this.atualizarGraficoEstrategias === 'function' && 
+            window.interfaceState.estrategiasMitigacao) {
+            this.atualizarGraficoEstrategias(window.interfaceState.estrategiasMitigacao);
+        }
+    },
 
     /**
      * Gera o gráfico de fluxo de caixa comparativo entre os regimes

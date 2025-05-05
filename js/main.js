@@ -185,6 +185,21 @@ function inicializarEventosPrincipais() {
  * Inicialização das estratégias de mitigação
  */
 function inicializarEstrategiasMitigacao() {
+    // Verificar se a simulação já foi realizada
+    if (!window.interfaceState || !window.interfaceState.resultadosSimulacao) {
+        console.log("Simulação não realizada. Estratégias de mitigação não inicializadas.");
+        return;
+    }
+
+    // Verificar se o elemento existe antes de tentar acessá-lo
+    const containerEstrategias = document.getElementById('estrategias-container');
+    if (!containerEstrategias) {
+        console.log("Elemento 'estrategias-container' não encontrado. Tentando novamente em 500ms...");
+        // Tentar novamente após um curto delay para dar tempo ao DOM de carregar
+        setTimeout(inicializarEstrategiasMitigacao, 500);
+        return;
+    }
+
     console.log('Inicializando gerenciador de estratégias de mitigação');
     
     // Configuração dos botões de estratégias
