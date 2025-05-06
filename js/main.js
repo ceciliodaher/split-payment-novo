@@ -77,29 +77,160 @@ function inicializarEventosPrincipais() {
     // Eventos para exportação
     const btnExportarPDF = document.getElementById('btn-exportar-pdf');
     if (btnExportarPDF) {
-        btnExportarPDF.addEventListener('click', function() {
-            if (typeof ExportTools !== 'undefined') {
-                ExportTools.exportarParaPDF();
-            }
-        });
+        btnExportarPDF.addEventListener('click', exportarParaPDF);
     }
-    
+
     const btnExportarExcel = document.getElementById('btn-exportar-excel');
     if (btnExportarExcel) {
-        btnExportarExcel.addEventListener('click', function() {
-            if (typeof ExportTools !== 'undefined') {
-                ExportTools.exportarParaExcel();
-            }
-        });
+        btnExportarExcel.addEventListener('click', exportarParaExcel);
     }
-    
+
     const btnExportarMemoria = document.getElementById('btn-exportar-memoria');
     if (btnExportarMemoria) {
-        btnExportarMemoria.addEventListener('click', function() {
-            if (typeof ExportTools !== 'undefined') {
-                ExportTools.exportarMemoriaCalculo();
+        btnExportarMemoria.addEventListener('click', exportarMemoriaCalculo);
+    }
+
+    // Função para exportar para PDF
+    function exportarParaPDF() {
+        if (!resultados || Object.keys(resultados).length === 0) {
+            alert('Execute uma simulação antes de exportar os resultados.');
+            return;
+        }
+
+        try {
+            // Solicitar nome do arquivo ao usuário
+            const nomeArquivo = solicitarNomeArquivo('pdf', 'simulacao-reforma-tributaria');
+            if (!nomeArquivo) {
+                return; // Usuário cancelou
             }
-        });
+
+            // Inicializar o exportador de PDF
+            PDFExporter.init({
+                logoEnabled: true,
+                colors: {
+                    primary: [52, 152, 219],      // Azul principal
+                    secondary: [46, 204, 113],    // Verde
+                    accent: [231, 76, 60],        // Vermelho
+                    neutral: [127, 140, 141],     // Cinza
+                    highlight: [155, 89, 182]     // Roxo
+                }
+            });
+
+            // Exportar o relatório
+            PDFExporter.exportarRelatorio(
+                obterDadosSimulacao(),
+                resultados,
+                aliquotasEquivalentes,
+                configuracao,
+                () => document.getElementById('memoria-calculo').textContent
+            ).then(resultado => {
+                if (resultado && resultado.success) {
+                    console.log('PDF exportado com sucesso:', resultado.fileName);
+                }
+            }).catch(erro => {
+                console.error('Erro ao exportar PDF:', erro);
+                alert(`Erro ao exportar para PDF: ${erro.message || 'Erro desconhecido'}`);
+            });
+        } catch (erro) {
+            console.error('Erro ao exportar PDF:', erro);
+            alert(`Erro ao exportar para PDF: ${erro.message || 'Erro desconhecido'}`);
+        }
+    }
+
+    // Função para exportar para Excel
+    function exportarParaExcel() {
+        if (!resultados || Object.keys(resultados).length === 0) {
+            alert('Execute uma simulação antes de exportar os resultados.');
+            return;
+        }
+
+        try {
+            // Inicializar o exportador de Excel
+            ExcelExporter.init({
+                colors: {
+                    primary: 'FF3498DB',      // Azul principal
+                    secondary: '2ECC71',      // Verde
+                    accent: 'E74C3C',         // Vermelho
+                    neutral: '7F8C8D',        // Cinza
+                    highlight: '9B59B6'       // Roxo
+                }
+            });
+
+            // Exportar o relatório
+            ExcelExporter.exportarRelatorio(
+                obterDadosSimulacao(),
+                resultados,
+                aliquotasEquivalentes,
+                configuracao,
+                () => document.getElementById('memoria-calculo').textContent
+            ).then(resultado => {
+                if (resultado && resultado.success) {
+                    console.log('Excel exportado com sucesso:', resultado.fileName);
+                }
+            }).catch(erro => {
+                console.error('Erro ao exportar Excel:', erro);
+                alert(`Erro ao exportar para Excel: ${erro.message || 'Erro desconhecido'}`);
+            });
+        } catch (erro) {
+            console.error('Erro ao exportar Excel:', erro);
+            alert(`Erro ao exportar para Excel: ${erro.message || 'Erro desconhecido'}`);
+        }
+    }
+
+    // Função para exportar memória de cálculo
+    function exportarMemoriaCalculo() {
+        const texto = document.getElementById('memoria-calculo').textContent;
+        if (!texto || texto.trim() === '') {
+            alert('Não há memória de cálculo para exportar. Execute uma simulação primeiro.');
+            return;
+        }
+
+        try {
+            // Solicitar nome do arquivo ao usuário
+            const nomeArquivo = solicitarNomeArquivo('txt', 'memoria-calculo');
+            if (!nomeArquivo) {
+                return; // Usuário cancelou
+            }
+
+            // Criar e baixar o arquivo
+            const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nomeArquivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            console.log('Memória de cálculo exportada com sucesso:', nomeArquivo);
+        } catch (erro) {
+            console.error('Erro ao exportar memória de cálculo:', erro);
+            alert(`Erro ao exportar memória de cálculo: ${erro.message || 'Erro desconhecido'}`);
+        }
+    }
+
+    // Função para obter os dados da simulação no formato esperado pelos exportadores
+    function obterDadosSimulacao() {
+        return {
+            // Dados da empresa
+            faturamento: obterValorNumerico(document.getElementById('faturamento')),
+            custosTributaveis: obterValorNumerico(document.getElementById('custos')),
+            custosICMS: obterValorNumerico(document.getElementById('custos_icms')),
+            custosSimples: obterValorNumerico(document.getElementById('custos_simples')),
+            creditosAnteriores: obterValorNumerico(document.getElementById('creditos_anteriores')),
+
+            // Configurações setoriais
+            setor: document.getElementById('setor').value,
+            regime: document.getElementById('regime').value,
+            cargaAtual: parseFloat(document.getElementById('carga_atual').value),
+            aliquotaEntrada: parseFloat(document.getElementById('aliquota_entrada').value),
+            aliquotaSaida: parseFloat(document.getElementById('aliquota_saida').value),
+
+            // Parâmetros da simulação
+            anoInicial: parseInt(document.getElementById('ano_inicial').value),
+            anoFinal: parseInt(document.getElementById('ano_final').value)
+        };
     }
     
     // Eventos para exportação de estratégias
@@ -228,7 +359,25 @@ function inicializarEstrategiasMitigacao() {
     inicializarBotaoAjustePrecos();
     inicializarBotaoRenegociacaoPrazos();
     
-    console.log('Gerenciador de estratégias de mitigação inicializado');
+    // Integração com o módulo ExportTools
+    window.ExportTools = ExportTools;
+
+    // Registrar funções alternativas de exportação utilizando o módulo ExportTools
+    window.exportarPDFAlternativo = function() {
+        ExportTools.exportarParaPDF();
+    };
+
+    window.exportarExcelAlternativo = function() {
+        ExportTools.exportarParaExcel();
+    };
+
+    window.exportarMemoriaCalculoAlternativo = function() {
+        ExportTools.exportarMemoriaCalculo();
+    };
+
+    console.log('Módulos de exportação integrados com sucesso.');
+    
+    console.log('Simulador de Split Payment inicializado com sucesso');
 }
 
 /**
