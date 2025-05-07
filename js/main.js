@@ -34,19 +34,11 @@ document.addEventListener('DOMContentLoaded', function() {
         ModalManager.inicializar();
     }
     
-    // Inicializar gerenciador de gráficos
-    if (typeof ChartsManager !== 'undefined') {
-        ChartsManager.init();
-    }
-    
     // Inicializar eventos específicos da página principal
     inicializarEventosPrincipais();
     
     // Adicionar observadores para mudanças de aba
     observarMudancasDeAba();
-    
-    // Inicializar estratégias de mitigação
-    inicializarEstrategiasMitigacao();
     
     console.log('Simulador de Split Payment inicializado com sucesso');
 });
@@ -77,160 +69,29 @@ function inicializarEventosPrincipais() {
     // Eventos para exportação
     const btnExportarPDF = document.getElementById('btn-exportar-pdf');
     if (btnExportarPDF) {
-        btnExportarPDF.addEventListener('click', exportarParaPDF);
+        btnExportarPDF.addEventListener('click', function() {
+            if (typeof ExportTools !== 'undefined') {
+                ExportTools.exportarParaPDF();
+            }
+        });
     }
-
+    
     const btnExportarExcel = document.getElementById('btn-exportar-excel');
     if (btnExportarExcel) {
-        btnExportarExcel.addEventListener('click', exportarParaExcel);
+        btnExportarExcel.addEventListener('click', function() {
+            if (typeof ExportTools !== 'undefined') {
+                ExportTools.exportarParaExcel();
+            }
+        });
     }
-
+    
     const btnExportarMemoria = document.getElementById('btn-exportar-memoria');
     if (btnExportarMemoria) {
-        btnExportarMemoria.addEventListener('click', exportarMemoriaCalculo);
-    }
-
-    // Função para exportar para PDF
-    function exportarParaPDF() {
-        if (!resultados || Object.keys(resultados).length === 0) {
-            alert('Execute uma simulação antes de exportar os resultados.');
-            return;
-        }
-
-        try {
-            // Solicitar nome do arquivo ao usuário
-            const nomeArquivo = solicitarNomeArquivo('pdf', 'simulacao-reforma-tributaria');
-            if (!nomeArquivo) {
-                return; // Usuário cancelou
+        btnExportarMemoria.addEventListener('click', function() {
+            if (typeof ExportTools !== 'undefined') {
+                ExportTools.exportarMemoriaCalculo();
             }
-
-            // Inicializar o exportador de PDF
-            PDFExporter.init({
-                logoEnabled: true,
-                colors: {
-                    primary: [52, 152, 219],      // Azul principal
-                    secondary: [46, 204, 113],    // Verde
-                    accent: [231, 76, 60],        // Vermelho
-                    neutral: [127, 140, 141],     // Cinza
-                    highlight: [155, 89, 182]     // Roxo
-                }
-            });
-
-            // Exportar o relatório
-            PDFExporter.exportarRelatorio(
-                obterDadosSimulacao(),
-                resultados,
-                aliquotasEquivalentes,
-                configuracao,
-                () => document.getElementById('memoria-calculo').textContent
-            ).then(resultado => {
-                if (resultado && resultado.success) {
-                    console.log('PDF exportado com sucesso:', resultado.fileName);
-                }
-            }).catch(erro => {
-                console.error('Erro ao exportar PDF:', erro);
-                alert(`Erro ao exportar para PDF: ${erro.message || 'Erro desconhecido'}`);
-            });
-        } catch (erro) {
-            console.error('Erro ao exportar PDF:', erro);
-            alert(`Erro ao exportar para PDF: ${erro.message || 'Erro desconhecido'}`);
-        }
-    }
-
-    // Função para exportar para Excel
-    function exportarParaExcel() {
-        if (!resultados || Object.keys(resultados).length === 0) {
-            alert('Execute uma simulação antes de exportar os resultados.');
-            return;
-        }
-
-        try {
-            // Inicializar o exportador de Excel
-            ExcelExporter.init({
-                colors: {
-                    primary: 'FF3498DB',      // Azul principal
-                    secondary: '2ECC71',      // Verde
-                    accent: 'E74C3C',         // Vermelho
-                    neutral: '7F8C8D',        // Cinza
-                    highlight: '9B59B6'       // Roxo
-                }
-            });
-
-            // Exportar o relatório
-            ExcelExporter.exportarRelatorio(
-                obterDadosSimulacao(),
-                resultados,
-                aliquotasEquivalentes,
-                configuracao,
-                () => document.getElementById('memoria-calculo').textContent
-            ).then(resultado => {
-                if (resultado && resultado.success) {
-                    console.log('Excel exportado com sucesso:', resultado.fileName);
-                }
-            }).catch(erro => {
-                console.error('Erro ao exportar Excel:', erro);
-                alert(`Erro ao exportar para Excel: ${erro.message || 'Erro desconhecido'}`);
-            });
-        } catch (erro) {
-            console.error('Erro ao exportar Excel:', erro);
-            alert(`Erro ao exportar para Excel: ${erro.message || 'Erro desconhecido'}`);
-        }
-    }
-
-    // Função para exportar memória de cálculo
-    function exportarMemoriaCalculo() {
-        const texto = document.getElementById('memoria-calculo').textContent;
-        if (!texto || texto.trim() === '') {
-            alert('Não há memória de cálculo para exportar. Execute uma simulação primeiro.');
-            return;
-        }
-
-        try {
-            // Solicitar nome do arquivo ao usuário
-            const nomeArquivo = solicitarNomeArquivo('txt', 'memoria-calculo');
-            if (!nomeArquivo) {
-                return; // Usuário cancelou
-            }
-
-            // Criar e baixar o arquivo
-            const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = nomeArquivo;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-
-            console.log('Memória de cálculo exportada com sucesso:', nomeArquivo);
-        } catch (erro) {
-            console.error('Erro ao exportar memória de cálculo:', erro);
-            alert(`Erro ao exportar memória de cálculo: ${erro.message || 'Erro desconhecido'}`);
-        }
-    }
-
-    // Função para obter os dados da simulação no formato esperado pelos exportadores
-    function obterDadosSimulacao() {
-        return {
-            // Dados da empresa
-            faturamento: obterValorNumerico(document.getElementById('faturamento')),
-            custosTributaveis: obterValorNumerico(document.getElementById('custos')),
-            custosICMS: obterValorNumerico(document.getElementById('custos_icms')),
-            custosSimples: obterValorNumerico(document.getElementById('custos_simples')),
-            creditosAnteriores: obterValorNumerico(document.getElementById('creditos_anteriores')),
-
-            // Configurações setoriais
-            setor: document.getElementById('setor').value,
-            regime: document.getElementById('regime').value,
-            cargaAtual: parseFloat(document.getElementById('carga_atual').value),
-            aliquotaEntrada: parseFloat(document.getElementById('aliquota_entrada').value),
-            aliquotaSaida: parseFloat(document.getElementById('aliquota_saida').value),
-
-            // Parâmetros da simulação
-            anoInicial: parseInt(document.getElementById('ano_inicial').value),
-            anoFinal: parseInt(document.getElementById('ano_final').value)
-        };
+        });
     }
     
     // Eventos para exportação de estratégias
@@ -313,112 +174,6 @@ function inicializarEventosPrincipais() {
 }
 
 /**
- * Inicialização das estratégias de mitigação
- */
-function inicializarEstrategiasMitigacao() {
-    // Verificar se a simulação já foi realizada
-    if (!window.interfaceState || !window.interfaceState.resultadosSimulacao) {
-        console.log("Simulação não realizada. Estratégias de mitigação não inicializadas.");
-        return;
-    }
-
-    // Verificar se o elemento existe antes de tentar acessá-lo
-    const containerEstrategias = document.getElementById('estrategias-container');
-    if (!containerEstrategias) {
-        console.log("Elemento 'estrategias-container' não encontrado. Tentando novamente em 500ms...");
-        // Tentar novamente após um curto delay para dar tempo ao DOM de carregar
-        setTimeout(inicializarEstrategiasMitigacao, 500);
-        return;
-    }
-
-    console.log('Inicializando gerenciador de estratégias de mitigação');
-    
-    // Configuração dos botões de estratégias
-    document.querySelectorAll('.strategy-tab-button').forEach(button => {
-        button.addEventListener('click', function() {
-            // Remover classe ativa de todos os botões
-            document.querySelectorAll('.strategy-tab-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Adicionar classe ativa ao botão clicado
-            this.classList.add('active');
-            
-            // Esconder todos os conteúdos
-            document.querySelectorAll('.strategy-tab-content').forEach(content => {
-                content.style.display = 'none';
-            });
-            
-            // Mostrar o conteúdo correspondente
-            const estrategiaId = this.getAttribute('data-strategy-tab');
-            document.getElementById('strategy-' + estrategiaId).style.display = 'block';
-        });
-    });
-    
-    // Inicializar botões de cálculo de estratégias
-    inicializarBotaoAjustePrecos();
-    inicializarBotaoRenegociacaoPrazos();
-    
-    // Integração com o módulo ExportTools
-    window.ExportTools = ExportTools;
-
-    // Registrar funções alternativas de exportação utilizando o módulo ExportTools
-    window.exportarPDFAlternativo = function() {
-        ExportTools.exportarParaPDF();
-    };
-
-    window.exportarExcelAlternativo = function() {
-        ExportTools.exportarParaExcel();
-    };
-
-    window.exportarMemoriaCalculoAlternativo = function() {
-        ExportTools.exportarMemoriaCalculo();
-    };
-
-    console.log('Módulos de exportação integrados com sucesso.');
-    
-    console.log('Simulador de Split Payment inicializado com sucesso');
-}
-
-/**
- * Inicializa o botão de ajuste de preços
- */
-function inicializarBotaoAjustePrecos() {
-    const btnAjustePrecos = document.getElementById('btn-calcular-ajuste-precos');
-    if (btnAjustePrecos) {
-        btnAjustePrecos.addEventListener('click', function() {
-            console.log('Calculando estratégia de ajuste de preços');
-            
-            // Verificar se ChartsManager está disponível
-            if (typeof ChartsManager !== 'undefined') {
-                ChartsManager.renderizarGraficoAjustePrecos();
-            } else {
-                console.error('ChartsManager não está disponível');
-            }
-        });
-    }
-}
-
-/**
- * Inicializa o botão de renegociação de prazos
- */
-function inicializarBotaoRenegociacaoPrazos() {
-    const btnRenegociacaoPrazos = document.getElementById('btn-calcular-renegociacao-prazos');
-    if (btnRenegociacaoPrazos) {
-        btnRenegociacaoPrazos.addEventListener('click', function() {
-            console.log('Calculando estratégia de renegociação de prazos');
-            
-            // Verificar se ChartsManager está disponível
-            if (typeof ChartsManager !== 'undefined') {
-                ChartsManager.renderizarGraficoRenegociacaoPrazos();
-            } else {
-                console.error('ChartsManager não está disponível');
-            }
-        });
-    }
-}
-
-/**
  * Observar mudanças de aba para atualizar dados quando necessário
  */
 function observarMudancasDeAba() {
@@ -430,14 +185,6 @@ function observarMudancasDeAba() {
         if (tabId === 'simulacao') {
             SetoresManager.preencherDropdownSetores('setor');
             console.log('Dropdown de setores atualizado na aba de simulação');
-        }
-        
-        // Se a aba de estratégias for ativada, atualizar os gráficos
-        if (tabId === 'estrategias') {
-            if (typeof ChartsManager !== 'undefined') {
-                ChartsManager.atualizarTodosGraficos();
-                console.log('Gráficos de estratégias atualizados');
-            }
         }
     });
 }
