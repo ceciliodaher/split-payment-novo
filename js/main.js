@@ -99,7 +99,8 @@ function inicializarEventosPrincipais() {
     if (btnExportarEstrategiasPDF) {
         btnExportarEstrategiasPDF.addEventListener('click', function() {
             if (typeof ExportTools !== 'undefined') {
-                ExportTools.exportarEstrategiasParaPDF();
+                // Chamar a mesma função da aba Simulação
+                ExportTools.exportarParaPDF();
             }
         });
     }
@@ -108,7 +109,8 @@ function inicializarEventosPrincipais() {
     if (btnExportarEstrategiasExcel) {
         btnExportarEstrategiasExcel.addEventListener('click', function() {
             if (typeof ExportTools !== 'undefined') {
-                ExportTools.exportarEstrategiasParaExcel();
+                // Chamar a mesma função da aba Simulação
+                ExportTools.exportarParaExcel();
             }
         });
     }
