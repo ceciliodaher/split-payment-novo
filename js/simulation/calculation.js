@@ -109,66 +109,233 @@ const CalculationModule = (function() {
     };
 })();
 
-/**
- * Calcula o fluxo de caixa no regime tributário atual (pré-Split Payment)
- * 
- * @param {Object} dados - Dados da empresa e parâmetros de simulação
- * @returns {Object} - Resultados detalhados do fluxo de caixa atual
- */
-function calcularFluxoCaixaAtual(dados) {
-    // Extrair parâmetros relevantes
-    const faturamento = dados.faturamento;
-    const aliquota = dados.aliquota;
-    const pmr = dados.pmr;
-    const percVista = dados.percVista;
-    const percPrazo = dados.percPrazo;
-    const creditos = dados.creditos || 0;
-    
-    // Cálculos do fluxo de caixa atual
-    const valorImpostoTotal = faturamento * aliquota;
-    const valorImpostoLiquido = Math.max(0, valorImpostoTotal - creditos);
-    
-    // Prazo para recolhimento do imposto (padrão: dia 25 do mês seguinte)
-    const prazoRecolhimento = 25;
-    
-    // Cálculo do capital de giro obtido pelo adiamento do pagamento de impostos
-    const capitalGiroImpostos = valorImpostoLiquido;
-    
-    // Cálculo do recebimento das vendas
-    const recebimentoVista = faturamento * percVista;
-    const recebimentoPrazo = faturamento * percPrazo;
-    
-    // Cálculo do tempo médio do capital em giro
-    const tempoMedioCapitalGiro = calcularTempoMedioCapitalGiro(pmr, prazoRecolhimento, percVista, percPrazo);
-    
-    // Benefício financeiro do capital em giro (em dias de faturamento)
-    const beneficioDiasCapitalGiro = (capitalGiroImpostos / faturamento) * tempoMedioCapitalGiro;
-    
-    // Resultado completo
-    return {
-        faturamento,
-        valorImpostoTotal,
-        creditos,
-        valorImpostoLiquido,
-        recebimentoVista,
-        recebimentoPrazo,
-        prazoRecolhimento,
-        capitalGiroDisponivel: capitalGiroImpostos,
-        tempoMedioCapitalGiro,
-        beneficioDiasCapitalGiro,
-        fluxoCaixaLiquido: faturamento - valorImpostoLiquido,
-        memoriaCritica: {
-            tituloRegime: "Regime Atual (Pré-Split Payment)",
-            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
-            tituloCalculo: "Cálculo do Capital de Giro Disponível",
-            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
-            observacoes: [
-                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
-                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`
-            ]
+    /**
+     * Calcula o fluxo de caixa no regime tributário atual (pré-Split Payment)
+     * 
+     * @param {Object} dados - Dados da empresa e parâmetros de simulação
+     * @returns {Object} - Resultados detalhados do fluxo de caixa atual
+     */
+    function calcularFluxoCaixaAtual(dados) {
+        // Extrair parâmetros relevantes
+        const faturamento = dados.faturamento;
+        const aliquota = dados.aliquota;
+        const pmr = dados.pmr;
+        const percVista = dados.percVista;
+        const percPrazo = dados.percPrazo;
+        const creditos = dados.creditos || 0;
+
+        // Cálculos do fluxo de caixa atual
+        const valorImpostoTotal = faturamento * aliquota;
+        const valorImpostoLiquido = Math.max(0, valorImpostoTotal - creditos);
+
+        // Prazo para recolhimento do imposto (padrão: dia 25 do mês seguinte)
+        const prazoRecolhimento = 25;
+
+        // Cálculo do capital de giro obtido pelo adiamento do pagamento de impostos
+        const capitalGiroImpostos = valorImpostoLiquido;
+
+        // Cálculo do recebimento das vendas
+        const recebimentoVista = faturamento * percVista;
+        const recebimentoPrazo = faturamento * percPrazo;
+
+        // Cálculo do tempo médio do capital em giro
+        const tempoMedioCapitalGiro = calcularTempoMedioCapitalGiro(pmr, prazoRecolhimento, percVista, percPrazo);
+
+        // Benefício financeiro do capital em giro (em dias de faturamento)
+        const beneficioDiasCapitalGiro = (capitalGiroImpostos / faturamento) * tempoMedioCapitalGiro;
+
+        // Resultado completo
+        const resultado = {
+            faturamento,
+            valorImpostoTotal,
+            creditos,
+            valorImpostoLiquido,
+            recebimentoVista,
+            recebimentoPrazo,
+            prazoRecolhimento,
+            capitalGiroDisponivel: capitalGiroImpostos,
+            tempoMedioCapitalGiro,
+            beneficioDiasCapitalGiro,
+            fluxoCaixaLiquido: faturamento - valorImpostoLiquido,
+            // Expandir memoriaCritica para incluir mais detalhes
+            memoriaCritica: {
+                tituloRegime: "Regime Atual (Pré-Split Payment)",
+                descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+                tituloCalculo: "Cálculo do Capital de Giro Disponível",
+                formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+                passoAPasso: [
+                    `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                    `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                    `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+                ],
+                observacoes: [
+                    `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                    `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                    `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
+                ]
+            }
+        };
+
+        return resultado;
+    }
+
+    /**
+     * Gera seção de análise de sensibilidade
+     * @param {Object} dados - Dados da simulação
+     * @param {number} diferencaCapitalGiro - Diferença no capital de giro
+     * @param {number} ano - Ano da simulação
+     * @returns {string} - Texto formatado
+     */
+    // Versão corrigida da função gerarSecaoAnaliseSensibilidade
+    function gerarSecaoAnaliseSensibilidade(dados, diferencaCapitalGiro, ano) {
+        let texto = '';
+
+        // Tabela de sensibilidade para diferentes percentuais de implementação
+        texto += `6.1. SENSIBILIDADE A DIFERENTES PERCENTUAIS DE IMPLEMENTAÇÃO:\n`;
+        texto += `A tabela abaixo mostra o impacto no capital de giro para diferentes percentuais de implementação do Split Payment.\n\n`;
+        texto += `| % Implementação | Impacto no Capital de Giro | % do Impacto Total |\n`;
+        texto += `|----------------|----------------------------|--------------------|\n`;
+
+        const impactoTotal = Math.abs(diferencaCapitalGiro / obterPercentualImplementacao(ano));
+
+        [10, 25, 40, 55, 70, 85, 100].forEach(percentual => {
+            const impactoPercentual = impactoTotal * (percentual / 100);
+            texto += `| ${percentual.toString().padStart(2, ' ')}%            | ${FormatacaoHelper.formatarMoeda(impactoPercentual).padEnd(28, ' ')} | ${percentual.toString().padStart(3, ' ')}%               |\n`;
+        });
+
+        texto += `\n`;
+
+        // Sensibilidade a diferentes taxas de crescimento
+        texto += `6.2. SENSIBILIDADE A DIFERENTES TAXAS DE CRESCIMENTO:\n`;
+        texto += `A tabela abaixo mostra o impacto acumulado para diferentes cenários de crescimento.\n\n`;
+        texto += `| Cenário       | Taxa de Crescimento | Impacto Acumulado (${ano}-2033) |\n`;
+        texto += `|--------------|--------------------|---------------------------------|\n`;
+
+        const cenarios = [
+            { nome: "Recessão", taxa: -0.02 },
+            { nome: "Conservador", taxa: 0.02 },
+            { nome: "Moderado", taxa: 0.05 },
+            { nome: "Otimista", taxa: 0.08 }
+        ];
+
+        cenarios.forEach(cenario => {
+            // Cálculo simplificado do impacto acumulado
+            const anos = 2033 - ano + 1;
+            const fatorAcumulado = (1 - Math.pow(1 + cenario.taxa, anos)) / (1 - (1 + cenario.taxa));
+            const impactoAcumulado = Math.abs(diferencaCapitalGiro) * fatorAcumulado;
+
+            texto += `| ${cenario.nome.padEnd(14, ' ')} | ${(cenario.taxa * 100).toFixed(1).padStart(2, ' ')}%                | ${FormatacaoHelper.formatarMoeda(impactoAcumulado).padEnd(33, ' ')} |\n`;
+        });
+
+        return texto;
+    }
+        
+    /**
+     * Gera seção de análise de sensibilidade
+     * @param {Object} dados - Dados da simulação
+     * @param {number} diferencaCapitalGiro - Diferença no capital de giro
+     * @param {number} ano - Ano da simulação
+     * @returns {string} - Texto formatado
+     */
+    // Versão corrigida da função gerarSecaoAnaliseSensibilidade
+    function gerarSecaoAnaliseSensibilidade(dados, diferencaCapitalGiro, ano) {
+        let texto = '';
+
+        // Tabela de sensibilidade para diferentes percentuais de implementação
+        texto += `6.1. SENSIBILIDADE A DIFERENTES PERCENTUAIS DE IMPLEMENTAÇÃO:\n`;
+        texto += `A tabela abaixo mostra o impacto no capital de giro para diferentes percentuais de implementação do Split Payment.\n\n`;
+        texto += `| % Implementação | Impacto no Capital de Giro | % do Impacto Total |\n`;
+        texto += `|----------------|----------------------------|--------------------|\n`;
+
+        const impactoTotal = Math.abs(diferencaCapitalGiro / obterPercentualImplementacao(ano));
+
+        [10, 25, 40, 55, 70, 85, 100].forEach(percentual => {
+            const impactoPercentual = impactoTotal * (percentual / 100);
+            texto += `| ${percentual.toString().padStart(2, ' ')}%            | ${FormatacaoHelper.formatarMoeda(impactoPercentual).padEnd(28, ' ')} | ${percentual.toString().padStart(3, ' ')}%               |\n`;
+        });
+
+        texto += `\n`;
+
+        // Sensibilidade a diferentes taxas de crescimento
+        texto += `6.2. SENSIBILIDADE A DIFERENTES TAXAS DE CRESCIMENTO:\n`;
+        texto += `A tabela abaixo mostra o impacto acumulado para diferentes cenários de crescimento.\n\n`;
+        texto += `| Cenário       | Taxa de Crescimento | Impacto Acumulado (${ano}-2033) |\n`;
+        texto += `|--------------|--------------------|---------------------------------|\n`;
+
+        const cenarios = [
+            { nome: "Recessão", taxa: -0.02 },
+            { nome: "Conservador", taxa: 0.02 },
+            { nome: "Moderado", taxa: 0.05 },
+            { nome: "Otimista", taxa: 0.08 }
+        ];
+
+        cenarios.forEach(cenario => {
+            // Cálculo simplificado do impacto acumulado
+            const anos = 2033 - ano + 1;
+            const fatorAcumulado = (1 - Math.pow(1 + cenario.taxa, anos)) / (1 - (1 + cenario.taxa));
+            const impactoAcumulado = Math.abs(diferencaCapitalGiro) * fatorAcumulado;
+
+            texto += `| ${cenario.nome.padEnd(14, ' ')} | ${(cenario.taxa * 100).toFixed(1).padStart(2, ' ')}%                | ${FormatacaoHelper.formatarMoeda(impactoAcumulado).padEnd(33, ' ')} |\n`;
+        });
+
+        return texto;
+    }
+
+    // Versão corrigida da função gerarSecaoProjecaoTemporal
+    function gerarSecaoProjecaoTemporal(dados, ano) {
+        let texto = '';
+
+        // Projeção anual até 2033
+        texto += `7.1. PROJEÇÃO ANUAL DO IMPACTO NO CAPITAL DE GIRO:\n`;
+        texto += `A tabela abaixo mostra a projeção do impacto no capital de giro até a implementação completa do Split Payment.\n\n`;
+        texto += `| Ano  | % Implementação | Faturamento Projetado | Impacto no Capital de Giro | Necessidade Adicional |\n`;
+        texto += `|------|----------------|------------------------|----------------------------|------------------------|\n`;
+
+        let faturamentoAtual = dados.faturamento;
+        const taxaCrescimento = dados.taxaCrescimento || (dados.cenario === 'conservador' ? 0.02 : dados.cenario === 'otimista' ? 0.08 : 0.05);
+
+        for (let anoProj = ano; anoProj <= 2033; anoProj++) {
+            const percentualImplementacao = obterPercentualImplementacao(anoProj);
+            const valorImposto = faturamentoAtual * dados.aliquota;
+            const impactoCapitalGiro = -valorImposto * percentualImplementacao;
+            const necessidadeAdicional = Math.abs(impactoCapitalGiro) * 1.2;
+
+            texto += `| ${anoProj} | ${(percentualImplementacao * 100).toFixed(0).padStart(2, ' ')}%            | ${FormatacaoHelper.formatarMoeda(faturamentoAtual).padEnd(24, ' ')} | ${FormatacaoHelper.formatarMoeda(impactoCapitalGiro).padEnd(28, ' ')} | ${FormatacaoHelper.formatarMoeda(necessidadeAdicional).padEnd(24, ' ')} |\n`;
+
+            // Atualizar faturamento para o próximo ano
+            faturamentoAtual *= (1 + taxaCrescimento);
         }
-    };
-}
+
+        texto += `\n`;
+
+        // Cálculo do impacto acumulado
+        texto += `7.2. CÁLCULO DO IMPACTO ACUMULADO (${ano}-2033):\n`;
+
+        let impactoAcumulado = 0;
+        let custoFinanceiroAcumulado = 0;
+        faturamentoAtual = dados.faturamento;
+
+        for (let anoProj = ano; anoProj <= 2033; anoProj++) {
+            const percentualImplementacao = obterPercentualImplementacao(anoProj);
+            const valorImposto = faturamentoAtual * dados.aliquota;
+            const impactoCapitalGiro = -valorImposto * percentualImplementacao;
+            const necessidadeAdicional = Math.abs(impactoCapitalGiro) * 1.2;
+            const custoMensal = necessidadeAdicional * (dados.taxaCapitalGiro || 0.021);
+            const custoAnual = custoMensal * 12;
+
+            impactoAcumulado += necessidadeAdicional;
+            custoFinanceiroAcumulado += custoAnual;
+
+            // Atualizar faturamento para o próximo ano
+            faturamentoAtual *= (1 + taxaCrescimento);
+        }
+
+        texto += `Necessidade Total de Capital de Giro: ${FormatacaoHelper.formatarMoeda(impactoAcumulado)}\n`;
+        texto += `Custo Financeiro Total: ${FormatacaoHelper.formatarMoeda(custoFinanceiroAcumulado)}\n`;
+        texto += `O cálculo considera o crescimento projetado do faturamento de ${(taxaCrescimento * 100).toFixed(1)}% ao ano.\n`;
+
+        return texto;
+    }
 
 /**
  * Calcula o fluxo de caixa com o regime de Split Payment
@@ -219,7 +386,7 @@ function calcularFluxoCaixaSplitPayment(dados, ano = 2026, parametrosSetoriais =
     const beneficioDiasCapitalGiro = (capitalGiroDisponivel / faturamento) * tempoMedioCapitalGiro;
     
     // Resultado completo
-    return {
+    const resultado = {
         faturamento,
         valorImpostoTotal,
         creditos,
@@ -234,17 +401,24 @@ function calcularFluxoCaixaSplitPayment(dados, ano = 2026, parametrosSetoriais =
         beneficioDiasCapitalGiro,
         fluxoCaixaLiquido: recebimentoVista + recebimentoPrazo,
         memoriaCritica: {
-            tituloRegime: `Regime Split Payment (${ano})`,
-            descricaoRegime: `No regime de Split Payment, ${(percentualImplementacao*100).toFixed(1)}% do tributo é retido no momento da transação.`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
             tituloCalculo: "Cálculo do Capital de Giro Disponível",
-            formula: `Capital de Giro = Valor do Imposto Não-Split (${formatarMoeda(valorImpostoNormal)})`,
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `O valor do imposto não afetado pelo Split (${formatarMoeda(valorImpostoNormal)}) fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
-                `O valor do imposto afetado pelo Split (${formatarMoeda(valorImpostoSplit)}) não fica disponível para uso como capital de giro.`,
-                `O Split Payment reduz o benefício de capital de giro em ${(percentualImplementacao*100).toFixed(1)}%.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -277,7 +451,7 @@ function calcularImpactoCapitalGiro(dados, ano = 2026, parametrosSetoriais = nul
     const impactoMargem = calcularImpactoMargem(dados, diferencaCapitalGiro);
     
     // Resultado completo
-    return {
+    const resultado = {
         ano,
         resultadoAtual,
         resultadoSplitPayment,
@@ -290,19 +464,24 @@ function calcularImpactoCapitalGiro(dados, ano = 2026, parametrosSetoriais = nul
         impactoMargem: impactoMargem.impactoPercentual,
         analiseSensibilidade,
         memoriaCritica: {
-            tituloPrincipal: `Análise de Impacto do Split Payment (${ano})`,
-            descricaoImpacto: `O Split Payment reduz o capital de giro disponível em ${formatarMoeda(Math.abs(diferencaCapitalGiro))} (${Math.abs(percentualImpacto).toFixed(2)}%).`,
-            tituloNecessidade: "Necessidade Adicional de Capital de Giro",
-            formulaNecessidade: `Necessidade = |Diferença de Capital| × 1,2 (margem de segurança) = ${formatarMoeda(necesidadeAdicionalCapitalGiro)}`,
-            tituloImpactoMargem: "Impacto na Margem Operacional",
-            descricaoImpactoMargem: `A margem operacional é reduzida de ${(dados.margem*100).toFixed(2)}% para ${((dados.margem - impactoMargem.impactoPercentual/100)*100).toFixed(2)}% devido ao custo financeiro adicional.`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `O impacto representa ${impactoDiasFaturamento.toFixed(1)} dias de faturamento em capital de giro.`,
-                `A necessidade adicional de capital de giro é de ${formatarMoeda(necesidadeAdicionalCapitalGiro)}.`,
-                `Para cada 10% de implementação do Split Payment, o impacto no capital de giro é de aproximadamente ${formatarMoeda(analiseSensibilidade.impactoPor10Percent)}.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -334,7 +513,7 @@ function calcularImpactoMargem(dados, diferencaCapitalGiro) {
     const percentualReducaoMargem = (impactoPercentual / (margem * 100)) * 100;
     
     // Resultado completo
-    return {
+    const resultado = {
         custoMensalCapitalGiro,
         custoAnualCapitalGiro,
         impactoPercentual,
@@ -342,17 +521,24 @@ function calcularImpactoMargem(dados, diferencaCapitalGiro) {
         margemAjustada,
         percentualReducaoMargem,
         memoriaCritica: {
-            tituloCalculo: "Cálculo do Impacto na Margem Operacional",
-            descricaoImpacto: "A necessidade de obtenção de capital de giro adicional gera um custo financeiro que impacta diretamente a margem operacional da empresa.",
-            formulaCusto: `Custo Mensal = |Diferença Capital de Giro| × Taxa do Capital de Giro = ${formatarMoeda(Math.abs(diferencaCapitalGiro))} × ${(taxaCapitalGiro*100).toFixed(1)}% = ${formatarMoeda(custoMensalCapitalGiro)}`,
-            formulaImpacto: `Impacto na Margem (p.p.) = (Custo Mensal / Faturamento) × 100 = (${formatarMoeda(custoMensalCapitalGiro)} / ${formatarMoeda(faturamento)}) × 100 = ${impactoPercentual.toFixed(2)} p.p.`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `A margem operacional é reduzida de ${(margem*100).toFixed(2)}% para ${(margemAjustada*100).toFixed(2)}%.`,
-                `Isso representa uma redução de ${percentualReducaoMargem.toFixed(2)}% na margem operacional original.`,
-                `O custo anual estimado é de ${formatarMoeda(custoAnualCapitalGiro)}.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -391,7 +577,7 @@ function calcularNecessidadeAdicionalCapital(dados, ano = 2026, parametrosSetori
     const impactoResultado = calcularImpactoResultado(dados, opcoesFinanciamento.opcaoRecomendada.custoAnual);
     
     // Resultado completo
-    return {
+    const resultado = {
         necesidadeBasica,
         fatorMargemSeguranca,
         fatorSazonalidade,
@@ -403,20 +589,24 @@ function calcularNecessidadeAdicionalCapital(dados, ano = 2026, parametrosSetori
         opcoesFinanciamento,
         impactoResultado,
         memoriaCritica: {
-            tituloCalculo: "Cálculo da Necessidade Adicional de Capital",
-            formulaBase: `Necessidade Base = |Diferença Capital de Giro| = ${formatarMoeda(necesidadeBasica)}`,
-            formulaTotal: `Necessidade Total = Necessidade Base × Fatores de Ajuste = ${formatarMoeda(necesidadeBasica)} × ${fatorMargemSeguranca.toFixed(2)} (segurança) × ${fatorSazonalidade.toFixed(2)} (sazonalidade) × ${fatorCrescimento.toFixed(2)} (crescimento) = ${formatarMoeda(necessidadeTotal)}`,
-            tituloOpcoes: "Opções de Financiamento",
-            descricaoRecomendada: `A opção recomendada é ${opcoesFinanciamento.opcaoRecomendada.tipo}, com custo anual de ${formatarMoeda(opcoesFinanciamento.opcaoRecomendada.custoAnual)}.`,
-            tituloImpacto: "Impacto no Resultado",
-            descricaoImpacto: `O custo de financiamento representará ${impactoResultado.percentualDaReceita.toFixed(2)}% da receita e ${impactoResultado.percentualDoLucro.toFixed(2)}% do lucro operacional.`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `Considerando a sazonalidade, a necessidade pode chegar a ${formatarMoeda(necessidadeComSazonalidade)}.`,
-                `O crescimento projetado para ${ano} aumenta a necessidade para ${formatarMoeda(necessidadeComCrescimento)}.`,
-                `A necessidade total, com todos os fatores, é de ${formatarMoeda(necessidadeTotal)}.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -479,7 +669,7 @@ function calcularProjecaoTemporal(dados, anoInicial = 2026, anoFinal = 2033, cen
     const analiseElasticidade = calcularAnaliseElasticidade(dados, anoInicial, anoFinal, parametrosSetoriais);
     
     // Resultado completo
-    return {
+    const resultado = {
         parametros: {
             anoInicial,
             anoFinal,
@@ -490,21 +680,24 @@ function calcularProjecaoTemporal(dados, anoInicial = 2026, anoFinal = 2033, cen
         impactoAcumulado,
         analiseElasticidade,
         memoriaCritica: {
-            tituloProjecao: `Projeção Temporal (${anoInicial}-${anoFinal})`,
-            descricaoCenario: `Cenário de crescimento: ${cenarioTaxaCrescimento} (${(taxaCrescimento*100).toFixed(1)}% a.a.)`,
-            tituloImpactoAcumulado: "Impacto Acumulado",
-            descricaoImpactoAcumulado: `O impacto acumulado ao longo do período é de ${formatarMoeda(impactoAcumulado.totalNecessidadeCapitalGiro)} em necessidade de capital de giro.`,
-            tituloCustoFinanceiro: "Custo Financeiro Total",
-            descricaoCustoFinanceiro: `O custo financeiro total estimado é de ${formatarMoeda(impactoAcumulado.custoFinanceiroTotal)}.`,
-            tituloImpactoMargem: "Impacto Médio na Margem",
-            descricaoImpactoMargem: `O impacto médio na margem operacional é de ${impactoAcumulado.impactoMedioMargem.toFixed(2)} pontos percentuais.`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `A necessidade de capital de giro aumenta ao longo do tempo devido à combinação do aumento do percentual de implementação do Split Payment e do crescimento do faturamento.`,
-                `O impacto é mais significativo nos anos finais da transição (2031-2033).`,
-                `O custo financeiro representa ${((impactoAcumulado.custoFinanceiroTotal / (dados.faturamento * numAnos * (1 + taxaCrescimento/2))) * 100).toFixed(2)}% do faturamento acumulado no período.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -549,7 +742,7 @@ function calcularImpactoCicloFinanceiro(dados, ano = 2026, parametrosSetoriais =
     const diferencaNCG = ncgAjustada - ncgAtual;
     
     // Resultado completo
-    return {
+    const resultado = {
         cicloFinanceiroAtual,
         cicloFinanceiroAjustado,
         diasAdicionais,
@@ -559,20 +752,24 @@ function calcularImpactoCicloFinanceiro(dados, ano = 2026, parametrosSetoriais =
         diferencaNCG,
         // Resto do código...
         memoriaCritica: {
-            tituloCalculo: "Cálculo do Impacto no Ciclo Financeiro",
-            formulaCicloAtual: `Ciclo Financeiro Atual = PMR + PME - PMP = ${pmr} + ${pme} - ${pmp} = ${cicloFinanceiroAtual} dias`,
-            formulaImpactoDias: `Impacto em Dias Adicionais = (Imposto Split / Faturamento) × 30 = (${formatarMoeda(impostoSplit)} / ${formatarMoeda(faturamento)}) × 30 = ${diasAdicionais.toFixed(2)} dias`,
-            formulaCicloAjustado: `Ciclo Financeiro Ajustado = Ciclo Atual + Dias Adicionais = ${cicloFinanceiroAtual} + ${diasAdicionais.toFixed(2)} = ${cicloFinanceiroAjustado.toFixed(2)} dias`,
-            tituloImpactoNCG: "Impacto na Necessidade de Capital de Giro (NCG)",
-            formulaNCGAtual: `NCG Atual = (Faturamento / 30) × Ciclo Atual = (${formatarMoeda(faturamento)} / 30) × ${cicloFinanceiroAtual} = ${formatarMoeda(ncgAtual)}`,
-            formulaNCGAjustada: `NCG Ajustada = (Faturamento / 30) × Ciclo Ajustado = (${formatarMoeda(faturamento)} / 30) × ${cicloFinanceiroAjustado.toFixed(2)} = ${formatarMoeda(ncgAjustada)}`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `O Split Payment aumenta o ciclo financeiro em ${diasAdicionais.toFixed(2)} dias.`,
-                `A necessidade de capital de giro aumenta em ${formatarMoeda(diferencaNCG)}.`,
-                `Este aumento ocorre porque a empresa deixa de ter disponível o valor dos impostos como capital de giro.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -613,7 +810,7 @@ function calcularEfeitividadeMitigacao(dados, estrategias, ano = 2026, parametro
     const combinacaoOtima = identificarCombinacaoOtima(dados, estrategias, resultadosEstrategias, impactoBase);
     
     // Resultado completo
-    return {
+    const resultado = {
         impactoBase,
         resultadosEstrategias,
         efeitividadeCombinada,
@@ -621,23 +818,24 @@ function calcularEfeitividadeMitigacao(dados, estrategias, ano = 2026, parametro
         estrategiaMaisEfetiva,
         combinacaoOtima,
         memoriaCritica: {
-            tituloAnalise: "Análise de Efetividade das Estratégias de Mitigação",
-            descricaoImpactoBase: `O impacto base do Split Payment é uma redução de ${formatarMoeda(Math.abs(impactoBase.diferencaCapitalGiro))} no capital de giro.`,
-            tituloEfetividadeCombinada: "Efetividade Combinada das Estratégias",
-            descricaoEfetividadeCombinada: `A aplicação combinada das estratégias selecionadas mitiga ${efeitividadeCombinada.efetividadePercentual.toFixed(2)}% do impacto.`,
-            tituloEstrategiaMaisEfetiva: "Estratégia Mais Efetiva",
-            descricaoEstrategiaMaisEfetiva: estrategiaMaisEfetiva ? 
-                `A estratégia mais efetiva é ${traduzirNomeEstrategia(estrategiaMaisEfetiva[0])}, com efetividade de ${estrategiaMaisEfetiva[1].efetividadePercentual.toFixed(2)}%.` : 
-                "Nenhuma estratégia foi selecionada.",
-            tituloCombinacaoOtima: "Combinação Ótima de Estratégias",
-            descricaoCombinacaoOtima: `A combinação ótima de estratégias mitiga ${combinacaoOtima.efetividadePercentual.toFixed(2)}% do impacto, com custo total de ${formatarMoeda(combinacaoOtima.custoTotal)}.`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `As estratégias combinadas têm um custo total de ${formatarMoeda(efeitividadeCombinada.custoTotal)}.`,
-                `A relação custo-benefício das estratégias combinadas é de ${(efeitividadeCombinada.custoBeneficio).toFixed(2)} (quanto menor, melhor).`,
-                `A melhor estratégia individual é ${estrategiaMaisEfetiva ? traduzirNomeEstrategia(estrategiaMaisEfetiva[0]) : "nenhuma"}.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -1042,7 +1240,7 @@ function calcularEfeitividadeRenegociacaoPrazos(dados, estrategia, impactoBase) 
     let impactoCicloFinanceiro = dados.pmr + dados.pme - impactoNovoPMP;
     let diferençaCiclo = (dados.pmr + dados.pme - dados.pmp) - impactoCicloFinanceiro;
     
-    return {
+    const resultado = {
         aumentoPrazo,
         percentualFornecedores: estrategia.percentualFornecedores,
         contrapartidas,
@@ -1058,16 +1256,24 @@ function calcularEfeitividadeRenegociacaoPrazos(dados, estrategia, impactoBase) 
         impactoCicloFinanceiro,
         diferençaCiclo,
         memoriaCritica: {
-            tituloCalculo: "Cálculo da Efetividade da Renegociação de Prazos",
-            formulaImpacto: `Impacto no Fluxo de Caixa = (Pagamentos a Fornecedores / 30) × Aumento de Prazo × % Fornecedores × (1 - Custo Contrapartida)`,
-            valorCalculado: `= (${formatarMoeda(pagamentosFornecedores)} / 30) × ${aumentoPrazo} × ${percentualFornecedores} × (1 - ${custoContrapartida}) = ${formatarMoeda(impactoFluxoCaixa)}`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `Esta estratégia aumenta o PMP de ${dados.pmp} para ${impactoNovoPMP.toFixed(1)} dias.`,
-                `O ciclo financeiro é reduzido em ${diferençaCiclo.toFixed(1)} dias.`,
-                `O custo total da contrapartida é de ${formatarMoeda(custoTotal)}.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -1121,7 +1327,7 @@ function calcularEfeitividadeAntecipacaoRecebiveis(dados, estrategia, impactoBas
     const cicloFinanceiroAjustado = pmrAjustado + dados.pme - dados.pmp;
     const reducaoCiclo = cicloFinanceiroOriginal - cicloFinanceiroAjustado;
     
-    return {
+    const resultado = {
         percentualAntecipacao: estrategia.percentualAntecipacao,
         taxaDesconto: estrategia.taxaDesconto * 100,
         prazoAntecipacao,
@@ -1138,18 +1344,24 @@ function calcularEfeitividadeAntecipacaoRecebiveis(dados, estrategia, impactoBas
         reducaoCiclo,
         custoBeneficio: custoTotalAntecipacao / valorTotalAntecipado,
         memoriaCritica: {
-            tituloCalculo: "Cálculo da Efetividade da Antecipação de Recebíveis",
-            formulaImpacto: `Impacto no Fluxo de Caixa = Valor Antecipado - Custo da Antecipação`,
-            valorCalculado: `= ${formatarMoeda(valorAntecipado)} - ${formatarMoeda(custoAntecipacao)} = ${formatarMoeda(impactoFluxoCaixa)}`,
-            formulaReducaoPMR: `Redução no PMR = PMR Original × (% Antecipação × % Vendas a Prazo)`,
-            valorReducaoPMR: `= ${pmrOriginal} × (${percentualAntecipacao} × ${percPrazo}) = ${reducaoPMR.toFixed(1)} dias`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `Esta estratégia reduz o PMR de ${pmrOriginal} para ${pmrAjustado.toFixed(1)} dias.`,
-                `O ciclo financeiro é reduzido em ${reducaoCiclo.toFixed(1)} dias.`,
-                `O custo total da antecipação é de ${formatarMoeda(custoTotalAntecipacao)} para um valor antecipado de ${formatarMoeda(valorTotalAntecipado)}.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -1193,7 +1405,7 @@ function calcularEfeitividadeCapitalGiro(dados, estrategia, impactoBase) {
     // Calcular o impacto na margem operacional
     const impactoMargemPP = (custoMensalJuros / dados.faturamento) * 100;
     
-    return {
+    const resultado = {
         valorCaptacao: estrategia.valorCaptacao,
         taxaJuros: estrategia.taxaJuros * 100,
         prazoPagamento,
@@ -1209,18 +1421,24 @@ function calcularEfeitividadeCapitalGiro(dados, estrategia, impactoBase) {
         impactoMargemPP,
         custoBeneficio: custoTotalFinanciamento / valorFinanciamento,
         memoriaCritica: {
-            tituloCalculo: "Cálculo da Efetividade da Captação de Capital de Giro",
-            formulaValor: `Valor do Financiamento = Necessidade de Capital de Giro × % Captação`,
-            valorCalculado: `= ${formatarMoeda(necessidadeCapitalGiro)} × ${valorCaptacao} = ${formatarMoeda(valorFinanciamento)}`,
-            formulaCusto: `Custo Total = (Juros × Carência) + ((Parcela + Juros) × (Prazo - Carência))`,
-            valorCusto: `= (${formatarMoeda(custoMensalJuros)} × ${carencia}) + ((${formatarMoeda(valorParcela)} + ${formatarMoeda(custoMensalJuros)}) × ${prazoPagamento - carencia}) = ${formatarMoeda(custoTotalFinanciamento)}`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `Esta estratégia disponibiliza imediatamente ${formatarMoeda(valorFinanciamento)} para capital de giro.`,
-                `O custo mensal de juros é de ${formatarMoeda(custoMensalJuros)}, impactando a margem em ${impactoMargemPP.toFixed(2)} pontos percentuais.`,
-                `A taxa efetiva anual do financiamento é de ${(taxaEfetivaAnual * 100).toFixed(2)}%.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -1288,7 +1506,7 @@ function calcularEfeitividadeMixProdutos(dados, estrategia, impactoBase) {
     // Estimativa: 10% do valor ajustado como custos de implementação
     const custoImplementacao = valorAjustado * 0.1;
     
-    return {
+    const resultado = {
         percentualAjuste: estrategia.percentualAjuste,
         focoAjuste,
         impactoReceita: estrategia.impactoReceita,
@@ -1310,16 +1528,24 @@ function calcularEfeitividadeMixProdutos(dados, estrategia, impactoBase) {
         custoImplementacao,
         custoBeneficio: custoImplementacao / impactoTotal,
         memoriaCritica: {
-            tituloCalculo: "Cálculo da Efetividade do Ajuste no Mix de Produtos",
-            formulaImpacto: `Impacto no Fluxo de Caixa = Impacto Receita + Impacto Margem`,
-            valorCalculado: `= ${formatarMoeda(impactoFluxoReceita)} + ${formatarMoeda(impactoFluxoMargem)} = ${formatarMoeda(impactoFluxoCaixa)}`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `Esta estratégia ${impactoReceita >= 0 ? 'aumenta' : 'reduz'} a receita em ${Math.abs(estrategia.impactoReceita).toFixed(1)}% e ${impactoMargem >= 0 ? 'aumenta' : 'reduz'} a margem em ${Math.abs(estrategia.impactoMargem).toFixed(1)} pontos percentuais.`,
-                `O foco em "${focoAjuste}" ${reducaoCiclo > 0 ? 'reduz' : 'aumenta'} o ciclo financeiro em ${Math.abs(reducaoCiclo).toFixed(1)} dias.`,
-                `O custo estimado de implementação é de ${formatarMoeda(custoImplementacao)}.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -1389,7 +1615,7 @@ function calcularEfeitividadeMeiosPagamento(dados, estrategia, impactoBase) {
     const impactoTotal = impactoLiquido * duracaoEfeito;
     const custoTotalIncentivo = valorIncentivoMensal * duracaoEfeito;
     
-    return {
+    const resultado = {
         distribuicaoAtual,
         distribuicaoNova,
         taxaIncentivo: estrategia.taxaIncentivo,
@@ -1408,18 +1634,24 @@ function calcularEfeitividadeMeiosPagamento(dados, estrategia, impactoBase) {
         custoTotalIncentivo,
         custoBeneficio: variaPMR < 0 ? valorIncentivoMensal / Math.abs(impacto_pmr) : Infinity,
         memoriaCritica: {
-            tituloCalculo: "Cálculo da Efetividade da Estratégia de Meios de Pagamento",
-            formulaPMR: `PMR Novo = (0 × % Vista) + (30 × % 30 dias) + (60 × % 60 dias) + (90 × % 90 dias)`,
-            valorPMR: `= (0 × ${percVistaNovo}) + (30 × ${percDias30Novo}) + (60 × ${percDias60Novo}) + (90 × ${percDias90Novo}) = ${pmrNovo.toFixed(1)} dias`,
-            formulaImpacto: `Impacto Líquido = Impacto da Redução no PMR - Custo do Incentivo`,
-            valorImpacto: `= ${formatarMoeda(impacto_pmr)} - ${formatarMoeda(valorIncentivoMensal)} = ${formatarMoeda(impactoLiquido)}`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `Esta estratégia ${variaPMR < 0 ? 'reduz' : 'aumenta'} o PMR em ${Math.abs(variaPMR).toFixed(1)} dias.`,
-                `O ciclo financeiro ${variacaoCiclo < 0 ? 'reduz' : 'aumenta'} em ${Math.abs(variacaoCiclo).toFixed(1)} dias.`,
-                `O custo mensal do incentivo para pagamentos à vista é de ${formatarMoeda(valorIncentivoMensal)}.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 // Demais funções de efetividade...
@@ -1548,7 +1780,7 @@ function calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias
     // Calcular relação custo-benefício
     const custoBeneficio = custoTotal > 0 ? custoTotal / impactoFluxoCaixaTotal : 0;
     
-    return {
+    const resultado = {
         estrategiasAtivas: estrategiasAtivas.length,
         efetividadePercentual,
         mitigacaoTotal: impactoFluxoCaixaTotal,
@@ -1561,18 +1793,24 @@ function calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias
         margemAjustada,
         impactosMitigados,
         memoriaCritica: {
-            tituloAnalise: "Análise da Combinação de Estratégias",
-            estrategiasSelecionadas: `${estrategiasAtivas.length} estratégias selecionadas: ${estrategiasAtivas.map(e => traduzirNomeEstrategia(e.nome)).join(', ')}`,
-            formulaEfetividade: `Efetividade Total = (Impacto Combinado / Necessidade de Capital de Giro) × 100`,
-            valorEfetividade: `= (${formatarMoeda(impactoFluxoCaixaTotal)} / ${formatarMoeda(necessidadeCapitalGiro)}) × 100 = ${efetividadePercentual.toFixed(2)}%`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `A combinação de estratégias mitiga ${efetividadePercentual.toFixed(2)}% do impacto do Split Payment.`,
-                `O custo total das estratégias é de ${formatarMoeda(custoTotal)}, com uma relação custo-benefício de ${custoBeneficio.toFixed(2)}.`,
-                `O ciclo financeiro ${variacaoCiclo < 0 ? 'reduz' : 'aumenta'} em ${Math.abs(variacaoCiclo).toFixed(1)} dias.`,
-                `A margem operacional ${impactoMargemCombinado >= 0 ? 'aumenta' : 'diminui'} em ${Math.abs(impactoMargemCombinado * 100).toFixed(2)} pontos percentuais.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -1722,7 +1960,7 @@ function identificarCombinacaoOtima(dados, estrategias, resultadosEstrategias, i
     const combinacaoOtima = estrategiaPareto || melhorRelacaoCB;
     
     // Formatar resultado
-    return {
+    const resultado = {
         estrategiasSelecionadas: combinacaoOtima.estrategias.map(e => e.nome),
         nomeEstrategias: combinacaoOtima.estrategias.map(e => traduzirNomeEstrategia(e.nome)),
         efetividadePercentual: combinacaoOtima.efetividade,
@@ -1746,20 +1984,24 @@ function identificarCombinacaoOtima(dados, estrategias, resultadosEstrategias, i
             }
         },
         memoriaCritica: {
-            tituloAnalise: "Análise de Combinação Ótima de Estratégias",
-            descricaoCombinacao: `A combinação ótima inclui ${combinacaoOtima.estrategias.length} estratégias: ${combinacaoOtima.estrategias.map(e => traduzirNomeEstrategia(e.nome)).join(', ')}`,
-            motivoSelecao: "Esta combinação foi selecionada por apresentar o melhor equilíbrio entre efetividade de mitigação e custo de implementação.",
-            efetividade: `Efetividade Total: ${combinacaoOtima.efetividade.toFixed(2)}%`,
-            custo: `Custo Total: ${formatarMoeda(combinacaoOtima.custo)}`,
-            relacaoCB: `Relação Custo-Benefício: ${combinacaoOtima.relacaoCB.toFixed(2)}`,
+            tituloRegime: "Regime Atual (Pré-Split Payment)",
+            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+            tituloCalculo: "Cálculo do Capital de Giro Disponível",
+            formula: `Capital de Giro = Valor do Imposto Líquido (${formatarMoeda(valorImpostoLiquido)})`,
+            passoAPasso: [
+                `1. Cálculo do Imposto Total: ${formatarMoeda(faturamento)} × ${(aliquota*100).toFixed(2)}% = ${formatarMoeda(valorImpostoTotal)}`,
+                `2. Cálculo do Imposto Líquido: ${formatarMoeda(valorImpostoTotal)} - ${formatarMoeda(creditos)} = ${formatarMoeda(valorImpostoLiquido)}`,
+                `3. Determinação do Capital de Giro: O valor de ${formatarMoeda(valorImpostoLiquido)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+            ],
             observacoes: [
-                `Foram analisadas ${combinacoes.length} combinações possíveis de estratégias.`,
-                `A combinação com maior efetividade (${melhorEfetividade.efetividade.toFixed(2)}%) tem um custo de ${formatarMoeda(melhorEfetividade.custo)}.`,
-                `A combinação com melhor relação custo-benefício (${melhorRelacaoCB.relacaoCB.toFixed(2)}) tem uma efetividade de ${melhorRelacaoCB.efetividade.toFixed(2)}%.`,
-                `A melhor estratégia individual é "${traduzirNomeEstrategia(melhorEstrategia.nome)}" com efetividade de ${melhorEstrategia.efetividade.toFixed(2)}%.`
+                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
             ]
         }
     };
+
+    return resultado;
 }
 
 /**
@@ -1796,7 +2038,6 @@ function traduzirNomeEstrategia(estrategia) {
     return traducoes[estrategia] || estrategia;
 }
 
-// Integração com o módulo de cálculos
 function inicializarIntegracaoCalculos() {
     console.log('Inicializando integração com o módulo de cálculos...');
     
@@ -1806,17 +2047,35 @@ function inicializarIntegracaoCalculos() {
         return;
     }
     
-    // Registrar o módulo no simulador
-    if (typeof SimuladorFluxoCaixa !== 'undefined') {
-        // Associar as funções de cálculo ao simulador
-        SimuladorFluxoCaixa._calcularFluxoCaixaAtual = CalculationModule.calcularFluxoCaixaAtual;
-        SimuladorFluxoCaixa._calcularFluxoCaixaSplitPayment = CalculationModule.calcularFluxoCaixaSplitPayment;
-        SimuladorFluxoCaixa._calcularImpactoCapitalGiro = CalculationModule.calcularImpactoCapitalGiro;
-        SimuladorFluxoCaixa._calcularProjecaoTemporal = CalculationModule.calcularProjecaoTemporal;
+    // Adicionar o módulo ao objeto window para garantir disponibilidade global
+    window.CalculationModule = CalculationModule;
+    
+    // Tentar integrar com o simulador, mas não falhar se não estiver disponível
+    if (typeof window.SimuladorFluxoCaixa !== 'undefined') {
+        integrarComSimulador();
+    } else {
+        // Tentar novamente após um pequeno atraso para permitir que outros scripts carreguem
+        setTimeout(function() {
+            if (typeof window.SimuladorFluxoCaixa !== 'undefined') {
+                integrarComSimulador();
+            } else {
+                console.warn('Simulador não encontrado após espera. A integração será tentada quando o simulador for utilizado.');
+            }
+        }, 500);
+    }
+}
+
+function integrarComSimulador() {
+    // Associar as funções de cálculo ao simulador
+    if (window.SimuladorFluxoCaixa) {
+        window.SimuladorFluxoCaixa._calcularFluxoCaixaAtual = CalculationModule.calcularFluxoCaixaAtual;
+        window.SimuladorFluxoCaixa._calcularFluxoCaixaSplitPayment = CalculationModule.calcularFluxoCaixaSplitPayment;
+        window.SimuladorFluxoCaixa._calcularImpactoCapitalGiro = CalculationModule.calcularImpactoCapitalGiro;
+        window.SimuladorFluxoCaixa._calcularProjecaoTemporal = CalculationModule.calcularProjecaoTemporal;
         
         console.log('Módulo de cálculos integrado com sucesso ao simulador.');
     } else {
-        console.error('Simulador não encontrado. Não foi possível integrar o módulo de cálculos.');
+        console.warn('Simulador não encontrado. Não foi possível integrar o módulo de cálculos.');
     }
 }
 
@@ -1827,3 +2086,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar integração com o módulo de cálculos
     inicializarIntegracaoCalculos();
 });
+
+// ADICIONE ESTA LINHA AQUI, no final do arquivo, após a definição completa do módulo
+window.CalculationModule = CalculationModule;
+
+// No final do arquivo calculation.js, adicione:
+// Expor funções necessárias no CalculationModule
+CalculationModule.gerarSecaoAnaliseSensibilidade = gerarSecaoAnaliseSensibilidade;
+CalculationModule.gerarSecaoProjecaoTemporal = gerarSecaoProjecaoTemporal;

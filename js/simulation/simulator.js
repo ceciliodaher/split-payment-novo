@@ -1198,73 +1198,254 @@ window.SimuladorFluxoCaixa = {
     },
     
     /**
-     * Gera a memória de cálculo detalhada
-     * @param {Object} dados - Dados da simulação
-     * @param {number} anoInicial - Ano inicial
-     * @param {number} anoFinal - Ano final
-     * @returns {Object} - Memória de cálculo por ano
-     */
-    gerarMemoriaCalculo: function(dados, anoInicial, anoFinal) {
-        const memoria = {};
-        
-        for (let ano = anoInicial; ano <= anoFinal; ano++) {
-            let textoMemoria = `=== MEMÓRIA DE CÁLCULO - ANO ${ano} ===\n\n`;
-            
-            // Parâmetros básicos
-            textoMemoria += `=== PARÂMETROS BÁSICOS ===\n`;
-            textoMemoria += `Faturamento Mensal: ${FormatacaoHelper.formatarMoeda(dados.faturamento)}\n`;
-            textoMemoria += `Alíquota Efetiva: ${(dados.aliquota * 100).toFixed(1)}%\n`;
-            textoMemoria += `Prazo Médio de Recebimento: ${dados.pmr} dias\n`;
-            textoMemoria += `Prazo Médio de Pagamento: ${dados.pmp} dias\n`;
-            textoMemoria += `Prazo Médio de Estoque: ${dados.pme} dias\n`;
-            textoMemoria += `Ciclo Financeiro: ${dados.pmr + dados.pme - dados.pmp} dias\n`;
-            textoMemoria += `Percentual de Vendas à Vista: ${(dados.percVista * 100).toFixed(1)}%\n`;
-            textoMemoria += `Percentual de Vendas a Prazo: ${(dados.percPrazo * 100).toFixed(1)}%\n\n`;
-            
-            // Cálculo do impacto
-            textoMemoria += `=== CÁLCULO DO IMPACTO NO FLUXO DE CAIXA ===\n`;
-            const valorImposto = dados.faturamento * dados.aliquota;
-            
-            textoMemoria += `Valor do Imposto Mensal: ${FormatacaoHelper.formatarMoeda(dados.faturamento)} × ${(dados.aliquota * 100).toFixed(1)}% = ${FormatacaoHelper.formatarMoeda(valorImposto)}\n`;
-            
-            // Obter percentual de implementação para o ano
-            const percentualImplementacao = this.obterPercentualImplementacao(ano);
-            const impactoAno = valorImposto * percentualImplementacao;
-            
-            textoMemoria += `Percentual de Implementação (${ano}): ${(percentualImplementacao * 100).toFixed(0)}%\n`;
-            textoMemoria += `Impacto no Fluxo de Caixa: ${FormatacaoHelper.formatarMoeda(valorImposto)} × ${(percentualImplementacao * 100).toFixed(0)}% = ${FormatacaoHelper.formatarMoeda(impactoAno)}\n\n`;
-            
-            // Análise do capital de giro
-            textoMemoria += `=== ANÁLISE DO CAPITAL DE GIRO ===\n`;
-            const impactoDias = dados.pmr * (impactoAno / dados.faturamento);
-            
-            textoMemoria += `Impacto em Dias de Faturamento: ${dados.pmr} × ${(impactoAno / dados.faturamento * 100).toFixed(1)}% = ${impactoDias.toFixed(1)} dias\n`;
-            textoMemoria += `Necessidade Adicional de Capital de Giro: ${FormatacaoHelper.formatarMoeda(impactoAno * 1.2)}\n\n`;
-            
-            // Impacto na rentabilidade
-            textoMemoria += `=== IMPACTO NA RENTABILIDADE ===\n`;
-            const custoGiro = dados.taxaCapitalGiro || 0.021; // Taxa de capital de giro (2,1% a.m.)
-            const custoMensal = impactoAno * custoGiro;
-            const custoAnual = custoMensal * 12;
-            const impactoMargem = custoMensal / dados.faturamento;
-            
-            textoMemoria += `Margem Operacional Original: ${(dados.margem * 100).toFixed(1)}%\n`;
-            textoMemoria += `Custo Financeiro Mensal: ${FormatacaoHelper.formatarMoeda(impactoAno)} × ${(custoGiro * 100).toFixed(1)}% = ${FormatacaoHelper.formatarMoeda(custoMensal)}\n`;
-            textoMemoria += `Custo Financeiro Anual: ${FormatacaoHelper.formatarMoeda(custoMensal)} × 12 = ${FormatacaoHelper.formatarMoeda(custoAnual)}\n`;
-            textoMemoria += `Impacto na Margem: ${FormatacaoHelper.formatarMoeda(custoMensal)} ÷ ${FormatacaoHelper.formatarMoeda(dados.faturamento)} = ${(impactoMargem * 100).toFixed(2)}%\n`;
-            textoMemoria += `Margem Ajustada: ${(dados.margem * 100).toFixed(1)}% - ${(impactoMargem * 100).toFixed(2)}% = ${((dados.margem - impactoMargem) * 100).toFixed(2)}%\n\n`;
-            
-            memoria[ano] = textoMemoria;
-        }
-        
-        return memoria;
-    }
-};
+	 * Gera a memória de cálculo detalhada para auditoria
+	 * @param {Object} dados - Dados da simulação
+	 * @param {number} anoInicial - Ano inicial
+	 * @param {number} anoFinal - Ano final
+	 * @returns {Object} - Memória de cálculo por ano
+	 */
+	gerarMemoriaCalculo: function(dados, anoInicial, anoFinal) {
+		const memoria = {};
+
+		for (let ano = anoInicial; ano <= anoFinal; ano++) {
+			let textoMemoria = `=== MEMÓRIA DE CÁLCULO AUDITÁVEL - ANO ${ano} ===\n\n`;
+
+			// 1. DADOS DE ENTRADA (Parâmetros básicos)
+			textoMemoria += `=== 1. DADOS DE ENTRADA ===\n`;
+			textoMemoria += this.gerarSecaoParametrosBasicos(dados);
+
+			// 2. CÁLCULO DO FLUXO DE CAIXA ATUAL (Pré-Split Payment)
+			textoMemoria += `\n=== 2. CÁLCULO DO FLUXO DE CAIXA ATUAL (PRÉ-SPLIT PAYMENT) ===\n`;
+			const resultadoAtual = this.calcularFluxoCaixaAtual(dados);
+			textoMemoria += this.gerarSecaoFluxoCaixaAtual(dados, resultadoAtual);
+
+			// 3. CÁLCULO DO FLUXO DE CAIXA COM SPLIT PAYMENT
+			textoMemoria += `\n=== 3. CÁLCULO DO FLUXO DE CAIXA COM SPLIT PAYMENT ===\n`;
+			const percentualImplementacao = this.obterPercentualImplementacao(ano);
+			const resultadoSplitPayment = this.calcularFluxoCaixaSplitPayment(dados, ano);
+			textoMemoria += this.gerarSecaoFluxoCaixaSplitPayment(dados, resultadoSplitPayment, percentualImplementacao);
+
+			// 4. CÁLCULO DO IMPACTO NO CAPITAL DE GIRO
+			textoMemoria += `\n=== 4. CÁLCULO DO IMPACTO NO CAPITAL DE GIRO ===\n`;
+			const diferencaCapitalGiro = resultadoSplitPayment.capitalGiroDisponivel - resultadoAtual.capitalGiroDisponivel;
+			const percentualImpacto = (diferencaCapitalGiro / resultadoAtual.capitalGiroDisponivel) * 100;
+			textoMemoria += this.gerarSecaoImpactoCapitalGiro(resultadoAtual, resultadoSplitPayment, diferencaCapitalGiro, percentualImpacto);
+
+			// 5. CÁLCULO DO IMPACTO NA MARGEM OPERACIONAL
+			textoMemoria += `\n=== 5. CÁLCULO DO IMPACTO NA MARGEM OPERACIONAL ===\n`;
+			const custoGiro = dados.taxaCapitalGiro || 0.021; // Taxa de capital de giro (2,1% a.m.)
+			const necesidadeAdicionalCapitalGiro = Math.abs(diferencaCapitalGiro) * 1.2; // 20% de margem de segurança
+			const custoMensal = necesidadeAdicionalCapitalGiro * custoGiro;
+			const impactoMargem = custoMensal / dados.faturamento;
+			textoMemoria += this.gerarSecaoImpactoMargem(dados, necesidadeAdicionalCapitalGiro, custoGiro, custoMensal, impactoMargem);
+
+			// 6. CENÁRIOS DE SENSIBILIDADE
+			textoMemoria += `\n=== 6. ANÁLISE DE SENSIBILIDADE ===\n`;
+			textoMemoria += window.CalculationModule.gerarSecaoAnaliseSensibilidade(dados, diferencaCapitalGiro, ano);
+
+			// 7. PROJEÇÃO E IMPACTO AO LONGO DO TEMPO
+			textoMemoria += `\n=== 7. PROJEÇÃO DE IMPACTO TEMPORAL ===\n`;
+			textoMemoria += window.CalculationModule.gerarSecaoProjecaoTemporal(dados, ano);
+
+			memoria[ano] = textoMemoria;
+		}
+
+		return memoria;
+	},
+
+
+	/**
+	 * Gera seção de parâmetros básicos
+	 * @param {Object} dados - Dados da simulação
+	 * @returns {string} - Texto formatado
+	 */
+	gerarSecaoParametrosBasicos: function(dados) {
+		let texto = '';
+
+		// Dados da empresa
+		texto += `1.1. DADOS DA EMPRESA:\n`;
+		texto += `Empresa: ${dados.empresa || 'Não especificada'}\n`;
+		texto += `Faturamento Mensal: ${FormatacaoHelper.formatarMoeda(dados.faturamento)}\n`;
+		texto += `Setor: ${dados.setor || 'Não especificado'}\n`;
+		texto += `Regime Tributário: ${this.traduzirRegimeTributario(dados.regime)}\n`;
+		texto += `Margem Operacional: ${(dados.margem * 100).toFixed(2)}%\n\n`;
+
+		// Ciclo financeiro
+		texto += `1.2. CICLO FINANCEIRO:\n`;
+		texto += `Prazo Médio de Recebimento (PMR): ${dados.pmr} dias\n`;
+		texto += `Prazo Médio de Pagamento (PMP): ${dados.pmp} dias\n`;
+		texto += `Prazo Médio de Estoque (PME): ${dados.pme} dias\n`;
+		texto += `Ciclo Financeiro = PMR + PME - PMP = ${dados.pmr} + ${dados.pme} - ${dados.pmp} = ${dados.pmr + dados.pme - dados.pmp} dias\n\n`;
+
+		// Distribuição das vendas
+		texto += `1.3. DISTRIBUIÇÃO DAS VENDAS:\n`;
+		texto += `Percentual de Vendas à Vista: ${(dados.percVista * 100).toFixed(2)}%\n`;
+		texto += `Percentual de Vendas a Prazo: ${(dados.percPrazo * 100).toFixed(2)}%\n\n`;
+
+		// Parâmetros fiscais
+		texto += `1.4. PARÂMETROS FISCAIS:\n`;
+		texto += `Alíquota Efetiva: ${(dados.aliquota * 100).toFixed(2)}%\n`;
+		texto += `Tipo de Operação: ${this.traduzirTipoOperacao(dados.tipoOperacao)}\n`;
+		texto += `Créditos Tributários Mensais: ${FormatacaoHelper.formatarMoeda(dados.creditos)}\n\n`;
+
+		// Parâmetros de simulação
+		texto += `1.5. PARÂMETROS DE SIMULAÇÃO:\n`;
+		texto += `Cenário de Crescimento: ${this.traduzirCenario(dados.cenario)}\n`;
+		texto += `Taxa de Crescimento Anual: ${(dados.taxaCrescimento * 100).toFixed(2)}%\n`;
+		texto += `Taxa de Capital de Giro: ${((dados.taxaCapitalGiro || 0.021) * 100).toFixed(2)}% a.m.\n`;
+
+		return texto;
+	},
+
+	/**
+	 * Gera seção de fluxo de caixa atual
+	 * @param {Object} dados - Dados da simulação
+	 * @param {Object} resultadoAtual - Resultado do cálculo
+	 * @returns {string} - Texto formatado
+	 */
+	gerarSecaoFluxoCaixaAtual: function(dados, resultadoAtual) {
+		let texto = '';
+
+		// Cálculo do imposto
+		texto += `2.1. CÁLCULO DO IMPOSTO:\n`;
+		texto += `Valor do Imposto = Faturamento × Alíquota\n`;
+		texto += `Valor do Imposto = ${FormatacaoHelper.formatarMoeda(dados.faturamento)} × ${(dados.aliquota * 100).toFixed(2)}%\n`;
+		texto += `Valor do Imposto = ${FormatacaoHelper.formatarMoeda(resultadoAtual.valorImposto)}\n\n`;
+
+		// Créditos tributários
+		if (dados.creditos && dados.creditos > 0) {
+			texto += `2.2. APLICAÇÃO DE CRÉDITOS TRIBUTÁRIOS:\n`;
+			texto += `Valor do Imposto Líquido = Valor do Imposto - Créditos Tributários\n`;
+			texto += `Valor do Imposto Líquido = ${FormatacaoHelper.formatarMoeda(resultadoAtual.valorImposto)} - ${FormatacaoHelper.formatarMoeda(dados.creditos)}\n`;
+			texto += `Valor do Imposto Líquido = ${FormatacaoHelper.formatarMoeda(resultadoAtual.valorImposto - dados.creditos)}\n\n`;
+		}
+
+		// Prazo de recolhimento
+		texto += `2.3. PRAZO DE RECOLHIMENTO DO IMPOSTO:\n`;
+		texto += `No regime atual, o imposto é recolhido até o dia 25 do mês seguinte.\n`;
+		texto += `Prazo médio de recolhimento = 25 dias\n\n`;
+
+		// Capital de giro disponível
+		texto += `2.4. CAPITAL DE GIRO DISPONÍVEL:\n`;
+		texto += `No sistema atual, o valor do imposto fica disponível como capital de giro até o prazo de recolhimento.\n`;
+		texto += `Capital de Giro Disponível = Valor do Imposto Líquido\n`;
+		texto += `Capital de Giro Disponível = ${FormatacaoHelper.formatarMoeda(resultadoAtual.capitalGiroDisponivel)}\n`;
+
+		return texto;
+	},
+
+	/**
+	 * Gera seção de fluxo de caixa com Split Payment
+	 * @param {Object} dados - Dados da simulação
+	 * @param {Object} resultadoSplitPayment - Resultado do cálculo
+	 * @param {number} percentualImplementacao - Percentual de implementação
+	 * @returns {string} - Texto formatado
+	 */
+	gerarSecaoFluxoCaixaSplitPayment: function(dados, resultadoSplitPayment, percentualImplementacao) {
+		let texto = '';
+
+		// Percentual de implementação
+		texto += `3.1. PERCENTUAL DE IMPLEMENTAÇÃO:\n`;
+		texto += `Percentual de Implementação (${resultadoSplitPayment.ano}): ${(percentualImplementacao * 100).toFixed(2)}%\n\n`;
+
+		// Cálculo do imposto afetado pelo Split Payment
+		texto += `3.2. CÁLCULO DO IMPOSTO COM SPLIT PAYMENT:\n`;
+		texto += `Valor do Imposto Total = ${FormatacaoHelper.formatarMoeda(resultadoSplitPayment.valorImpostoTotal)}\n`;
+		texto += `Valor Afetado pelo Split Payment = Valor do Imposto Total × Percentual de Implementação\n`;
+		texto += `Valor Afetado pelo Split Payment = ${FormatacaoHelper.formatarMoeda(resultadoSplitPayment.valorImpostoTotal)} × ${(percentualImplementacao * 100).toFixed(2)}%\n`;
+		texto += `Valor Afetado pelo Split Payment = ${FormatacaoHelper.formatarMoeda(resultadoSplitPayment.valorRetidoImediatamente)}\n\n`;
+
+		// Valor não afetado pelo Split Payment
+		texto += `3.3. VALOR NÃO AFETADO PELO SPLIT PAYMENT:\n`;
+		texto += `Valor Não Afetado = Valor do Imposto Total - Valor Afetado pelo Split Payment\n`;
+		texto += `Valor Não Afetado = ${FormatacaoHelper.formatarMoeda(resultadoSplitPayment.valorImpostoTotal)} - ${FormatacaoHelper.formatarMoeda(resultadoSplitPayment.valorRetidoImediatamente)}\n`;
+		texto += `Valor Não Afetado = ${FormatacaoHelper.formatarMoeda(resultadoSplitPayment.valorImpostoTotal - resultadoSplitPayment.valorRetidoImediatamente)}\n\n`;
+
+		// Capital de giro disponível
+		texto += `3.4. CAPITAL DE GIRO DISPONÍVEL COM SPLIT PAYMENT:\n`;
+		texto += `No regime de Split Payment, apenas o valor não afetado fica disponível como capital de giro.\n`;
+		texto += `Capital de Giro Disponível = Valor Não Afetado pelo Split Payment\n`;
+		texto += `Capital de Giro Disponível = ${FormatacaoHelper.formatarMoeda(resultadoSplitPayment.capitalGiroDisponivel)}\n`;
+
+		return texto;
+	},
+
+	/**
+	 * Gera seção de impacto no capital de giro
+	 * @param {Object} resultadoAtual - Resultado do fluxo de caixa atual
+	 * @param {Object} resultadoSplitPayment - Resultado do fluxo de caixa com Split Payment
+	 * @param {number} diferencaCapitalGiro - Diferença no capital de giro
+	 * @param {number} percentualImpacto - Percentual de impacto
+	 * @returns {string} - Texto formatado
+	 */
+	gerarSecaoImpactoCapitalGiro: function(resultadoAtual, resultadoSplitPayment, diferencaCapitalGiro, percentualImpacto) {
+		let texto = '';
+
+		// Cálculo da diferença no capital de giro
+		texto += `4.1. CÁLCULO DA DIFERENÇA NO CAPITAL DE GIRO:\n`;
+		texto += `Diferença no Capital de Giro = Capital de Giro com Split Payment - Capital de Giro Atual\n`;
+		texto += `Diferença no Capital de Giro = ${FormatacaoHelper.formatarMoeda(resultadoSplitPayment.capitalGiroDisponivel)} - ${FormatacaoHelper.formatarMoeda(resultadoAtual.capitalGiroDisponivel)}\n`;
+		texto += `Diferença no Capital de Giro = ${FormatacaoHelper.formatarMoeda(diferencaCapitalGiro)}\n\n`;
+
+		// Cálculo do percentual de impacto
+		texto += `4.2. CÁLCULO DO PERCENTUAL DE IMPACTO:\n`;
+		texto += `Percentual de Impacto = (Diferença no Capital de Giro / Capital de Giro Atual) × 100\n`;
+		texto += `Percentual de Impacto = (${FormatacaoHelper.formatarMoeda(diferencaCapitalGiro)} / ${FormatacaoHelper.formatarMoeda(resultadoAtual.capitalGiroDisponivel)}) × 100\n`;
+		texto += `Percentual de Impacto = ${percentualImpacto.toFixed(2)}%\n\n`;
+
+		// Cálculo da necessidade adicional de capital de giro
+		texto += `4.3. CÁLCULO DA NECESSIDADE ADICIONAL DE CAPITAL DE GIRO:\n`;
+		texto += `Necessidade Adicional = |Diferença no Capital de Giro| × 1.2 (margem de segurança de 20%)\n`;
+		texto += `Necessidade Adicional = ${FormatacaoHelper.formatarMoeda(Math.abs(diferencaCapitalGiro))} × 1.2\n`;
+		texto += `Necessidade Adicional = ${FormatacaoHelper.formatarMoeda(Math.abs(diferencaCapitalGiro) * 1.2)}\n`;
+
+		return texto;
+	},
+
+	/**
+	 * Gera seção de impacto na margem operacional
+	 * @param {Object} dados - Dados da simulação
+	 * @param {number} necesidadeAdicionalCapitalGiro - Necessidade adicional de capital de giro
+	 * @param {number} custoGiro - Custo do capital de giro
+	 * @param {number} custoMensal - Custo mensal do capital de giro
+	 * @param {number} impactoMargem - Impacto na margem operacional
+	 * @returns {string} - Texto formatado
+	 */
+	gerarSecaoImpactoMargem: function(dados, necesidadeAdicionalCapitalGiro, custoGiro, custoMensal, impactoMargem) {
+		let texto = '';
+
+		// Cálculo do custo mensal do capital de giro
+		texto += `5.1. CÁLCULO DO CUSTO MENSAL DO CAPITAL DE GIRO:\n`;
+		texto += `Custo Mensal = Necessidade Adicional de Capital de Giro × Taxa de Custo do Capital de Giro\n`;
+		texto += `Custo Mensal = ${FormatacaoHelper.formatarMoeda(necesidadeAdicionalCapitalGiro)} × ${(custoGiro * 100).toFixed(2)}%\n`;
+		texto += `Custo Mensal = ${FormatacaoHelper.formatarMoeda(custoMensal)}\n\n`;
+
+		// Cálculo do custo anual
+		texto += `5.2. CÁLCULO DO CUSTO ANUAL:\n`;
+		texto += `Custo Anual = Custo Mensal × 12\n`;
+		texto += `Custo Anual = ${FormatacaoHelper.formatarMoeda(custoMensal)} × 12\n`;
+		texto += `Custo Anual = ${FormatacaoHelper.formatarMoeda(custoMensal * 12)}\n\n`;
+
+		// Cálculo do impacto na margem
+		texto += `5.3. CÁLCULO DO IMPACTO NA MARGEM OPERACIONAL:\n`;
+		texto += `Impacto na Margem (pontos percentuais) = (Custo Mensal / Faturamento) × 100\n`;
+		texto += `Impacto na Margem (pontos percentuais) = (${FormatacaoHelper.formatarMoeda(custoMensal)} / ${FormatacaoHelper.formatarMoeda(dados.faturamento)}) × 100\n`;
+		texto += `Impacto na Margem (pontos percentuais) = ${(impactoMargem * 100).toFixed(2)}\n\n`;
+
+		// Cálculo da margem ajustada
+		texto += `5.4. CÁLCULO DA MARGEM OPERACIONAL AJUSTADA:\n`;
+		texto += `Margem Operacional Original: ${(dados.margem * 100).toFixed(2)}%\n`;
+		texto += `Margem Operacional Ajustada = Margem Original - Impacto na Margem\n`;
+		texto += `Margem Operacional Ajustada = ${(dados.margem * 100).toFixed(2)}% - ${(impactoMargem * 100).toFixed(2)}%\n`;
+		texto += `Margem Operacional Ajustada = ${((dados.margem - impactoMargem) * 100).toFixed(2)}%\n`;
+
+		return texto;
+	},
 
     /**
      * Simula o impacto das estratégias de mitigação selecionadas
      */
-    function simularEstrategias() {
+    simularEstrategias: function() {
         console.log('Iniciando simulação de estratégias...');
 
         try {
@@ -1473,14 +1654,14 @@ window.SimuladorFluxoCaixa = {
             console.error('Erro ao simular estratégias:', error);
             alert('Ocorreu um erro durante a simulação das estratégias: ' + error.message);
         }
-    }
+    },
 
     /**
      * Exibe os resultados das estratégias de mitigação na interface
      * 
      * @param {Object} resultados - Resultados da simulação de estratégias
      */
-    function exibirResultadosEstrategias(resultados) {
+    exibirResultadosEstrategias: function(resultados) {
         const containerResultados = document.getElementById('resultados-estrategias');
         if (!containerResultados) return;
 
@@ -1610,14 +1791,14 @@ window.SimuladorFluxoCaixa = {
 
         // Inserir HTML no container
         containerResultados.innerHTML = html;
-    }
+    },
 
     /**
      * Gera o gráfico comparativo das estratégias de mitigação
      * 
      * @param {Object} resultados - Resultados da simulação de estratégias
      */
-    function gerarGraficoEstrategias(resultados) {
+    gerarGraficoEstrategias: function (resultados) {
         // Verificar se o Chart.js está disponível
         if (typeof Chart === 'undefined') {
             console.error('Chart.js não está disponível para gerar o gráfico de estratégias');
@@ -1738,4 +1919,48 @@ window.SimuladorFluxoCaixa = {
                 }
             }
         });
-    }
+    },
+		
+		/**
+	 * Traduz o regime tributário para exibição
+	 * @param {string} regime - Código do regime
+	 * @returns {string} - Descrição do regime
+	 */
+	traduzirRegimeTributario: function(regime) {
+		switch (regime) {
+			case 'simples': return 'Simples Nacional';
+			case 'presumido': return 'Lucro Presumido';
+			case 'real': return 'Lucro Real';
+			default: return regime || 'Não especificado';
+		}
+	},
+
+	/**
+	 * Traduz o tipo de operação para exibição
+	 * @param {string} tipo - Código do tipo de operação
+	 * @returns {string} - Descrição do tipo de operação
+	 */
+	traduzirTipoOperacao: function(tipo) {
+		switch (tipo) {
+			case 'b2b': return 'B2B (Empresa-Empresa)';
+			case 'b2c': return 'B2C (Empresa-Consumidor)';
+			case 'mista': return 'Mista (B2B e B2C)';
+			default: return tipo || 'Não especificado';
+		}
+	},
+
+	/**
+	 * Traduz o cenário de crescimento para exibição
+	 * @param {string} cenario - Código do cenário
+	 * @returns {string} - Descrição do cenário
+	 */
+	traduzirCenario: function(cenario) {
+		switch (cenario) {
+			case 'conservador': return 'Conservador (2% a.a.)';
+			case 'moderado': return 'Moderado (5% a.a.)';
+			case 'otimista': return 'Otimista (8% a.a.)';
+			case 'personalizado': return 'Personalizado';
+			default: return cenario || 'Não especificado';
+		}
+	},
+};

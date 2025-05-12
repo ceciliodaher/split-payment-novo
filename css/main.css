@@ -309,3 +309,50 @@ button:hover {
         flex-direction: column;
     }
 }
+
+/* Estilos para a memória de cálculo */
+#memoria-calculo {
+    font-family: monospace;
+    white-space: pre-wrap;
+    background-color: #f8f9fa;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: auto;
+    max-height: 600px;
+}
+
+#memoria-calculo h3 {
+    margin-top: 15px;
+    margin-bottom: 5px;
+    color: #0056b3;
+}
+
+#memoria-calculo table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+}
+
+#memoria-calculo th, #memoria-calculo td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+#memoria-calculo th {
+    background-color: #f2f2f2;
+}
+
+.memoria-secao {
+    margin-bottom: 15px;
+    border-bottom: 1px dotted #ccc;
+    padding-bottom: 10px;
+}
+
+.memoria-formula {
+    background-color: #eef;
+    padding: 5px;
+    border-left: 3px solid #0056b3;
+    margin: 5px 0;
+}
