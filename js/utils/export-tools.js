@@ -111,9 +111,15 @@ const ExportTools = {
         }
 
         try {
+            // Verificar se a simulação foi realizada
+            if (!window.ultimaSimulacao) {
+                alert('Execute uma simulação antes de exportar os resultados.');
+                return Promise.reject('Simulação não realizada');
+            }
+        
             // Extrair os dados da última simulação
             const dados = window.ultimaSimulacao.dados;
-            const resultados = window.ultimaSimulacao.resultados;
+            const resultados = window.ultimaSimulacao; // Passa o objeto completo para ter acesso à nova estrutura
             const aliquotasEquivalentes = window.ultimaSimulacao.aliquotasEquivalentes || {};
             
             // Solicitar nome do arquivo ao usuário
@@ -241,51 +247,91 @@ const ExportTools = {
      * Adiciona a seção de memória de cálculo ao PDF
      * @private
      * @param {Object} doc - Documento PDF
-     * @param {Function|null} obterMemoriaCalculo - Função para obter a memória de cálculo
+     * @param {Function|Object|null} obterMemoriaCalculo - Função para obter a memória de cálculo ou objeto com a memória
      * @param {number} pageCount - Número da página
      * @returns {number} Posição Y atual após adicionar o conteúdo
      */
     _adicionarMemoriaCalculo: function(doc, obterMemoriaCalculo, pageCount) {
         // Adicionar cabeçalho
+        const margins = this.config.pdf && this.config.pdf.margins ? this.config.pdf.margins : {
+            top: 25,
+            right: 15,
+            bottom: 25,
+            left: 15
+        };
+        
+        let currentPositionY = margins.top;
+        
         doc.setFontSize(16);
-        doc.text('Memória de Cálculo', 15, 30);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219); // Cor principal
+        doc.text('5. MEMÓRIA DE CÁLCULO', margins.left, currentPositionY);
+        currentPositionY += 15;
+        
+        // Linha separadora
+        doc.setDrawColor(52, 152, 219);
+        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
+        currentPositionY += 10;
 
-        let currentPositionY = 40;
-
-        // Verificar se a função obterMemoriaCalculo está disponível
-        if (typeof obterMemoriaCalculo !== 'function') {
-            console.warn('Função obterMemoriaCalculo não definida');
-            doc.setFontSize(12);
-            doc.text('Memória de cálculo não disponível.', 15, currentPositionY);
-            return currentPositionY + 10;
-        }
-
+        let memoriaTexto = '';
+        
+        // Determinar o conteúdo da memória de cálculo
         try {
-            // Obter a memória de cálculo
-            const memoriaTexto = obterMemoriaCalculo() || 'Memória de cálculo vazia.';
-
-            // Definir fonte menor para a memória de cálculo (monospace)
-            doc.setFont('Courier', 'normal');
-            doc.setFontSize(9);
-
-            // Dividir o texto em linhas para caber na página
-            const linhas = doc.splitTextToSize(memoriaTexto, 180);
-
-            // Adicionar as linhas ao documento
-            doc.text(linhas, 15, currentPositionY);
-
-            // Atualizar posição Y
-            currentPositionY += linhas.length * 4; // Espaçamento entre linhas
-
-            // Resetar fonte
-            doc.setFont('Helvetica', 'normal');
-            doc.setFontSize(12);
+            if (typeof obterMemoriaCalculo === 'function') {
+                // É uma função, chamá-la para obter a memória
+                memoriaTexto = obterMemoriaCalculo() || '';
+            } else if (obterMemoriaCalculo && typeof obterMemoriaCalculo === 'object') {
+                // É um objeto, pegar o primeiro ano disponível
+                const primeiroAno = Object.keys(obterMemoriaCalculo)[0];
+                memoriaTexto = obterMemoriaCalculo[primeiroAno] || '';
+            } else if (window.memoriaCalculoSimulacao) {
+                // Tentar obter do objeto global
+                const anoSelecionado = document.getElementById('select-ano-memoria')?.value || 
+                                    Object.keys(window.memoriaCalculoSimulacao)[0];
+                memoriaTexto = window.memoriaCalculoSimulacao[anoSelecionado] || '';
+            } else {
+                // Nada disponível
+                memoriaTexto = 'Memória de cálculo não disponível.';
+            }
         } catch (error) {
             console.error('Erro ao processar memória de cálculo:', error);
-            doc.setFontSize(12);
-            doc.text('Erro ao processar memória de cálculo.', 15, currentPositionY);
-            currentPositionY += 10;
+            memoriaTexto = 'Erro ao processar memória de cálculo: ' + error.message;
         }
+
+        // Definir fonte menor para a memória de cálculo (monospace)
+        doc.setFont('Courier', 'normal');
+        doc.setFontSize(9);
+
+        // Dividir o texto em linhas para caber na página
+        const linhas = doc.splitTextToSize(memoriaTexto, doc.internal.pageSize.width - margins.left - margins.right - 10);
+
+        // Calcular o espaço necessário
+        const alturaLinhas = linhas.length * 4; // Espaçamento entre linhas
+        
+        // Verificar se precisa de uma nova página
+        if (currentPositionY + alturaLinhas > doc.internal.pageSize.height - margins.bottom - 20) {
+            doc.addPage();
+            currentPositionY = margins.top;
+            
+            // Adicionar cabeçalho na nova página
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.text('5. MEMÓRIA DE CÁLCULO (continuação)', margins.left, currentPositionY);
+            currentPositionY += 10;
+            
+            doc.setFont('Courier', 'normal');
+            doc.setFontSize(9);
+        }
+
+        // Adicionar as linhas ao documento
+        doc.text(linhas, margins.left, currentPositionY);
+
+        // Atualizar posição Y
+        currentPositionY += alturaLinhas;
+
+        // Resetar fonte
+        doc.setFont('Helvetica', 'normal');
+        doc.setFontSize(12);
 
         return currentPositionY;
     },
@@ -649,6 +695,15 @@ const ExportTools = {
     /**
      * Correção 6: Implementar a função _adicionarResultadosSimulacao que é chamada mas parece estar faltando
      */
+    /**
+     * Adiciona os resultados da simulação ao PDF
+     * @private
+     * @param {Object} doc - Documento PDF
+     * @param {Object} resultados - Resultados da simulação
+     * @param {Object} aliquotasEquivalentes - Alíquotas equivalentes calculadas (opcional)
+     * @param {number} pageCount - Número da página
+     * @returns {number} Posição Y atual após adicionar o conteúdo
+     */
     _adicionarResultadosSimulacao: function(doc, resultados, aliquotasEquivalentes, pageCount) {
         // Configurações básicas da página
         const margins = this.config.pdf && this.config.pdf.margins ? this.config.pdf.margins : {
@@ -672,178 +727,142 @@ const ExportTools = {
         doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
         currentPositionY += 10;
 
-        // Organizar anos
-        const anos = Object.keys(resultados).sort();
+        // Verificar se temos a estrutura atualizada
+        if (resultados.resultadosExportacao && resultados.resultadosExportacao.resultadosPorAno) {
+            // Usar a nova estrutura simplificada
+            const resultadosPorAno = resultados.resultadosExportacao.resultadosPorAno;
+            const anos = resultados.resultadosExportacao.anos;
+            const resumo = resultados.resultadosExportacao.resumo || {};
 
-        // Tabela de resultados
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(46, 204, 113); // Cor secundária
-        doc.text('2.1. Impacto no Fluxo de Caixa', margins.left, currentPositionY);
-        currentPositionY += 10;
+            // Cabeçalho da seção
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(46, 204, 113); // Cor secundária
+            doc.text('2.1. Impacto no Fluxo de Caixa', margins.left, currentPositionY);
+            currentPositionY += 10;
 
-        // Definir fonte para conteúdo
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
+            // Cabeçalho da tabela
+            const headers = ['Ano', 'Imposto Devido', 'Sistema Atual', 'Diferença', 'Variação (%)'];
+            const colWidths = [30, 40, 40, 40, 35];
 
-        // Cabeçalho da tabela
-        const headers = ['Ano', 'Imposto Devido', 'Sistema Atual', 'Diferença', 'Variação (%)'];
-        const colWidths = [30, 40, 40, 40, 35];
+            // Desenhar cabeçalho
+            doc.setFillColor(52, 152, 219);
+            doc.setDrawColor(52, 152, 219);
+            doc.setTextColor(255, 255, 255);
+            doc.rect(margins.left, currentPositionY, doc.internal.pageSize.width - margins.left - margins.right, 10, 'F');
 
-        // Desenhar cabeçalho
-        doc.setFillColor(52, 152, 219);
-        doc.setDrawColor(52, 152, 219);
-        doc.setTextColor(255, 255, 255);
-        doc.rect(margins.left, currentPositionY, doc.internal.pageSize.width - margins.left - margins.right, 10, 'F');
+            let currentX = margins.left + 5;
+            headers.forEach((header, index) => {
+                doc.text(header, currentX, currentPositionY + 7);
+                currentX += colWidths[index];
+            });
 
-        let currentX = margins.left + 5;
-        headers.forEach((header, index) => {
-            doc.text(header, currentX, currentPositionY + 7);
-            currentX += colWidths[index];
-        });
+            currentPositionY += 10;
+            doc.setTextColor(0, 0, 0);
 
-        currentPositionY += 10;
-
-        // Resetar cor do texto
-        doc.setTextColor(0, 0, 0);
-
-        // Adicionar linhas da tabela
-        let rowColor = false;
-
-        anos.forEach(ano => {
-            const resultado = resultados[ano];
-            // Verificação robusta para evitar erro
-            const valorAtual = (aliquotasEquivalentes[ano] && typeof aliquotasEquivalentes[ano].valor_atual !== 'undefined') 
-                ? aliquotasEquivalentes[ano].valor_atual 
-                : 0;
-
-            const diferenca = resultado.imposto_devido - valorAtual;
-            const percentual = valorAtual !== 0 ? (diferenca / valorAtual) * 100 : 0;
-
-            // Alternar cor de fundo
-            if (rowColor) {
-                doc.setFillColor(240, 240, 240);
-                doc.rect(margins.left, currentPositionY, doc.internal.pageSize.width - margins.left - margins.right, 10, 'F');
-            }
-            rowColor = !rowColor;
-
-            // Formatar valores
-            const formatMoeda = (valor) => {
-                if (valor === undefined || valor === null) {
+            // Funções auxiliares de formatação segura
+            const formatarMoeda = (valor) => {
+                if (isNaN(valor) || valor === undefined || valor === null) {
                     return 'R$ 0,00';
                 }
                 return 'R$ ' + valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             };
-            const formatPerc = (valor) => valor.toFixed(2) + '%';
+            
+            const formatarPercentual = (valor) => {
+                if (isNaN(valor) || valor === undefined || valor === null) {
+                    return '0,00%';
+                }
+                return valor.toFixed(2) + '%';
+            };
 
-            // Adicionar dados
-            currentX = margins.left + 5;
-
-            doc.text(ano, currentX, currentPositionY + 7);
-            currentX += colWidths[0];
-
-            doc.text(FormatacaoHelper.formatarMoeda(diferenca), currentX, currentPositionY + 7);
-            currentX += colWidths[1];
-
-            doc.text(FormatacaoHelper.formatarMoeda(diferenca), currentX, currentPositionY + 7);
-            currentX += colWidths[2];
-
-            // Usar cor diferente para diferença positiva/negativa
-            if (diferenca > 0) {
-                doc.setTextColor(231, 76, 60); // Cor para aumento (vermelho)
-            } else {
-                doc.setTextColor(46, 204, 113); // Cor para redução (verde)
-            }
-
-            doc.text(formatMoeda(diferenca), currentX, currentPositionY + 7);
-            currentX += colWidths[3];
-
-            doc.text(formatPerc(percentual), currentX, currentPositionY + 7);
-
-            // Resetar cor do texto
-            doc.setTextColor(0, 0, 0);
-
+            // Adicionar linhas da tabela
+            let rowColor = false;
+            
+            anos.forEach(ano => {
+                const dadosAno = resultadosPorAno[ano];
+                if (!dadosAno) return;
+                
+                // Alternar cor de fundo
+                if (rowColor) {
+                    doc.setFillColor(240, 240, 240);
+                    doc.rect(margins.left, currentPositionY, doc.internal.pageSize.width - margins.left - margins.right, 10, 'F');
+                }
+                rowColor = !rowColor;
+                
+                // Adicionar dados
+                currentX = margins.left + 5;
+                
+                doc.text(ano, currentX, currentPositionY + 7);
+                currentX += colWidths[0];
+                
+                doc.text(formatarMoeda(dadosAno.impostoDevido), currentX, currentPositionY + 7);
+                currentX += colWidths[1];
+                
+                doc.text(formatarMoeda(dadosAno.sistemaAtual), currentX, currentPositionY + 7);
+                currentX += colWidths[2];
+                
+                // Usar cor diferente para diferença positiva/negativa
+                if (dadosAno.diferenca > 0) {
+                    doc.setTextColor(231, 76, 60); // Cor para aumento (vermelho)
+                } else {
+                    doc.setTextColor(46, 204, 113); // Cor para redução (verde)
+                }
+                
+                doc.text(formatarMoeda(dadosAno.diferenca), currentX, currentPositionY + 7);
+                currentX += colWidths[3];
+                
+                doc.text(formatarPercentual(dadosAno.percentualImpacto), currentX, currentPositionY + 7);
+                
+                // Resetar cor do texto
+                doc.setTextColor(0, 0, 0);
+                
+                currentPositionY += 10;
+            });
+            
             currentPositionY += 10;
-        });
 
-        currentPositionY += 10;
+            // Seção de análise dos resultados
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(46, 204, 113); // Cor secundária
+            doc.text('2.2. Análise dos Resultados', margins.left, currentPositionY);
+            currentPositionY += 10;
 
-        // Adicionar análise de resultados
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(46, 204, 113); // Cor secundária
-        doc.text('2.2. Análise dos Resultados', margins.left, currentPositionY);
-        currentPositionY += 10;
+            // Definir fonte para texto
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
 
-        // Calcular indicadores
-        let variacaoTotal = 0;
-        let maiorImpacto = { valor: 0, ano: '' };
-        let menorImpacto = { valor: Number.MAX_SAFE_INTEGER, ano: '' };
-
-        anos.forEach(ano => {
-            const resultado = resultados[ano];
-            const valorAtual = (aliquotasEquivalentes[ano] && typeof aliquotasEquivalentes[ano].valor_atual !== 'undefined') 
-                ? aliquotasEquivalentes[ano].valor_atual 
-                : 0;
-
-            const diferenca = resultado.imposto_devido - valorAtual;
-
-            // Acumular variação total
-            variacaoTotal += diferenca;
-
-            // Verificar maior impacto
-            if (Math.abs(diferenca) > Math.abs(maiorImpacto.valor)) {
-                maiorImpacto.valor = diferenca;
-                maiorImpacto.ano = ano;
-            }
-
-            // Verificar menor impacto
-            if (Math.abs(diferenca) < Math.abs(menorImpacto.valor)) {
-                menorImpacto.valor = diferenca;
-                menorImpacto.ano = ano;
-            }
-        });
-
-        // Formatar valores
-        const formatMoeda = (valor) => {
-            if (valor === undefined || valor === null) {
-                return 'R$ 0,00';
-            }
-            return 'R$ ' + valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        };
-
-        // Definir fonte para texto
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-
-        // Adicionar texto da análise
-        const linhas = [
-            `A variação total acumulada no período de ${anos[0]} a ${anos[anos.length - 1]} foi de ${formatMoeda(variacaoTotal)}.`,
-            `O ano com maior impacto foi ${maiorImpacto.ano}, com uma diferença de ${formatMoeda(maiorImpacto.valor)}.`,
-            `O ano com menor impacto foi ${menorImpacto.ano}, com uma diferença de ${formatMoeda(menorImpacto.valor)}.`
-        ];
-
-        linhas.forEach(linha => {
-            doc.text(linha, margins.left, currentPositionY);
+            // Adicionar texto da análise
+            const anoInicial = anos.length > 0 ? anos[0] : '';
+            const anoFinal = anos.length > 0 ? anos[anos.length - 1] : '';
+            
+            const textoVariacao = `A variação total acumulada no período de ${anoInicial} a ${anoFinal} foi de ${formatarMoeda(resumo.variacaoTotal)}.`;
+            doc.text(textoVariacao, margins.left, currentPositionY);
             currentPositionY += 8;
-        });
+            
+            const textoMaiorImpacto = `O ano com maior impacto foi ${resumo.anoMaiorImpacto}, com uma diferença de ${formatarMoeda(resumo.valorMaiorImpacto)}.`;
+            doc.text(textoMaiorImpacto, margins.left, currentPositionY);
+            currentPositionY += 8;
+            
+            const textoMenorImpacto = `O ano com menor impacto foi ${resumo.anoMenorImpacto}, com uma diferença de ${formatarMoeda(resumo.valorMenorImpacto)}.`;
+            doc.text(textoMenorImpacto, margins.left, currentPositionY);
+            currentPositionY += 12;
 
-        currentPositionY += 5;
+            // Conclusão
+            const tendencia = resumo.tendenciaGeral || (resumo.variacaoTotal > 0 ? 'aumento' : 'redução');
+            const conclusao = `A implementação do Split Payment resultará em um ${tendencia} da necessidade de capital de giro.`;
+            doc.text(conclusao, margins.left, currentPositionY);
+            currentPositionY += 8;
 
-        // Conclusão
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-
-        const conclusao = variacaoTotal > 0 
-            ? 'A implementação do Split Payment resultará em um aumento da necessidade de capital de giro.'
-            : 'A implementação do Split Payment poderá resultar em uma redução da necessidade de capital de giro.';
-
-        doc.text(conclusao, margins.left, currentPositionY);
-        currentPositionY += 8;
-
-        const recomendacao = 'Recomenda-se a análise das estratégias de mitigação apresentadas na seção 4 deste relatório.';
-        doc.text(recomendacao, margins.left, currentPositionY);
+            const recomendacao = 'Recomenda-se a análise das estratégias de mitigação apresentadas na seção 4 deste relatório.';
+            doc.text(recomendacao, margins.left, currentPositionY);
+        } else {
+            // Estrutura antiga ou inválida - exibir mensagem de erro
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'italic');
+            doc.text('Dados de resultados não disponíveis ou em formato incompatível.', margins.left, currentPositionY);
+            currentPositionY += 20;
+        }
 
         return currentPositionY;
     },
@@ -1147,14 +1166,11 @@ const ExportTools = {
      * @param {Object} doc - Documento PDF
      * @param {Object} dados - Dados da simulação
      * @param {Object} resultados - Resultados da simulação
-     * @param {Object} aliquotasEquivalentes - Alíquotas equivalentes (opcional)
      * @param {number} pageCount - Número da página
+     * @param {Object} aliquotasEquivalentes - Alíquotas equivalentes (opcional)
      * @returns {number} Posição Y atual após adicionar o conteúdo
      */
     _adicionarConclusao: function(doc, dados, resultados, pageCount, aliquotasEquivalentes) {
-        // Verificação inicial - usar objeto vazio se aliquotasEquivalentes não estiver definido
-        aliquotasEquivalentes = aliquotasEquivalentes || {};
-
         // Configurações básicas da página
         const margins = this.config.pdf && this.config.pdf.margins ? this.config.pdf.margins : {
             top: 25,
@@ -1177,30 +1193,63 @@ const ExportTools = {
         doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
         currentPositionY += 10;
 
-        // Organizar anos
-        const anos = Object.keys(resultados).sort();
+        // Verificar se temos a estrutura atualizada
+        let empresaNome = dados.empresa || 'a empresa';
+        let anoInicial = '';
+        let anoFinal = '';
         let variacaoTotal = 0;
+        let tendencia = 'variação';
 
-        // Calcular variação total
-        anos.forEach(ano => {
-            const resultado = resultados[ano];
-            const valorAtual = (aliquotasEquivalentes && aliquotasEquivalentes[ano] && 
-                              typeof aliquotasEquivalentes[ano].valor_atual !== 'undefined') 
-                ? aliquotasEquivalentes[ano].valor_atual 
-                : 0;
+        if (resultados.resultadosExportacao) {
+            // Usar a nova estrutura
+            const resumo = resultados.resultadosExportacao.resumo || {};
+            const anos = resultados.resultadosExportacao.anos || [];
+            
+            anoInicial = anos.length > 0 ? anos[0] : '';
+            anoFinal = anos.length > 0 ? anos[anos.length - 1] : '';
+            variacaoTotal = resumo.variacaoTotal || 0;
+            tendencia = resumo.tendenciaGeral || (variacaoTotal > 0 ? 'aumento' : 'redução');
+        } else {
+            // Tentar extrair informações da estrutura antiga
+            const anos = Object.keys(resultados).filter(key => !isNaN(parseInt(key))).sort();
+            
+            anoInicial = anos.length > 0 ? anos[0] : '';
+            anoFinal = anos.length > 0 ? anos[anos.length - 1] : '';
+            
+            // Tentar calcular variação total
+            anos.forEach(ano => {
+                const resultado = resultados[ano];
+                const valorAtual = (aliquotasEquivalentes && aliquotasEquivalentes[ano] && 
+                                typeof aliquotasEquivalentes[ano].valor_atual !== 'undefined') 
+                    ? aliquotasEquivalentes[ano].valor_atual 
+                    : 0;
 
-            const diferenca = resultado.imposto_devido - valorAtual;
-            variacaoTotal += diferenca;
-        });
+                const diferenca = resultado && resultado.imposto_devido ? 
+                    resultado.imposto_devido - valorAtual : 0;
+                
+                variacaoTotal += diferenca;
+            });
+            
+            tendencia = variacaoTotal > 0 ? 'aumento' : 'redução';
+        }
+
+        // Formatar números
+        const formatarMoeda = (valor) => {
+            if (isNaN(valor) || valor === undefined || valor === null) {
+                return 'R$ 0,00';
+            }
+            return 'R$ ' + Math.abs(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        };
 
         // Texto da conclusão
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0, 0, 0);
 
-        const conclusaoTexto = `A implementação do Split Payment, conforme simulação realizada para ${dados.empresa || 'a empresa'}, 
-    resultará em um ${variacaoTotal > 0 ? 'aumento' : 'decréscimo'} estimado de R$ ${Math.abs(variacaoTotal).toLocaleString('pt-BR', {minimumFractionDigits: 2})} 
-    na necessidade de capital de giro durante o período de ${anos[0]} a ${anos[anos.length - 1]}.`;
+        // Introdução da conclusão
+        const conclusaoTexto = `A implementação do Split Payment, conforme simulação realizada para ${empresaNome}, 
+        resultará em um ${tendencia} estimado de ${formatarMoeda(variacaoTotal)} 
+        na necessidade de capital de giro durante o período de ${anoInicial} a ${anoFinal}.`;
 
         // Dividir texto em linhas
         const linhas = doc.splitTextToSize(conclusaoTexto, doc.internal.pageSize.width - margins.left - margins.right);
@@ -1209,9 +1258,9 @@ const ExportTools = {
 
         // Impacto no fluxo de caixa
         const impactoTexto = `O principal impacto identificado está relacionado à antecipação do recolhimento tributário, 
-    que no modelo atual ocorre em média 30-45 dias após o faturamento, e no novo modelo ocorrerá de forma instantânea 
-    no momento da transação financeira. Esta mudança afeta diretamente o ciclo financeiro da empresa 
-    e sua necessidade de capital de giro.`;
+        que no modelo atual ocorre em média 30-45 dias após o faturamento, e no novo modelo ocorrerá de forma instantânea 
+        no momento da transação financeira. Esta mudança afeta diretamente o ciclo financeiro da empresa 
+        e sua necessidade de capital de giro.`;
 
         const linhasImpacto = doc.splitTextToSize(impactoTexto, doc.internal.pageSize.width - margins.left - margins.right);
         doc.text(linhasImpacto, margins.left, currentPositionY);
@@ -1230,16 +1279,16 @@ const ExportTools = {
 
         const recomendacoes = [
             `1. Planejamento Financeiro: Recomenda-se iniciar imediatamente o planejamento financeiro 
-    para adequação ao novo regime, considerando a implementação gradual do Split Payment a partir de 2026.`,
+        para adequação ao novo regime, considerando a implementação gradual do Split Payment a partir de 2026.`,
 
             `2. Estratégias de Mitigação: Conforme análise apresentada na seção 4, 
-    sugere-se a implementação de uma combinação de estratégias para minimizar o impacto no fluxo de caixa.`,
+        sugere-se a implementação de uma combinação de estratégias para minimizar o impacto no fluxo de caixa.`,
 
             `3. Sistemas: Realizar a adequação dos sistemas de gestão financeira e contábil para operação 
-    com o novo modelo de recolhimento tributário.`,
+        com o novo modelo de recolhimento tributário.`,
 
             `4. Monitoramento Contínuo: Manter acompanhamento constante das alterações na regulamentação 
-    do Split Payment, que ainda está em fase de definição pelos órgãos competentes.`
+        do Split Payment, que ainda está em fase de definição pelos órgãos competentes.`
         ];
 
         recomendacoes.forEach(recomendacao => {
@@ -1261,9 +1310,9 @@ const ExportTools = {
         doc.setTextColor(0, 0, 0);
 
         const consideracoesFinais = `Esta simulação representa uma estimativa baseada nas informações disponíveis 
-    e nas premissas estabelecidas. Os resultados podem variar conforme a evolução da regulamentação do Split Payment 
-    e as particularidades operacionais de cada empresa. Recomenda-se a atualização periódica desta análise 
-    à medida que novas informações forem divulgadas pelos órgãos competentes.`;
+        e nas premissas estabelecidas. Os resultados podem variar conforme a evolução da regulamentação do Split Payment 
+        e as particularidades operacionais de cada empresa. Recomenda-se a atualização periódica desta análise 
+        à medida que novas informações forem divulgadas pelos órgãos competentes.`;
 
         const linhasConsideracoes = doc.splitTextToSize(consideracoesFinais, doc.internal.pageSize.width - margins.left - margins.right);
         doc.text(linhasConsideracoes, margins.left, currentPositionY);

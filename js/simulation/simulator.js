@@ -14,8 +14,8 @@ window.SimuladorFluxoCaixa = {
             empresa: document.getElementById('empresa').value,
             setor: document.getElementById('setor').value,
             regime: document.getElementById('regime').value,
-            faturamento: this.extrairValorNumerico(document.getElementById('faturamento').value),
-            margem: parseFloat(document.getElementById('margem').value) / 100,
+            faturamento: this.validarNumero(this.extrairValorNumerico(document.getElementById('faturamento').value)),
+    		margem: this.validarNumero(parseFloat(document.getElementById('margem').value), 15) / 100, // valor padrão de 15%
             pmr: parseInt(document.getElementById('pmr').value) || 30,
             pmp: parseInt(document.getElementById('pmp').value) || 30,
             pme: parseInt(document.getElementById('pme').value) || 30,
@@ -45,13 +45,79 @@ window.SimuladorFluxoCaixa = {
         // Atualizar memória de cálculo
         this.atualizarMemoriaCalculo(resultados.memoriaCalculo);
 
-        // Armazenar resultados para uso posterior (exportação)
-        window.ultimaSimulacao = {
-            dados: dados,
-            resultados: resultados
-        };
+        // Identificar maior e menor impacto para resumo
+		let maiorImpacto = { valor: 0, ano: '' };
+		let menorImpacto = { valor: Number.MAX_SAFE_INTEGER, ano: '' };
+		let variacaoTotal = 0;
 
-        console.log('Simulação concluída com sucesso');
+		// Calcular valores de resumo a partir dos resultados
+		const anosProjecao = Object.keys(resultados.projecaoTemporal.resultadosAnuais).sort();
+		anosProjecao.forEach(ano => {
+			const resultado = resultados.projecaoTemporal.resultadosAnuais[ano];
+			const diferenca = this.validarNumero(resultado.diferencaCapitalGiro);
+
+			// Acumular variação total
+			variacaoTotal += diferenca;
+
+			// Verificar maior impacto (em valores absolutos)
+			if (Math.abs(diferenca) > Math.abs(maiorImpacto.valor)) {
+				maiorImpacto = { valor: diferenca, ano: ano };
+			}
+
+			// Verificar menor impacto (em valores absolutos)
+			if (Math.abs(diferenca) < Math.abs(menorImpacto.valor) && Math.abs(diferenca) > 0) {
+				menorImpacto = { valor: diferenca, ano: ano };
+			}
+		});
+
+		// Se não encontrou um menor impacto válido, ajustar para zero
+		if (menorImpacto.valor === Number.MAX_SAFE_INTEGER) {
+			menorImpacto = { valor: 0, ano: anosProjecao[0] || '' };
+		}
+
+		// Criar estrutura global com dados organizados para exportação
+		window.ultimaSimulacao = {
+			dados: dados,
+			resultados: resultados,
+			// Adicionar uma estrutura auxiliar simplificada para uso nas exportações
+			resultadosExportacao: {
+				anos: anosProjecao,
+				impactoBase: resultados.impactoBase,
+				resultadosPorAno: {}, // Será preenchido abaixo
+				resumo: {
+					variacaoTotal: variacaoTotal,
+					impactoMedioAnual: anosProjecao.length > 0 ? variacaoTotal / anosProjecao.length : 0,
+					anoMaiorImpacto: maiorImpacto.ano,
+					valorMaiorImpacto: maiorImpacto.valor,
+					anoMenorImpacto: menorImpacto.ano,
+					valorMenorImpacto: menorImpacto.valor,
+					tendenciaGeral: variacaoTotal > 0 ? 'aumento' : 'redução'
+				}
+			}
+		};
+
+		// Preencher resultados por ano em formato simplificado
+		anosProjecao.forEach(ano => {
+			const resultado = resultados.projecaoTemporal.resultadosAnuais[ano];
+
+			// Validar valores para evitar NaN
+			const impostoDevido = this.validarNumero(resultado.resultadoSplitPayment?.valorImposto);
+			const valorAtual = this.validarNumero(resultado.resultadoAtual?.valorImposto);
+			const diferenca = this.validarNumero(resultado.diferencaCapitalGiro);
+			const percentualImpacto = this.validarNumero(resultado.percentualImpacto);
+
+			// Adicionar ao objeto de resultados por ano
+			window.ultimaSimulacao.resultadosExportacao.resultadosPorAno[ano] = {
+				impostoDevido: impostoDevido,
+				sistemaAtual: valorAtual,
+				diferenca: diferenca,
+				percentualImpacto: percentualImpacto,
+				necessidadeAdicional: this.validarNumero(resultado.necessidadeAdicionalCapitalGiro),
+				margemAjustada: this.validarNumero(resultado.margemOperacionalAjustada)
+			};
+		});
+
+		console.log('Simulação concluída com sucesso', window.ultimaSimulacao);
     },
 
     /**
@@ -77,6 +143,19 @@ window.SimuladorFluxoCaixa = {
         const valorNumerico = parseFloat(valorConvertido);
         console.log('Extraindo valor numérico de:', valor, '→', valorNumerico);
         return isNaN(valorNumerico) ? 0 : valorNumerico;
+    },
+	
+	 /**
+     * Valida um valor numérico, retornando um valor padrão caso seja inválido
+     * @param {any} valor - Valor a ser validado
+     * @param {number} valorPadrao - Valor padrão a ser retornado em caso de valor inválido
+     * @returns {number} - Valor numérico validado
+     */
+    validarNumero: function(valor, valorPadrao = 0) {
+        if (valor === undefined || valor === null || isNaN(parseFloat(valor))) {
+            return valorPadrao;
+        }
+        return parseFloat(valor);
     },
 
     /**
@@ -798,39 +877,61 @@ window.SimuladorFluxoCaixa = {
      * @param {Object} dados - Dados para simulação
      * @returns {Object} - Resultados da simulação
      */
-    simular: function(dados) {
-        console.log('Iniciando simulação:', dados);
-        
-        // Extrair ano inicial e final para simulação
-        const anoInicial = parseInt(dados.dataInicial.split('-')[0]);
-        const anoFinal = parseInt(dados.dataFinal.split('-')[0]);
-        
-        // Calcular impacto inicial
-        const impactoBase = this.calcularImpactoCapitalGiro(dados, anoInicial);
-        
-        // Simular período de transição
-        const projecaoTemporal = this.simularPeriodoTransicao(
-            dados, 
-            anoInicial, 
-            anoFinal, 
-            dados.cenario, 
-            dados.taxaCrescimento
-        );
-        
-        // Armazenar memória de cálculo
-        const memoriaCalculo = this.gerarMemoriaCalculo(dados, anoInicial, anoFinal);
-        
-        // Resultados completos
-        const resultados = {
-            impactoBase,
-            projecaoTemporal,
-            memoriaCalculo
-        };
-        
-        console.log('Simulação concluída com sucesso:', resultados);
-        
-        return resultados;
-    },
+    // Modificar a função simular() para organizar os resultados por anos
+	simular: function(dados) {
+		console.log('Iniciando simulação:', dados);
+
+		// Extrair ano inicial e final para simulação
+		const anoInicial = parseInt(dados.dataInicial.split('-')[0]);
+		const anoFinal = parseInt(dados.dataFinal.split('-')[0]);
+
+		// Calcular impacto inicial
+		const impactoBase = this.calcularImpactoCapitalGiro(dados, anoInicial);
+
+		// Simular período de transição
+		const projecaoTemporal = this.simularPeriodoTransicao(
+			dados, 
+			anoInicial, 
+			anoFinal, 
+			dados.cenario, 
+			dados.taxaCrescimento
+		);
+
+		// Reorganizar resultados por anos para facilitar acesso
+		const resultadosPorAno = {};
+		resultadosPorAno[anoInicial] = {
+			imposto_devido: impactoBase.resultadoSplitPayment.valorImposto || 0,
+			sistema_atual: impactoBase.resultadoAtual.valorImposto || 0,
+			diferenca: impactoBase.diferencaCapitalGiro || 0,
+			percentual_impacto: impactoBase.percentualImpacto || 0
+		};
+
+		// Adicionar resultados de anos subsequentes
+		Object.keys(projecaoTemporal.resultadosAnuais).forEach(ano => {
+			const resultado = projecaoTemporal.resultadosAnuais[ano];
+			resultadosPorAno[ano] = {
+				imposto_devido: resultado.resultadoSplitPayment?.valorImposto || 0,
+				sistema_atual: resultado.resultadoAtual?.valorImposto || 0,
+				diferenca: resultado.diferencaCapitalGiro || 0,
+				percentual_impacto: resultado.percentualImpacto || 0
+			};
+		});
+
+		// Armazenar memória de cálculo
+		const memoriaCalculo = this.gerarMemoriaCalculo(dados, anoInicial, anoFinal);
+
+		// Resultados completos
+		const resultados = {
+			impactoBase,
+			projecaoTemporal,
+			resultadosPorAno, // Nova estrutura organizada por anos
+			memoriaCalculo
+		};
+
+		console.log('Simulação concluída com sucesso:', resultados);
+
+		return resultados;
+	},
     
     /**
      * Calcula o fluxo de caixa no regime tributário atual
@@ -918,11 +1019,12 @@ window.SimuladorFluxoCaixa = {
         const resultadoSplitPayment = this.calcularFluxoCaixaSplitPayment(dados, ano);
         
         // Calcular diferenças
-        const diferencaCapitalGiro = resultadoSplitPayment.capitalGiroDisponivel - resultadoAtual.capitalGiroDisponivel;
-        const percentualImpacto = (diferencaCapitalGiro / resultadoAtual.capitalGiroDisponivel) * 100;
+        const diferencaCapitalGiro = this.validarNumero(resultadoSplitPayment.capitalGiroDisponivel) - this.validarNumero(resultadoAtual.capitalGiroDisponivel);
+		const capitalGiroAtual = this.validarNumero(resultadoAtual.capitalGiroDisponivel);
+		const percentualImpacto = capitalGiroAtual !== 0 ? (diferencaCapitalGiro / capitalGiroAtual) * 100 : 0;
         
         // Calcular impacto na margem operacional
-        const margem = dados.margem;
+        const margem = parseFloat(dados.margem) / 100;  // Converter para decimal se vier como percentual
         const custoCapitalGiro = Math.abs(diferencaCapitalGiro) * (dados.taxaCapitalGiro || 0.021); // 2,1% a.m. padrão
         const impactoMargem = (custoCapitalGiro / dados.faturamento) * 100;
         
