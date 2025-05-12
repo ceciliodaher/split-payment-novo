@@ -146,17 +146,17 @@ window.SimuladorFluxoCaixa = {
     },
 	
 	 /**
-     * Valida um valor numérico, retornando um valor padrão caso seja inválido
-     * @param {any} valor - Valor a ser validado
-     * @param {number} valorPadrao - Valor padrão a ser retornado em caso de valor inválido
-     * @returns {number} - Valor numérico validado
-     */
-    validarNumero: function(valor, valorPadrao = 0) {
-        if (valor === undefined || valor === null || isNaN(parseFloat(valor))) {
-            return valorPadrao;
-        }
-        return parseFloat(valor);
-    },
+	 * Valida um valor numérico, retornando um valor padrão caso seja inválido
+	 * @param {any} valor - Valor a ser validado
+	 * @param {number} valorPadrao - Valor padrão a ser retornado em caso de valor inválido
+	 * @returns {number} - Valor numérico validado
+	 */
+	validarNumero: function(valor, valorPadrao = 0) {
+		if (valor === undefined || valor === null || isNaN(parseFloat(valor))) {
+			return valorPadrao;
+		}
+		return parseFloat(valor);
+	},
 
     /**
      * Valida os dados da simulação
@@ -241,7 +241,7 @@ window.SimuladorFluxoCaixa = {
 							</tr>
 							<tr>
 								<td>Impacto na Margem Operacional:</td>
-								<td>De <span class="value-original">${formatarPercent(impacto.margemOperacionalOriginal)}</span> para <span class="value-adjusted">${formatarPercent(impacto.margemOperacionalAjustada)}</span></td>
+								<td>De <span class="value-original">${formatarPercent(impacto.margemOperacionalOriginal*100)}</span> para <span class="value-adjusted">${formatarPercent(impacto.margemOperacionalAjustada*100)}</span></td>
 							</tr>
 						</table>
 					</div>
@@ -256,12 +256,12 @@ window.SimuladorFluxoCaixa = {
 							<td><strong>${formatarMoeda(projecao.impactoAcumulado.totalNecessidadeCapitalGiro)}</strong></td>
 						</tr>
 						<tr>
-							<td>Custo Financeiro Total:</td>
-							<td><strong>${formatarMoeda(projecao.impactoAcumulado.custoFinanceiroTotal)}</strong></td>
+							<th>Custo Financeiro Total:</th>
+        					<td><strong>${formatarMoeda(this.validarNumero(projecao.impactoAcumulado.custoFinanceiroTotal))}</strong></td>
 						</tr>
 						<tr>
-							<td>Impacto Médio na Margem:</td>
-							<td><strong>${formatarPercent(projecao.impactoAcumulado.impactoMedioMargem/100)}</strong></td>
+							<th>Impacto Médio na Margem:</th>
+        					<td><strong>${formatarPercent(this.validarNumero(projecao.impactoAcumulado.impactoMedioMargem)/1)}</strong></td>
 						</tr>
 					</table>
 				</div>
@@ -294,7 +294,7 @@ window.SimuladorFluxoCaixa = {
 					<td>${formatarMoeda(resultado.diferencaCapitalGiro)}</td>
 					<td>${formatarPercent(resultado.percentualImpacto/100)}</td>
 					<td>${formatarMoeda(resultado.necesidadeAdicionalCapitalGiro)}</td>
-					<td>${formatarPercent(resultado.margemOperacionalAjustada)}</td>
+					<td>${formatarPercent(resultado.margemOperacionalAjustada*100)}</td>
 				</tr>
 			`;
 		});
@@ -934,116 +934,149 @@ window.SimuladorFluxoCaixa = {
 	},
     
     /**
-     * Calcula o fluxo de caixa no regime tributário atual
-     * @param {Object} dados - Dados para simulação
-     * @returns {Object} - Resultados do fluxo de caixa atual
-     */
-    calcularFluxoCaixaAtual: function(dados) {
-        // Extrair dados relevantes
-        const faturamento = dados.faturamento;
-        const aliquota = dados.aliquota;
-        const pmr = dados.pmr;
-        
-        // Calcular valores
-        const valorImposto = faturamento * aliquota;
-        const prazoRecolhimento = 25; // Dias para recolhimento do imposto (mês seguinte)
-        const capitalGiroDisponivel = valorImposto;
-        const diasCapitalDisponivel = pmr + prazoRecolhimento;
-        
-        // Resultado
-        const resultado = {
-            faturamento,
-            valorImposto,
-            recebimentoLiquido: faturamento,
-            capitalGiroDisponivel,
-            diasCapitalDisponivel
-        };
-        
-        // Armazenar resultado para memória de cálculo
-        this._resultadoAtual = resultado;
-        
-        return resultado;
-    },
+	 * Calcula o fluxo de caixa no regime tributário atual
+	 * @param {Object} dados - Dados para simulação
+	 * @returns {Object} - Resultados do fluxo de caixa atual
+	 */
+	calcularFluxoCaixaAtual: function(dados) {
+		// Extrair dados relevantes
+		const faturamento = dados.faturamento;
+		const aliquota = dados.aliquota;
+		const pmr = dados.pmr;
+
+		// Calcular valores
+		const valorImposto = faturamento * aliquota;
+		const prazoRecolhimento = 25; // Dias para recolhimento do imposto (mês seguinte)
+
+		// No sistema atual, o valor do imposto fica disponível como capital de giro
+		// até o prazo de recolhimento
+		const impostoComoCapitalGiro = valorImposto;
+		const diasCapitalDisponivel = pmr + prazoRecolhimento;
+
+		// Resultado
+		const resultado = {
+			faturamento,
+			valorImposto,
+			recebimentoLiquido: faturamento,
+			impostoComoCapitalGiro, // Renomeado para deixar mais claro
+			diasCapitalDisponivel,
+			observacao: "No sistema atual, o valor do imposto fica disponível como capital de giro até o prazo de recolhimento"
+		};
+
+		// Armazenar resultado para memória de cálculo
+		this._resultadoAtual = resultado;
+
+		return resultado;
+	},
     
     /**
-     * Calcula o fluxo de caixa com o regime de Split Payment
-     * @param {Object} dados - Dados para simulação
-     * @param {number} ano - Ano para simulação
-     * @returns {Object} - Resultados do fluxo de caixa com Split Payment
-     */
-    calcularFluxoCaixaSplitPayment: function(dados, ano = 2026) {
-        // Extrair dados relevantes
-        const faturamento = dados.faturamento;
-        const aliquota = dados.aliquota;
-        const pmr = dados.pmr;
-        
-        // Obter percentual de implementação do Split Payment para o ano
-        const percentualImplementacao = this.obterPercentualImplementacao(ano);
-        
-        // Calcular valores
-        const valorImposto = faturamento * aliquota;
-        const valorImpostoSplit = valorImposto * percentualImplementacao;
-        const valorImpostoNormal = valorImposto - valorImpostoSplit;
-        
-        const recebimentoLiquido = faturamento - valorImpostoSplit;
-        const capitalGiroDisponivel = valorImpostoNormal;
-        const diasCapitalDisponivel = 25; // Apenas para o valor não retido
-        
-        // Resultado
-        const resultado = {
-            faturamento,
-            valorImposto,
-            valorImpostoSplit,
-            valorImpostoNormal,
-            recebimentoLiquido,
-            capitalGiroDisponivel,
-            diasCapitalDisponivel,
-            percentualImplementacao
-        };
-        
-        // Armazenar resultado para memória de cálculo
-        this._resultadoSplitPayment = resultado;
-        
-        return resultado;
-    },
+	 * Calcula o fluxo de caixa com o regime de Split Payment
+	 * @param {Object} dados - Dados para simulação
+	 * @param {number} ano - Ano para simulação
+	 * @returns {Object} - Resultados do fluxo de caixa com Split Payment
+	 */
+	calcularFluxoCaixaSplitPayment: function(dados, ano = 2026) {
+		// Extrair dados relevantes
+		const faturamento = dados.faturamento;
+		const aliquota = dados.aliquota;
+		const pmr = dados.pmr;
+
+		// Obter percentual de implementação do Split Payment para o ano
+		const percentualImplementacao = this.obterPercentualImplementacao(ano);
+
+		// Calcular valores
+		const valorImpostoTotal = faturamento * aliquota;
+
+		// No Split Payment, parte do imposto é retida imediatamente
+		const valorImpostoRetidoImediatamente = valorImpostoTotal * percentualImplementacao;
+
+		// Parte do imposto ainda é recolhida no sistema tradicional
+		const valorImpostoRecolhimentoNormal = valorImpostoTotal - valorImpostoRetidoImediatamente;
+
+		// O valor recebido é líquido da parte retida
+		const recebimentoLiquido = faturamento - valorImpostoRetidoImediatamente;
+
+		// Apenas o valor não retido fica disponível como capital de giro
+		const impostoComoCapitalGiro = valorImpostoRecolhimentoNormal;
+
+		// Resultado
+		const resultado = {
+			faturamento,
+			valorImpostoTotal,
+			valorImpostoRetidoImediatamente,
+			valorImpostoRecolhimentoNormal,
+			recebimentoLiquido,
+			impostoComoCapitalGiro, // Renomeado para deixar mais claro
+			percentualImplementacao,
+			observacao: "No Split Payment, parte do imposto é retida imediatamente, reduzindo o capital de giro disponível"
+		};
+
+		// Armazenar resultado para memória de cálculo
+		this._resultadoSplitPayment = resultado;
+
+		return resultado;
+	},
     
     /**
-     * Calcula o impacto do Split Payment no capital de giro
-     * @param {Object} dados - Dados para simulação
-     * @param {number} ano - Ano para simulação
-     * @returns {Object} - Resultados do impacto no capital de giro
-     */
-    calcularImpactoCapitalGiro: function(dados, ano = 2026) {
-        // Calcular fluxo de caixa nos dois regimes
-        const resultadoAtual = this.calcularFluxoCaixaAtual(dados);
-        const resultadoSplitPayment = this.calcularFluxoCaixaSplitPayment(dados, ano);
-        
-        // Calcular diferenças
-        const diferencaCapitalGiro = this.validarNumero(resultadoSplitPayment.capitalGiroDisponivel) - this.validarNumero(resultadoAtual.capitalGiroDisponivel);
-		const capitalGiroAtual = this.validarNumero(resultadoAtual.capitalGiroDisponivel);
+	 * Calcula o impacto do Split Payment no capital de giro
+	 * @param {Object} dados - Dados para simulação
+	 * @param {number} ano - Ano para simulação
+	 * @returns {Object} - Resultados do impacto no capital de giro
+	 */
+	calcularImpactoCapitalGiro: function(dados, ano = 2026) {
+		// Calcular fluxo de caixa nos dois regimes
+		const resultadoAtual = this.calcularFluxoCaixaAtual(dados);
+		const resultadoSplitPayment = this.calcularFluxoCaixaSplitPayment(dados, ano);
+
+		// Calcular diferenças no capital de giro
+		// Um valor negativo significa que há menos capital disponível no Split Payment
+		const diferencaCapitalGiro = this.validarNumero(resultadoSplitPayment.impostoComoCapitalGiro) - 
+								   this.validarNumero(resultadoAtual.impostoComoCapitalGiro);
+
+		const capitalGiroAtual = this.validarNumero(resultadoAtual.impostoComoCapitalGiro);
+
+		// Percentual do impacto (valor negativo = redução de capital disponível)
 		const percentualImpacto = capitalGiroAtual !== 0 ? (diferencaCapitalGiro / capitalGiroAtual) * 100 : 0;
-        
-        // Calcular impacto na margem operacional
-        const margem = parseFloat(dados.margem) / 100;  // Converter para decimal se vier como percentual
-        const custoCapitalGiro = Math.abs(diferencaCapitalGiro) * (dados.taxaCapitalGiro || 0.021); // 2,1% a.m. padrão
-        const impactoMargem = (custoCapitalGiro / dados.faturamento) * 100;
-        
-        // Resultado
-        const resultado = {
-            ano,
-            resultadoAtual,
-            resultadoSplitPayment,
-            diferencaCapitalGiro,
-            percentualImpacto,
-            necessidadeAdicionalCapitalGiro: Math.abs(diferencaCapitalGiro) * 1.2, // Margem de segurança
-            margemOperacionalOriginal: margem,
-            margemOperacionalAjustada: margem - impactoMargem / 100,
-            impactoMargem,
-            custoCapitalGiro
-        };
-        
-        return resultado;
-    },
+
+		// Calcular impacto na margem operacional
+		const margem = parseFloat(dados.margem) / 100;  // Converter para decimal se vier como percentual
+
+		// Custo do capital necessário para compensar a redução
+		const custoCapitalGiro = Math.abs(diferencaCapitalGiro) * (dados.taxaCapitalGiro || 0.021); // 2,1% a.m. padrão
+		const impactoMargem = (custoCapitalGiro / dados.faturamento) * 100;
+
+		// Resultado
+		const resultado = {
+			ano,
+			resultadoAtual: {
+				valorImposto: resultadoAtual.valorImposto,
+				capitalGiroDisponivel: resultadoAtual.impostoComoCapitalGiro,
+				observacao: resultadoAtual.observacao
+			},
+			resultadoSplitPayment: {
+				valorImposto: resultadoSplitPayment.valorImpostoTotal,
+				valorRetidoImediatamente: resultadoSplitPayment.valorImpostoRetidoImediatamente,
+				capitalGiroDisponivel: resultadoSplitPayment.impostoComoCapitalGiro,
+				percentualImplementacao: resultadoSplitPayment.percentualImplementacao,
+				observacao: resultadoSplitPayment.observacao
+			},
+			diferencaCapitalGiro,
+			percentualImpacto,
+			// Um valor negativo de diferencaCapitalGiro significa que precisamos de mais capital
+			necessidadeAdicionalCapitalGiro: Math.abs(diferencaCapitalGiro) * 1.2, // Margem de segurança de 20%
+			interpretacaoImpacto: diferencaCapitalGiro < 0 
+				? "Redução no capital de giro disponível, gerando necessidade adicional de capital" 
+				: "Aumento no capital de giro disponível",
+			margemOperacionalOriginal: margem,
+			margemOperacionalAjustada: margem - impactoMargem / 100,
+			impactoMargem: {
+				valorPontoPercentual: impactoMargem,
+				custoMensalCapitalGiro: custoCapitalGiro
+			}
+		};
+
+		return resultado;
+	},
     
     /**
      * Simula o impacto ao longo do período de transição
@@ -1111,18 +1144,27 @@ window.SimuladorFluxoCaixa = {
      * @returns {Object} - Impacto acumulado
      */
     calcularImpactoAcumulado: function(resultadosAnuais, anoInicial, anoFinal) {
-        let totalNecessidadeCapitalGiro = 0;
-        let totalCustoFinanceiro = 0;
-        let somaImpactoMargem = 0;
-        
-        // Calcular totais
-        for (let ano = anoInicial; ano <= anoFinal; ano++) {
-            const impactoAno = resultadosAnuais[ano];
-            
-            totalNecessidadeCapitalGiro += impactoAno.necessidadeAdicionalCapitalGiro;
-            totalCustoFinanceiro += impactoAno.custoCapitalGiro * 12; // Anualizado
-            somaImpactoMargem += impactoAno.impactoMargem;
-        }
+		let totalNecessidadeCapitalGiro = 0;
+		let totalCustoFinanceiro = 0;
+		let somaImpactoMargem = 0;
+
+		// Calcular totais
+		for (let ano = anoInicial; ano <= anoFinal; ano++) {
+			const impactoAno = resultadosAnuais[ano];
+			if (!impactoAno) continue;
+
+			totalNecessidadeCapitalGiro += this.validarNumero(impactoAno.necessidadeAdicionalCapitalGiro);
+
+			// Acessar custoMensalCapitalGiro do objeto impactoMargem
+			if (impactoAno.impactoMargem && typeof impactoAno.impactoMargem.custoMensalCapitalGiro === 'number') {
+				totalCustoFinanceiro += impactoAno.impactoMargem.custoMensalCapitalGiro * 12;
+			}
+
+			// Acessar valorPontoPercentual do objeto impactoMargem
+			if (impactoAno.impactoMargem && typeof impactoAno.impactoMargem.valorPontoPercentual === 'number') {
+				somaImpactoMargem += impactoAno.impactoMargem.valorPontoPercentual;
+			}
+		}
         
         // Calcular médias
         const numAnos = anoFinal - anoInicial + 1;
@@ -1321,8 +1363,91 @@ window.SimuladorFluxoCaixa = {
             // Calcular efetividade combinada
             const efeitividadeCombinada = calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias, impactoBase);
 
-            // Identificar combinação ótima
-            const combinacaoOtima = identificarCombinacaoOtima(dados, estrategias, resultadosEstrategias, impactoBase);
+            // O problema ocorre quando a estratégia "Renegociação de Prazos" é selecionada como ótima
+			// mas seus valores de custo não estão sendo capturados corretamente
+
+			// Adicione este código onde a combinação ótima é definida:
+			if (estrategias.renegociacaoPrazos && estrategias.renegociacaoPrazos.ativar) {
+				// Assegurar que o custo da renegociação de prazos seja calculado corretamente
+				const resultado = resultadosEstrategias.renegociacaoPrazos;
+
+				// Verificar se o custoTotal está sendo calculado e atribuído
+				if (resultado && typeof resultado.custoTotal === 'undefined') {
+					// Calcular o custo total a partir dos dados disponíveis
+					const percFornecedores = estrategias.renegociacaoPrazos.percentualFornecedores / 100;
+					const custoContrapartida = estrategias.renegociacaoPrazos.custoContrapartida / 100;
+
+					// Calcular custo com base na contrapartida
+					resultado.custoTotal = resultado.impactoFluxoCaixa * custoContrapartida * percFornecedores;
+				}
+			}
+
+			// Determinar a estratégia ótima
+			let estrategiasSelecionadas = [];
+			let nomesEstrategias = [];
+			let efetividadeTotal = 0;
+			let mitigacaoTotal = 0;
+			let custoTotal = 0;
+
+			// Identificar as estratégias ativas e calcular seus impactos
+			Object.entries(resultadosEstrategias).forEach(([codigo, resultado]) => {
+				if (!resultado) return;
+
+				estrategiasSelecionadas.push(resultado);
+				nomesEstrategias.push(traduzirNomeEstrategia(codigo));
+
+				// Somar a efetividade (evitando duplicação de impacto)
+				efetividadeTotal = Math.max(efetividadeTotal, resultado.efetividadePercentual/100 || 0);
+
+				// Calcular impacto e custo com base no tipo de estratégia
+				let impacto = 0;
+				let custo = 0;
+
+				switch (codigo) {
+					case 'ajustePrecos':
+						impacto = resultado.fluxoCaixaAdicional || 0;
+						custo = resultado.custoEstrategia || 0;
+						break;
+					case 'renegociacaoPrazos':
+						impacto = resultado.impactoFluxoCaixa || 0;
+						custo = resultado.custoTotal || 0;
+						break;
+					case 'antecipacaoRecebiveis':
+						impacto = resultado.impactoFluxoCaixa || 0;
+						custo = resultado.custoTotalAntecipacao || 0;
+						break;
+					case 'capitalGiro':
+						impacto = resultado.valorFinanciamento || 0;
+						custo = resultado.custoTotalFinanciamento || 0;
+						break;
+					case 'mixProdutos':
+						impacto = resultado.impactoFluxoCaixa || 0;
+						custo = resultado.custoImplementacao || 0;
+						break;
+					case 'meiosPagamento':
+						impacto = resultado.impactoLiquido || 0;
+						custo = resultado.custoTotalIncentivo || 0;
+						break;
+				}
+
+				mitigacaoTotal += impacto;
+				custoTotal += custo;
+			});
+
+			// Calcular a relação custo-benefício
+			const custoBeneficio = custoTotal > 0 ? 
+				mitigacaoTotal / custoTotal : 
+				mitigacaoTotal > 0 ? 999 : 0;
+
+			// Criação do objeto combinacaoOtima
+			const combinacaoOtima = {
+				estrategiasSelecionadas: estrategiasSelecionadas,
+				nomeEstrategias: nomesEstrategias,
+				efetividadePercentual: efetividadeTotal,
+				mitigacaoTotal: mitigacaoTotal,
+				custoTotal: custoTotal,
+				custoBeneficio: custoBeneficio
+			};
 
             // Consolidar resultados
             const resultados = {
@@ -1363,7 +1488,17 @@ window.SimuladorFluxoCaixa = {
         const formatarMoeda = (valor) => (valor !== undefined && valor !== null) 
 			? `R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
 			: "R$ 0,00";
-        const formatarPercent = (valor) => `${valor.toFixed(2)}%`;
+        // Em simulator.js, onde estiver a função formatarPercent
+		const formatarPercent = (valor) => {
+			// Verificar se o valor é válido
+			const valorNumerico = parseFloat(valor);
+			if (isNaN(valorNumerico)) {
+				return "0.00%";
+			}
+
+			// Não multiplicar por 100 novamente
+			return `${valorNumerico.toFixed(2)}%`;
+		};
 
         // Construir HTML dos resultados
         let html = `
@@ -1372,10 +1507,10 @@ window.SimuladorFluxoCaixa = {
 
                 <div class="result-section">
                     <h4>Impacto Original do Split Payment</h4>
-                    <p>Redução no capital de giro: ${formatarMoeda(Math.abs(resultados.impactoBase.diferencaCapitalGiro))}</p>
-                    <p>Necessidade adicional: ${formatarMoeda(resultados.impactoBase.necesidadeAdicionalCapitalGiro)}</p>
-                    <p>Impacto na margem: ${formatarPercent(resultados.impactoBase.impactoMargem)}</p>
-                </div>
+					<p>Redução no capital de giro: ${formatarMoeda(Math.abs(resultados.impactoBase.diferencaCapitalGiro || 0))}</p>
+					<p>Necessidade adicional: ${formatarMoeda(resultados.impactoBase.necessidadeAdicionalCapitalGiro || 0)}</p>
+					<p>Impacto na margem: ${formatarPercent(resultados.impactoBase.impactoMargem?.valorPontoPercentual || 0)}</p>
+				</div>
         `;
 
         // Adicionar resumo de cada estratégia ativa
@@ -1431,7 +1566,7 @@ window.SimuladorFluxoCaixa = {
                 html += `
                     <tr>
                         <td>${nomeFormatado}</td>
-                        <td>${formatarPercent(resultado.efetividadePercentual)}</td>
+                        <td>${formatarPercent(resultado.efetividadePercentual/100)}</td>
                         <td>${formatarMoeda(impacto)}</td>
                         <td>${formatarMoeda(custo)}</td>
                     </tr>
@@ -1452,7 +1587,7 @@ window.SimuladorFluxoCaixa = {
             html += `
                 <div class="result-section">
                     <h4>Resultado Combinado</h4>
-                    <p>Efetividade total: ${formatarPercent(resultados.efeitividadeCombinada.efetividadePercentual)}</p>
+                    <p>Efetividade total: ${formatarPercent(resultados.efeitividadeCombinada.efetividadePercentual/100)}</p>
                     <p>Mitigação total: ${formatarMoeda(resultados.efeitividadeCombinada.mitigacaoTotal)}</p>
                     <p>Custo total: ${formatarMoeda(resultados.efeitividadeCombinada.custoTotal)}</p>
                     <p>Relação custo-benefício: ${resultados.efeitividadeCombinada.custoBeneficio.toFixed(2)}</p>
@@ -1464,7 +1599,7 @@ window.SimuladorFluxoCaixa = {
                 <div class="result-section">
                     <h4>Combinação Ótima de Estratégias</h4>
                     <p>Estratégias recomendadas: ${resultados.combinacaoOtima.nomeEstrategias.join(', ')}</p>
-                    <p>Efetividade: ${formatarPercent(resultados.combinacaoOtima.efetividadePercentual)}</p>
+                    <p>Efetividade: ${formatarPercent(resultados.combinacaoOtima.efetividadePercentual/100)}</p>
                     <p>Custo total: ${formatarMoeda(resultados.combinacaoOtima.custoTotal)}</p>
                     <p>Relação custo-benefício: ${resultados.combinacaoOtima.custoBeneficio.toFixed(2)}</p>
                 </div>
@@ -1546,13 +1681,13 @@ window.SimuladorFluxoCaixa = {
 
         // Adicionar combinação de estratégias
         labels.push('Todas Estratégias');
-        data.push(resultados.efeitividadeCombinada.efetividadePercentual);
+        data.push(resultados.efeitividadeCombinada.efetividadePercentual/100);
         backgroundColors.push('rgba(39, 174, 96, 0.6)'); // Verde escuro
 
         // Adicionar combinação ótima se diferente de "Todas Estratégias"
         if (estrategiasAtivas.length !== resultados.combinacaoOtima.estrategiasSelecionadas.length) {
             labels.push('Combinação Ótima');
-            data.push(resultados.combinacaoOtima.efetividadePercentual);
+            data.push(resultados.combinacaoOtima.efetividadePercentual/100);
             backgroundColors.push('rgba(41, 128, 185, 0.6)'); // Azul médio
         }
 
