@@ -224,7 +224,7 @@ function gerarMemoriaCritica(dados, resultados = null) {
             tempoMedioCapitalGiro,
             beneficioDiasCapitalGiro,
             fluxoCaixaLiquido: faturamento - valorImpostoLiquido,            
-            memoriaCritica: gerarMemoriaCritica(dados)
+            memoriaCritica: gerarMemoriaCritica(dados, null)
         };
 
         return resultado;
@@ -451,7 +451,7 @@ function calcularFluxoCaixaSplitPayment(dados, ano = 2026, parametrosSetoriais =
         tempoMedioCapitalGiro,
         beneficioDiasCapitalGiro,
         fluxoCaixaLiquido: recebimentoVista + recebimentoPrazo,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -499,7 +499,7 @@ function calcularImpactoCapitalGiro(dados, ano = 2026, parametrosSetoriais = nul
         margemOperacionalAjustada: dados.margem - (impactoMargem.impactoPercentual / 100),
         impactoMargem: impactoMargem.impactoPercentual,
         analiseSensibilidade,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -541,7 +541,7 @@ function calcularImpactoMargem(dados, diferencaCapitalGiro) {
         margemOriginal: margem,
         margemAjustada,
         percentualReducaoMargem,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -594,7 +594,7 @@ function calcularNecessidadeAdicionalCapital(dados, ano = 2026, parametrosSetori
         necessidadeTotal,
         opcoesFinanciamento,
         impactoResultado,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -670,7 +670,7 @@ function calcularProjecaoTemporal(dados, anoInicial = 2026, anoFinal = 2033, cen
         resultadosAnuais,
         impactoAcumulado,
         analiseElasticidade,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -727,7 +727,7 @@ function calcularImpactoCicloFinanceiro(dados, ano = 2026, parametrosSetoriais =
         ncgAjustada,
         diferencaNCG,
         // Resto do código...
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -778,7 +778,7 @@ function calcularEfeitividadeMitigacao(dados, estrategias, ano = 2026, parametro
         estrategiasOrdenadas,
         estrategiaMaisEfetiva,
         combinacaoOtima,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -1210,7 +1210,7 @@ function calcularEfeitividadeRenegociacaoPrazos(dados, estrategia, impactoBase) 
         impactoNovoPMP,
         impactoCicloFinanceiro,
         diferençaCiclo,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -1283,7 +1283,7 @@ function calcularEfeitividadeAntecipacaoRecebiveis(dados, estrategia, impactoBas
         cicloFinanceiroAjustado,
         reducaoCiclo,
         custoBeneficio: custoTotalAntecipacao / valorTotalAntecipado,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -1345,7 +1345,7 @@ function calcularEfeitividadeCapitalGiro(dados, estrategia, impactoBase) {
         taxaEfetivaAnual,
         impactoMargemPP,
         custoBeneficio: custoTotalFinanciamento / valorFinanciamento,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -1437,7 +1437,7 @@ function calcularEfeitividadeMixProdutos(dados, estrategia, impactoBase) {
         impactoTotal,
         custoImplementacao,
         custoBeneficio: custoImplementacao / impactoTotal,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -1528,7 +1528,7 @@ function calcularEfeitividadeMeiosPagamento(dados, estrategia, impactoBase) {
         impactoTotal,
         custoTotalIncentivo,
         custoBeneficio: variaPMR < 0 ? valorIncentivoMensal / Math.abs(impacto_pmr) : Infinity,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -1663,7 +1663,7 @@ function calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias
         variacaoCiclo,
         margemAjustada,
         impactosMitigados,
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
@@ -1830,7 +1830,7 @@ function identificarCombinacaoOtima(dados, estrategias, resultadosEstrategias, i
                 custo: melhorEstrategia.custo
             }
         },
-        memoriaCritica: gerarMemoriaCritica(dados)
+        memoriaCritica: gerarMemoriaCritica(dados, null)
     };
 
     return resultado;
