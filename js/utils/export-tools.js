@@ -173,12 +173,7 @@ const ExportTools = {
             // Inicializar contagem de páginas para numeração
             let pageCount = 1;
             let currentPositionY = 0;
-            const margins = this.config.pdf.margins || {
-                top: 25,
-                right: 15,
-                bottom: 25,
-                left: 15
-            };
+            const margins = this.config.pdf.margins;
 
             // Adicionar capa
             this._adicionarCapa(doc, window.ultimaSimulacao.dados || {}, pageCount);
@@ -353,41 +348,45 @@ const ExportTools = {
     },
 
     /**
-     * Adiciona a seção de memória de cálculo ao PDF
+     * Adiciona a memória de cálculo com formatação aprimorada
      * @private
-     * @param {Object} doc - Documento PDF
-     * @param {Function|Object|null} obterMemoriaCalculo - Função para obter a memória de cálculo ou objeto com a memória
-     * @param {number} pageCount - Número da página
-     * @returns {number} Posição Y atual após adicionar o conteúdo
+     * @param {jsPDF} doc - Documento PDF
+     * @param {Function} obterMemoriaCalculo - Função para obter a memória de cálculo
+     * @param {number} pageNumber - Número da página
+     * @returns {number} Posição Y após adicionar o conteúdo
      */
-    _adicionarMemoriaCalculo: function (doc, obterMemoriaCalculo, pageCount) {
-        // Adicionar cabeçalho
-        const margins =
-            this.config.pdf && this.config.pdf.margins
-                ? this.config.pdf.margins
-                : {
-                      top: 25,
-                      right: 15,
-                      bottom: 25,
-                      left: 15
-                  };
+    _adicionarMemoriaCalculo: function(doc, obterMemoriaCalculo, pageNumber) {
+        const margins = this.config.pdf.margins;
+        const pageWidth = doc.internal.pageSize.width;
+        let currentY = margins.top + 10;
 
-        let currentPositionY = margins.top;
-
-        doc.setFontSize(16);
+        // Adicionar cabeçalho da seção
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("5. MEMÓRIA DE CÁLCULO", margins.left, currentPositionY);
-        currentPositionY += 15;
+        doc.setFontSize(16);
+        doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+        doc.text('5. Memória de Cálculo', margins.left, currentY);
 
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
+        currentY += 15;
 
+        // Texto introdutório
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+
+        const introTexto = [
+            "Esta seção apresenta os detalhes dos cálculos realizados na simulação, permitindo a verificação ",
+            "e auditoria dos resultados. A memória de cálculo inclui todas as etapas do processo, desde a aplicação ",
+            "das alíquotas até o cálculo final dos impostos."
+        ].join('');
+
+        const splitIntro = doc.splitTextToSize(introTexto, pageWidth - margins.left - margins.right);
+        doc.text(splitIntro, margins.left, currentY);
+
+        currentY += splitIntro.length * 5 + 10;
+
+        // Obter a memória de cálculo
         let memoriaTexto = "";
 
-        // Determinar o conteúdo da memória de cálculo
         try {
             if (typeof obterMemoriaCalculo === "function") {
                 // É uma função, chamá-la para obter a memória
@@ -411,277 +410,293 @@ const ExportTools = {
             memoriaTexto = "Erro ao processar memória de cálculo: " + error.message;
         }
 
-        // Definir fonte menor para a memória de cálculo (monospace)
-        doc.setFont("Courier", "normal");
-        doc.setFontSize(9);
+        if (memoriaTexto) {
+            // Formatar memória de cálculo para exibição
+            doc.setFont('courier', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(30, 30, 30);
 
-        // Dividir o texto em linhas para caber na página
-        const linhas = doc.splitTextToSize(
-            memoriaTexto,
-            doc.internal.pageSize.width - margins.left - margins.right - 10
-        );
+            // Dividir em linhas e limitar a quantidade
+            const linhasMemoria = memoriaTexto.split('\n');
+            const maxLinhas = 200; // Limitar a quantidade de linhas para não deixar o PDF muito grande
 
-        // Calcular o espaço necessário
-        const alturaLinhas = linhas.length * 4; // Espaçamento entre linhas
-
-        // Verificar se precisa de uma nova página
-        if (currentPositionY + alturaLinhas > doc.internal.pageSize.height - margins.bottom - 20) {
-            doc.addPage();
-            currentPositionY = margins.top;
-
-            // Adicionar cabeçalho na nova página
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(14);
-            doc.text("5. MEMÓRIA DE CÁLCULO (continuação)", margins.left, currentPositionY);
-            currentPositionY += 10;
-
-            doc.setFont("Courier", "normal");
-            doc.setFontSize(9);
-        }
-
-        // Adicionar as linhas ao documento
-        doc.text(linhas, margins.left, currentPositionY);
-
-        // Atualizar posição Y
-        currentPositionY += alturaLinhas;
-
-        // Resetar fonte
-        doc.setFont("Helvetica", "normal");
-        doc.setFontSize(12);
-
-        return currentPositionY;
-    },
-
-    /**
-     * Correção 1: Adicionar a função _adicionarCapa que estava faltando
-     * Esta função é chamada na linha 160 durante o processo de exportação para PDF
-     */
-    _adicionarCapa: function (doc, dados, pageCount) {
-        // Configurações básicas da página
-        const margins =
-            this.config.pdf && this.config.pdf.margins
-                ? this.config.pdf.margins
-                : {
-                      top: 25,
-                      right: 15,
-                      bottom: 25,
-                      left: 15
-                  };
-
-        // Definir fonte e tamanho para o título
-        doc.setFontSize(24);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-
-        // Título principal centralizado
-        const titleText = "RELATÓRIO DE IMPACTO DO SPLIT PAYMENT";
-        const titleWidth = (doc.getStringUnitWidth(titleText) * doc.internal.getFontSize()) / doc.internal.scaleFactor;
-        const titleX = (doc.internal.pageSize.width - titleWidth) / 2;
-        doc.text(titleText, titleX, 60);
-
-        // Subtítulo
-        doc.setFontSize(16);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
-        const subtitleText = "Análise do Impacto no Fluxo de Caixa";
-        const subtitleWidth =
-            (doc.getStringUnitWidth(subtitleText) * doc.internal.getFontSize()) / doc.internal.scaleFactor;
-        const subtitleX = (doc.internal.pageSize.width - subtitleWidth) / 2;
-        doc.text(subtitleText, subtitleX, 75);
-
-        // Adicionar informações da empresa
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Empresa:", margins.left, 110);
-        doc.setFont("helvetica", "normal");
-        doc.text(dados.empresa || "N/A", margins.left + 40, 110);
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Setor:", margins.left, 125);
-        doc.setFont("helvetica", "normal");
-        doc.text(dados.setor || "N/A", margins.left + 40, 125);
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Regime Tributário:", margins.left, 140);
-        doc.setFont("helvetica", "normal");
-        doc.text(this._obterRegimeTributarioFormatado(dados.regime) || "N/A", margins.left + 40, 140);
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Faturamento:", margins.left, 155);
-        doc.setFont("helvetica", "normal");
-        doc.text(
-            "R$ " + (typeof dados.faturamento === "number" ? dados.faturamento.toLocaleString("pt-BR") : "N/A"),
-            margins.left + 40,
-            155
-        );
-
-        // Data da análise
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "italic");
-        const today = new Date();
-        const dateString = this._formatarData(today);
-        doc.text("Data da análise: " + dateString, margins.left, 180);
-
-        // Rodapé
-        doc.setFontSize(9);
-        doc.text("© 2025 Expertzy Inteligência Tributária", margins.left, doc.internal.pageSize.height - 15);
-        doc.text(
-            "Página " + pageCount + " de {totalPages}",
-            doc.internal.pageSize.width - 45,
-            doc.internal.pageSize.height - 15
-        );
-
-        // Adicionar logo (opcional)
-        try {
-            if (this.config.pdf && this.config.pdf.logoEnabled && this.config.pdf.logoPath) {
-                doc.addImage(
-                    this.config.pdf.logoPath,
-                    "PNG",
-                    margins.left,
-                    20,
-                    this.config.pdf.logoSize.width,
-                    this.config.pdf.logoSize.height
-                );
-            } else {
-                // Tenta encontrar o logo no DOM
-                const logo = document.querySelector("img.logo");
-                if (logo) {
-                    const canvas = document.createElement("canvas");
-                    canvas.width = logo.width;
-                    canvas.height = logo.height;
-                    const ctx = canvas.getContext("2d");
-                    ctx.drawImage(logo, 0, 0, logo.width, logo.height);
-                    const imgData = canvas.toDataURL("image/png");
-                    doc.addImage(imgData, "PNG", margins.left, 20, 40, 15);
-                }
+            const linhasExibidas = linhasMemoria.slice(0, maxLinhas);
+            if (linhasMemoria.length > maxLinhas) {
+                linhasExibidas.push('... (memória de cálculo truncada para manter o tamanho do documento)');
             }
-        } catch (e) {
-            console.warn("Não foi possível adicionar o logo à capa:", e);
+
+            // Processar linhas
+            for (let i = 0; i < linhasExibidas.length; i++) {
+                const linha = linhasExibidas[i];
+
+                // Verificar se a linha é um título de seção
+                if (linha.includes('===')) {
+                    doc.setFont('courier', 'bold');
+                    doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+                } else {
+                    doc.setFont('courier', 'normal');
+                    doc.setTextColor(30, 30, 30);
+                }
+
+                // Verificar se precisa adicionar nova página
+                if (currentY > doc.internal.pageSize.height - margins.bottom - 10) {
+                    doc.addPage();
+                    pageNumber++;
+                    currentY = margins.top + 10;
+                }
+
+                // Quebrar linhas longas
+                const splitLinha = doc.splitTextToSize(linha, pageWidth - margins.left - margins.right);
+                doc.text(splitLinha, margins.left, currentY);
+
+                currentY += splitLinha.length * 3.5;
+            }
+
+            // Adicionar nota sobre exportação completa
+            currentY += 10;
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+
+            const notaExportacao = [
+                "Nota: Para a memória de cálculo completa e detalhada, recomenda-se utilizar a função 'Exportar Memória de Cálculo' ",
+                "disponível no simulador, que gera um arquivo de texto contendo todas as etapas do cálculo sem truncamento."
+            ].join('');
+
+            const splitNota = doc.splitTextToSize(notaExportacao, pageWidth - margins.left - margins.right);
+            doc.text(splitNota, margins.left, currentY);
+
+            currentY += splitNota.length * 5;
+        } else {
+            // Mensagem se não houver memória de cálculo
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.setTextColor(150, 150, 150);
+            doc.text('Memória de cálculo não disponível. Execute a simulação para gerar os dados detalhados.', margins.left, currentY);
+
+            currentY += 10;
         }
+
+        return currentY;
+    },
+    
+    /**
+     * Adiciona a capa do relatório
+     * @private
+     * @param {jsPDF} doc - Documento PDF
+     * @param {Object} dados - Dados do simulador
+     * @param {number} pageNumber - Número da página
+     * @returns {jsPDF} Documento PDF atualizado
+     */
+    _adicionarCapa: function(doc, dados, pageNumber) {
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+        const margins = this.config.pdf.margins;
+
+        // Fundo gradiente sutil na capa
+        this._desenharGradiente(doc, 0, 0, pageWidth, pageHeight, 
+            [240, 240, 240], [220, 220, 220]);
+
+        let currentY = 50;
+
+        // Logo
+        if (this.config.pdf.logoEnabled) {
+            try {
+                const logoImg = document.querySelector('img.logo');
+                if (logoImg && logoImg.complete) {
+                    const logoWidth = 70;
+                    const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
+
+                    doc.addImage(
+                        logoImg, 
+                        'PNG', 
+                        (pageWidth - logoWidth) / 2, 
+                        currentY, 
+                        logoWidth, 
+                        logoHeight
+                    );
+
+                    currentY += logoHeight + 30;
+                } else {
+                    currentY += 30;
+                }
+            } catch (e) {
+                console.warn('Não foi possível adicionar o logo:', e);
+                currentY += 30;
+            }
+        }
+
+        // Título do relatório
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(24);
+        doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+
+        const tituloPrincipal = 'RELATÓRIO DE SIMULAÇÃO';
+        doc.text(tituloPrincipal, pageWidth / 2, currentY, { align: 'center' });
+        currentY += 10;
+
+        const subtitulo = 'IMPACTO DO SPLIT PAYMENT NO FLUXO DE CAIXA';
+        doc.text(subtitulo, pageWidth / 2, currentY, { align: 'center' });
+        currentY += 30;
+
+        // Informações da empresa
+        doc.setFontSize(14);
+        doc.setTextColor(60, 60, 60);
+
+        const regimeText = dados.regime ? (dados.regime === 'real' ? 'Lucro Real' : 
+            dados.regime === 'presumido' ? 'Lucro Presumido' : 'Simples Nacional') : '';
+
+        const setorText = dados.setor ? dados.setor.charAt(0).toUpperCase() + dados.setor.slice(1) : '';
+
+        const infoText = [
+            `Empresa: ${dados.empresa || 'N/A'}`,
+            `Setor: ${setorText}`,
+            `Regime Tributário: ${regimeText}`,
+            `Data: ${new Date().toLocaleDateString('pt-BR')}`
+        ];
+
+        infoText.forEach(text => {
+            doc.text(text, pageWidth / 2, currentY, { align: 'center' });
+            currentY += 10;
+        });
+
+        currentY += 30;
+
+        // Detalhes do simulador
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+
+        const anoInicial = dados.anoInicial || 2026;
+        const anoFinal = dados.anoFinal || 2033;
+
+        const detailText = `Simulação para o período ${anoInicial} - ${anoFinal}`;
+        doc.text(detailText, pageWidth / 2, currentY, { align: 'center' });
+
+        // Rodapé da capa
+        const footerY = pageHeight - margins.bottom - 10;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(100, 100, 100);
+
+        doc.text('© 2025 Expertzy Inteligência Tributária', pageWidth / 2, footerY, { align: 'center' });
+        doc.text('Confidencial - Uso Interno', pageWidth / 2, footerY + 5, { align: 'center' });
 
         return doc;
     },
-
+    
     /**
-     * Correção 3: Implementar a função _adicionarIndice que é chamada mas parece estar faltando
+     * Adiciona o índice do relatório
+     * @private
+     * @param {jsPDF} doc - Documento PDF
+     * @param {number} pageNumber - Número da página
+     * @returns {number} Posição Y após adicionar o conteúdo
      */
-    _adicionarIndice: function (doc, pageCount) {
-        // Configurações básicas da página
-        const margins =
-            this.config.pdf && this.config.pdf.margins
-                ? this.config.pdf.margins
-                : {
-                      top: 25,
-                      right: 15,
-                      bottom: 25,
-                      left: 15
-                  };
+    _adicionarIndice: function(doc, pageNumber) {
+        const margins = this.config.pdf.margins;
+        const pageWidth = doc.internal.pageSize.width;
+        let currentY = margins.top;
 
-        let currentPositionY = margins.top;
-
-        // Título da página
-        doc.setFontSize(18);
+        // Título
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("ÍNDICE", margins.left, currentPositionY);
-        currentPositionY += 15;
+        doc.setFontSize(16);
+        doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+        doc.text('Índice', pageWidth / 2, currentY, { align: 'center' });
 
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
+        currentY += 20;
 
-        // Definir fonte para itens do índice
-        doc.setFontSize(12);
+        // Itens do índice
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.setTextColor(60, 60, 60);
 
-        // Array com itens do índice
         const indiceItems = [
-            { texto: "1. Parâmetros da Simulação", pagina: 3 },
-            { texto: "2. Resultados da Simulação", pagina: 4 },
-            { texto: "3. Gráficos", pagina: 5 },
-            { texto: "4. Análise de Estratégias de Mitigação", pagina: 6 },
-            { texto: "5. Memória de Cálculo", pagina: 7 },
-            { texto: "6. Conclusão", pagina: 8 }
+            { texto: '1. Parâmetros da Simulação', pagina: 3 },
+            { texto: '2. Resultados da Simulação', pagina: 4 },
+            { texto: '3. Análise Gráfica', pagina: 5 },
+            { texto: '4. Estratégias de Mitigação', pagina: 6 },
+            { texto: '5. Memória de Cálculo', pagina: 7 },
+            { texto: '6. Conclusão e Recomendações', pagina: 8 }
         ];
 
-        // Adicionar itens ao índice
-        indiceItems.forEach((item) => {
-            doc.text(item.texto, margins.left, currentPositionY);
-            doc.text(item.pagina.toString(), doc.internal.pageSize.width - margins.right - 10, currentPositionY);
+        indiceItems.forEach(item => {
+            // Texto do item
+            doc.text(item.texto, margins.left + 5, currentY);
 
-            // Linha pontilhada entre texto e número da página
-            const textWidth =
-                (doc.getStringUnitWidth(item.texto) * doc.internal.getFontSize()) / doc.internal.scaleFactor;
-            const xStart = margins.left + textWidth + 5;
-            const xEnd = doc.internal.pageSize.width - margins.right - 15;
+            // Pontilhado
+            const startX = doc.getStringUnitWidth(item.texto) * doc.internal.getFontSize() / doc.internal.scaleFactor + margins.left + 10;
+            const endX = pageWidth - margins.right - 15;
+            this._desenharLinhaPontilhada(doc, startX, currentY - 2, endX, currentY - 2);
 
-            // Desenhar linha pontilhada
-            const lineY = currentPositionY - 2;
-            const dashLength = 1;
-            const gapLength = 1;
-            let currentX = xStart;
+            // Número da página
+            doc.text(item.pagina.toString(), pageWidth - margins.right - 10, currentY, { align: 'right' });
 
-            while (currentX < xEnd) {
-                doc.line(currentX, lineY, currentX + dashLength, lineY);
-                currentX += dashLength + gapLength;
-            }
-
-            currentPositionY += 10;
+            currentY += 12;
         });
 
-        // Rodapé
-        doc.setFontSize(9);
-        doc.text("© 2025 Expertzy Inteligência Tributária", margins.left, doc.internal.pageSize.height - 15);
-        doc.text(
-            "Página " + pageCount + " de {totalPages}",
-            doc.internal.pageSize.width - 45,
-            doc.internal.pageSize.height - 15
-        );
-
-        return currentPositionY;
+        return currentY;
     },
 
     /**
-     * Correção 4: Implementar a função _adicionarCabecalhoRodape que é chamada mas parece estar faltando
+     * Adiciona cabeçalho e rodapé em todas as páginas
+     * @private
+     * @param {jsPDF} doc - Documento PDF
+     * @param {number} pageCount - Número total de páginas
      */
-    _adicionarCabecalhoRodape: function (doc, totalPages) {
-        // Configurações básicas de margem
-        const margins =
-            this.config.pdf && this.config.pdf.margins
-                ? this.config.pdf.margins
-                : {
-                      top: 25,
-                      right: 15,
-                      bottom: 25,
-                      left: 15
-                  };
-
-        // Iterar por todas as páginas (exceto a primeira que é a capa)
-        for (let i = 2; i <= totalPages; i++) {
+    _adicionarCabecalhoRodape: function(doc, pageCount) {
+        // Percorrer todas as páginas (exceto a capa)
+        for (let i = 2; i <= pageCount; i++) {
             doc.setPage(i);
 
-            // Cabeçalho
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(127, 140, 141); // Cor neutra
-            doc.text("Relatório de Impacto do Split Payment", margins.left, 15);
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+            const margins = this.config.pdf.margins;
 
-            // Linha do cabeçalho
-            doc.setDrawColor(230, 230, 230);
-            doc.line(margins.left, 18, doc.internal.pageSize.width - margins.right, 18);
+            // Cabeçalho
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.5);
+            doc.line(margins.left, margins.top - 5, pageWidth - margins.right, margins.top - 5);
+
+            // Logo no cabeçalho (se disponível)
+            if (this.config.pdf.logoEnabled) {
+                try {
+                    const logoImg = document.querySelector('img.logo');
+                    if (logoImg && logoImg.complete) {
+                        const logoWidth = 25;
+                        const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
+
+                        doc.addImage(
+                            logoImg, 
+                            'PNG', 
+                            margins.left, 
+                            margins.top - 15, 
+                            logoWidth, 
+                            logoHeight
+                        );
+                    }
+                } catch (e) {
+                    console.warn('Não foi possível adicionar o logo no cabeçalho:', e);
+                }
+            }
+
+            // Título no cabeçalho
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Simulador de Split Payment - Relatório', pageWidth - margins.right, margins.top - 8, { align: 'right' });
 
             // Rodapé
-            doc.text("© 2025 Expertzy Inteligência Tributária", margins.left, doc.internal.pageSize.height - 15);
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.5);
+            doc.line(margins.left, pageHeight - margins.bottom + 10, pageWidth - margins.right, pageHeight - margins.bottom + 10);
 
-            // Numeração de páginas
-            // Substituir marcador {totalPages} pelo número real de páginas
-            doc.text(
-                "Página " + i + " de " + totalPages,
-                doc.internal.pageSize.width - 45,
-                doc.internal.pageSize.height - 15
-            );
+            // Copyright no rodapé
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('© 2025 Expertzy Inteligência Tributária', pageWidth / 2, pageHeight - margins.bottom + 18, { align: 'center' });
+
+            // Número da página
+            doc.text(`Página ${i} de ${pageCount}`, pageWidth - margins.right, pageHeight - margins.bottom + 18, { align: 'right' });
         }
     },
 
@@ -1023,67 +1038,51 @@ const ExportTools = {
 
         return currentPositionY;
     },
-    
+   
     /**
-     * Adiciona os resultados da simulação ao PDF com verificações robustas
+     * Adiciona a seção de resultados da simulação com cores condicionais
      * @private
-     * @param {Object} doc - Documento PDF
-     * @param {Object} simulacao - Simulação completa
-     * @param {Object} resultadosExportacao - Resultados para exportação
-     * @param {number} pageCount - Número da página
-     * @returns {number} - Posição Y atual após adicionar o conteúdo
+     * @param {jsPDF} doc - Documento PDF
+     * @param {Object} resultados - Resultados da simulação
+     * @param {Object} aliquotasEquivalentes - Alíquotas equivalentes calculadas
+     * @param {number} pageNumber - Número da página
+     * @returns {number} Posição Y após adicionar o conteúdo
      */
-    _adicionarResultadosSimulacaoRobusto: function (doc, simulacao, resultadosExportacao, pageCount) {
-        // Configurações de margem
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : { top: 25, right: 15, bottom: 25, left: 15 };
+    _adicionarResultadosSimulacaoRobusto: function(doc, simulacao, resultadosExportacao, pageNumber) {
+        const margins = this.config.pdf.margins;
+        const pageWidth = doc.internal.pageSize.width;
+        let currentY = margins.top + 10;
 
-        let currentPositionY = margins.top;
-
-        // Título da página
-        doc.setFontSize(18);
+        // Adicionar cabeçalho da seção
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("2. RESULTADOS DA SIMULAÇÃO", margins.left, currentPositionY);
-        currentPositionY += 15;
+        doc.setFontSize(16);
+        doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+        doc.text('2. Resultados da Simulação', margins.left, currentY);
 
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
+        currentY += 15;
 
-        // Funções auxiliares de formatação
-        const formatarMoeda = (valor) => {
+        // Formatadores
+        const formatarMoeda = valor => {
             if (isNaN(valor) || valor === undefined || valor === null) return "R$ 0,00";
             return "R$ " + Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
 
-        const formatarPercentual = (valor) => {
+        const formatarPercentual = valor => {
             if (valor === undefined || valor === null || isNaN(parseFloat(valor))) return "0,00%";
             return `${Math.abs(parseFloat(valor)).toFixed(2)}%`;
         };
 
-        // Verificar se temos dados suficientes para criar uma tabela
+        // Verificar se temos dados suficientes
         if (resultadosExportacao && resultadosExportacao.resultadosPorAno) {
-            // Seção 2.1. Impacto no Fluxo de Caixa
-            doc.setFontSize(14);
+            // Seção 2.1 - Tabela de Resultados
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(46, 204, 113); // Cor secundária
+            doc.setFontSize(14);
+            doc.setTextColor(70, 70, 70);
+            doc.text('2.1. Tabela de Resultados Anuais', margins.left, currentY);
 
-            // Quebra automática do título se necessário
-            const maxTitleWidth = doc.internal.pageSize.width - margins.left - margins.right;
-            const tituloSecao = doc.splitTextToSize("2.1. Impacto no Fluxo de Caixa", maxTitleWidth);
-            doc.text(tituloSecao, margins.left, currentPositionY);
-            currentPositionY += 8 * tituloSecao.length + 2;
+            currentY += 10;
 
             // Cabeçalho da tabela
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(255, 255, 255);
-            doc.setFillColor(52, 152, 219);
-            doc.setDrawColor(52, 152, 219);
-
             const headers = [
                 "Ano",
                 "Capital de Giro (Split Payment)",
@@ -1092,167 +1091,213 @@ const ExportTools = {
                 "Variação (%)"
             ];
 
-            // Largura das colunas ajustada para evitar sobreposição
-            const colWidths = [22, 48, 48, 32, 32];
-            let currentX = margins.left;
-            const headerHeight = 8;
-
-            // Desenhar fundo do cabeçalho
-            doc.rect(
-                margins.left,
-                currentPositionY,
-                colWidths.reduce((a, b) => a + b, 0),
-                headerHeight,
-                "F"
-            );
-
-            // Escrever cabeçalhos
-            currentX = margins.left + 2;
-            headers.forEach((header, idx) => {
-                // Quebra automática para cabeçalhos longos
-                const headerLines = doc.splitTextToSize(header, colWidths[idx] - 2);
-                doc.text(headerLines, currentX, currentPositionY + 6, { maxWidth: colWidths[idx] - 2 });
-                currentX += colWidths[idx];
-            });
-            currentPositionY += headerHeight;
-
-            // Determinar anos
+            // Preparar dados para a tabela
             const anos = resultadosExportacao.anos || Object.keys(resultadosExportacao.resultadosPorAno).sort();
 
-            // Adicionar linhas da tabela
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(10);
-            doc.setTextColor(0, 0, 0);
+            // Preparar dados para a tabela
+            const tableData = [];
 
-            anos.forEach((ano) => {
-                // Obter dados do ano com validação
+            // Cabeçalho
+            tableData.push(headers);
+
+            // Dados por ano
+            anos.forEach(ano => {
                 const dadosAno = resultadosExportacao.resultadosPorAno[ano] || {};
 
-                // Os campos corretos para capital de giro vêm de resultadoSplitPayment.capitalGiroDisponivel e resultadoAtual.capitalGiroDisponivel
-                const capitalGiroSplitPayment = dadosAno.resultadoSplitPayment && typeof dadosAno.resultadoSplitPayment.capitalGiroDisponivel !== "undefined"
-                    ? dadosAno.resultadoSplitPayment.capitalGiroDisponivel
-                    : dadosAno.impostoDevido || 0;
+                // Extrair valores com segurança
+                const capitalGiroSplitPayment = 
+                    dadosAno.capitalGiroSplitPayment || dadosAno.impostoDevido || 0;
+                const capitalGiroAtual = 
+                    dadosAno.capitalGiroAtual || dadosAno.sistemaAtual || 0;
+                const diferenca = 
+                    dadosAno.diferenca || (capitalGiroSplitPayment - capitalGiroAtual);
+                const percentualImpacto = 
+                    dadosAno.percentualImpacto || (capitalGiroAtual !== 0 ? (diferenca / capitalGiroAtual) * 100 : 0);
 
-                const capitalGiroAtual = dadosAno.resultadoAtual && typeof dadosAno.resultadoAtual.capitalGiroDisponivel !== "undefined"
-                    ? dadosAno.resultadoAtual.capitalGiroDisponivel
-                    : dadosAno.sistemaAtual || 0;
+                tableData.push([
+                    ano,
+                    formatarMoeda(capitalGiroSplitPayment),
+                    formatarMoeda(capitalGiroAtual),
+                    formatarMoeda(diferenca),
+                    formatarPercentual(percentualImpacto)
+                ]);
+            });
 
-                // Verificar e tratar diferença e percentual com segurança
-                let diferenca = 0;
-                if (typeof dadosAno.diferencaCapitalGiro !== "undefined") {
-                    diferenca = dadosAno.diferencaCapitalGiro;
-                } else {
-                    diferenca = capitalGiroSplitPayment - capitalGiroAtual;
-                }
+            // Adicionar tabela com cores condicionais
+            doc.autoTable({
+                startY: currentY,
+                head: [tableData[0]],
+                body: tableData.slice(1),
+                theme: 'grid',
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 2,
+                    overflow: 'ellipsize'
+                },
+                headStyles: {
+                    fillColor: this.config.pdf.colors.primary,
+                    textColor: 255,
+                    fontStyle: 'bold'
+                },
+                // Adicionar cores condicionais para a coluna de variação
+                didDrawCell: function(data) {
+                    if (data.section === 'body') {
+                        // Colorir células de diferença e variação
+                        if (data.column.index === 3 || data.column.index === 4) {
+                            // Obter o valor da célula (remover formatação)
+                            let valorStr = data.cell.text[0];
+                            let valor = 0;
 
-                let percentualImpacto = 0;
-                if (typeof dadosAno.percentualImpacto !== "undefined") {
-                    percentualImpacto = dadosAno.percentualImpacto;
-                } else if (capitalGiroAtual !== 0) {
-                    percentualImpacto = (diferenca / capitalGiroAtual) * 100;
-                }
+                            if (data.column.index === 3) {
+                                // Coluna Diferença - formato R$ X.XXX,XX
+                                valor = parseFloat(valorStr.replace('R$', '').replace(/\./g, '').replace(',', '.').trim());
+                            } else {
+                                // Coluna Variação - formato X,XX%
+                                valor = parseFloat(valorStr.replace('%', '').replace(',', '.').trim());
+                            }
 
-                // Alternância de cor de fundo para linhas
-                if (parseInt(ano) % 2 === 0) {
-                    doc.setFillColor(245, 248, 250);
-                    doc.rect(margins.left, currentPositionY, colWidths.reduce((a, b) => a + b, 0), headerHeight, "F");
-                }
+                            if (valor > 0) {
+                                // Variação positiva (vermelho)
+                                doc.setFillColor(231, 76, 60, 0.2);
+                                doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                            } else if (valor < 0) {
+                                // Variação negativa (verde)
+                                doc.setFillColor(46, 204, 113, 0.2);
+                                doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                            }
+                        }
 
-                // Adicionar valores às células
-                currentX = margins.left + 2;
-                doc.text(String(ano), currentX, currentPositionY + 6, { maxWidth: colWidths[0] - 2 });
-                currentX += colWidths[0];
+                        // Colorir linhas alternadas
+                        if (data.row.index % 2 === 0 && data.column.index === 0) {
+                            doc.setFillColor(245, 245, 245);
+                            const rowWidth = data.table.columns.reduce((width, column) => width + column.width, 0);
+                            doc.rect(data.cell.x, data.cell.y, rowWidth, data.cell.height, 'F');
+                        }
+                    }
+                },
+                columnStyles: {
+                    0: { cellWidth: 15 },
+                    1: { cellWidth: 45 },
+                    2: { cellWidth: 45 },
+                    3: { cellWidth: 30 },
+                    4: { cellWidth: 30 }
+                },
+                margin: { left: margins.left }
+            });
 
-                doc.text(formatarMoeda(capitalGiroSplitPayment), currentX, currentPositionY + 6, { maxWidth: colWidths[1] - 2 });
-                currentX += colWidths[1];
+            currentY = doc.lastAutoTable.finalY + 15;
 
-                doc.text(formatarMoeda(capitalGiroAtual), currentX, currentPositionY + 6, { maxWidth: colWidths[2] - 2 });
-                currentX += colWidths[2];
+            // Calcular estatísticas para análise
+            let variacaoTotal = 0;
+            let anoMaiorImpacto = "";
+            let valorMaiorImpacto = 0;
 
-                // Coloração condicional para diferença
-                if (diferenca > 0) {
-                    doc.setTextColor(46, 204, 113); // Verde
-                } else if (diferenca < 0) {
-                    doc.setTextColor(231, 76, 60); // Vermelho
-                } else {
-                    doc.setTextColor(0, 0, 0); // Preto
-                }
-                doc.text(formatarMoeda(diferenca), currentX, currentPositionY + 6, { maxWidth: colWidths[3] - 2 });
-                currentX += colWidths[3];
+            anos.forEach(ano => {
+                const dadosAno = resultadosExportacao.resultadosPorAno[ano] || {};
+                const diferenca = dadosAno.diferenca || 0;
 
-                doc.text(formatarPercentual(percentualImpacto), currentX, currentPositionY + 6, { maxWidth: colWidths[4] - 2 });
+                variacaoTotal += diferenca;
 
-                // Resetar cor do texto
-                doc.setTextColor(0, 0, 0);
-
-                currentPositionY += headerHeight;
-
-                // Quebra de página automática se necessário
-                if (currentPositionY > doc.internal.pageSize.height - margins.bottom - 20) {
-                    doc.addPage();
-                    currentPositionY = margins.top;
+                if (Math.abs(diferenca) > Math.abs(valorMaiorImpacto)) {
+                    valorMaiorImpacto = diferenca;
+                    anoMaiorImpacto = ano;
                 }
             });
 
-            currentPositionY += 5;
-
-            // Seção 2.2. Análise dos Resultados
-            doc.setFontSize(14);
+            // Seção 2.2 - Análise dos Resultados
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(46, 204, 113);
+            doc.setFontSize(14);
+            doc.setTextColor(70, 70, 70);
+            doc.text('2.2. Análise dos Resultados', margins.left, currentY);
 
-            const tituloAnalise = doc.splitTextToSize("2.2. Análise dos Resultados", maxTitleWidth);
-            doc.text(tituloAnalise, margins.left, currentPositionY);
-            currentPositionY += 8 * tituloAnalise.length + 2;
+            currentY += 10;
 
             // Texto de análise
+            doc.setFont("helvetica", "normal");
             doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(0, 0, 0);
+            doc.setTextColor(60, 60, 60);
 
-            // Recuperar dados do resumo ou criar valores padrão seguros
-            const resumo = resultadosExportacao.resumo || {};
-            const anoInicial = anos.length > 0 ? anos[0] : "";
-            const anoFinal = anos.length > 0 ? anos[anos.length - 1] : "";
+            // Formatação de análise baseada nos resultados
+            const isImpactoPositivo = variacaoTotal < 0;
 
-            const textoVariacao = `A variação total acumulada no período de ${anoInicial} a ${anoFinal} foi de ${formatarMoeda(resumo.variacaoTotal || 0)}.`;
-            const textoMaiorImpacto = `O ano com maior impacto foi ${resumo.anoMaiorImpacto || "N/A"}, com uma diferença de ${formatarMoeda(resumo.valorMaiorImpacto || 0)}.`;
-            const textoMenorImpacto = `O ano com menor impacto foi ${resumo.anoMenorImpacto || "N/A"}, com uma diferença de ${formatarMoeda(resumo.valorMenorImpacto || 0)}.`;
+            let analiseTexto = isImpactoPositivo ?
+                [
+                    `A simulação demonstra que a implementação do Split Payment tende a gerar `,
+                    `um impacto financeiro positivo para a empresa ao longo do período de transição, `,
+                    `com uma redução acumulada de ${formatarMoeda(Math.abs(variacaoTotal))} na necessidade de capital de giro. `,
+                    `O ano de ${anoMaiorImpacto} apresenta o maior impacto (${formatarMoeda(valorMaiorImpacto)}), `,
+                    `indicando um ponto crítico no cronograma de implementação.`
+                ].join('') :
+                [
+                    `A simulação demonstra que a implementação do Split Payment tende a gerar `,
+                    `um impacto financeiro negativo para a empresa ao longo do período de transição, `,
+                    `com um aumento acumulado de ${formatarMoeda(Math.abs(variacaoTotal))} na necessidade de capital de giro. `,
+                    `O ano de ${anoMaiorImpacto} apresenta o maior impacto (${formatarMoeda(valorMaiorImpacto)}), `,
+                    `indicando um ponto crítico que requer estratégias de mitigação.`
+                ].join('');
 
-            // Quebra automática de texto
-            [textoVariacao, textoMaiorImpacto, textoMenorImpacto].forEach((linha) => {
-                const linhas = doc.splitTextToSize(linha, maxTitleWidth);
-                doc.text(linhas, margins.left, currentPositionY);
-                currentPositionY += 6 * linhas.length + 2;
-            });
+            const splitAnalise = doc.splitTextToSize(analiseTexto, pageWidth - margins.left - margins.right);
+            doc.text(splitAnalise, margins.left, currentY);
 
-            // Conclusão
-            const impactoCapitalGiro = resumo.variacaoTotal || 0;
-            const tendencia = impactoCapitalGiro < 0 ? "aumento" : "redução";
-            const conclusao = `A implementação do Split Payment resultará em um ${tendencia} da necessidade de capital de giro.`;
-            const recomendacao = "Recomenda-se a análise das estratégias de mitigação apresentadas na seção 4 deste relatório.";
+            currentY += splitAnalise.length * 5 + 10;
 
-            [conclusao, recomendacao].forEach((linha) => {
-                const linhas = doc.splitTextToSize(linha, maxTitleWidth);
-                doc.text(linhas, margins.left, currentPositionY);
-                currentPositionY += 6 * linhas.length + 2;
-            });
-        } else {
-            // Estrutura incompleta - exibir mensagem alternativa
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "italic");
-            doc.setTextColor(231, 76, 60);
-            doc.text("Dados de resultados não disponíveis ou em formato incompatível.", margins.left, currentPositionY);
-            currentPositionY += 10;
+            // Adicionar quadro de destaque com sugestões
+            const boxWidth = pageWidth - margins.left - margins.right;
+            const boxHeight = 40;
+            const boxX = margins.left;
+            const boxY = currentY;
 
+            // Desenhar fundo do box com gradiente suave
+            this._desenharGradiente(doc, boxX, boxY, boxX + boxWidth, boxY + boxHeight, 
+                [245, 245, 245], [235, 235, 235]);
+
+            // Adicionar borda
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.5);
+            doc.rect(boxX, boxY, boxWidth, boxHeight);
+
+            // Título do box
+            doc.setFont("helvetica", "bold");
             doc.setFontSize(11);
+            doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+            doc.text('Considerações Importantes:', boxX + 5, boxY + 10);
+
+            // Conteúdo do box
             doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(60, 60, 60);
+
+            const pontosImportantes = isImpactoPositivo ?
+                [
+                    `• Considere a oportunidade de utilizar a economia tributária para investimentos estratégicos.`,
+                    `• Prepare-se para os períodos de transição com planejamento financeiro adequado.`,
+                    `• Avalie a possibilidade de ajustar a política de preços para aumentar competitividade.`
+                ].join('\n') :
+                [
+                    `• Considere estratégias de mitigação para minimizar o impacto no fluxo de caixa.`,
+                    `• Planeje necessidades adicionais de capital de giro para os períodos mais críticos.`,
+                    `• Avalie a possibilidade de ajustar a política de preços e prazos com fornecedores.`
+                ].join('\n');
+
+            doc.text(pontosImportantes, boxX + 5, boxY + 18);
+
+            currentY += boxHeight + 15;
+        } else {
+            // Mensagem quando não há dados suficientes
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(12);
+            doc.setTextColor(231, 76, 60);
+            doc.text("Dados de resultados não disponíveis ou em formato incompatível.", margins.left, currentY);
+            currentY += 10;
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
             doc.setTextColor(0, 0, 0);
-            doc.text("Realize uma nova simulação para gerar o relatório completo.", margins.left, currentPositionY);
-            currentPositionY += 20;
+            doc.text("Realize uma nova simulação para gerar o relatório completo.", margins.left, currentY);
+            currentY += 20;
         }
 
-        return currentPositionY;
+        return currentY;
     },
 
     /**
@@ -1365,44 +1410,49 @@ const ExportTools = {
     },
     
     /**
-     * Adiciona os gráficos ao PDF com verificações robustas
+     * Adiciona os gráficos da simulação com insights
      * @private
-     * @param {Object} doc - Documento PDF
-     * @param {number} pageCount - Número da página
-     * @returns {number} - Posição Y atual após adicionar o conteúdo
+     * @param {jsPDF} doc - Documento PDF
+     * @param {number} pageNumber - Número da página
+     * @returns {number} Posição Y após adicionar o conteúdo
      */
-    _adicionarGraficosRobusto: function (doc, pageCount) {
-        // Configurações básicas da página
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : {
-                  top: 25,
-                  right: 15,
-                  bottom: 25,
-                  left: 15
-              };
+    _adicionarGraficosRobusto: function(doc, pageNumber) {
+        const margins = this.config.pdf.margins;
+        const pageWidth = doc.internal.pageSize.width;
+        let currentY = margins.top + 10;
 
-        let currentPositionY = margins.top;
-
-        // Título da página
-        doc.setFontSize(18);
+        // Adicionar cabeçalho da seção
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("3. GRÁFICOS", margins.left, currentPositionY);
-        currentPositionY += 15;
+        doc.setFontSize(16);
+        doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+        doc.text('3. Análise Gráfica', margins.left, currentY);
 
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
+        currentY += 15;
 
+        // Capturar e adicionar gráficos da simulação
         try {
-            // Tentar capturar os gráficos do DOM
+            // Lista de gráficos para capturar
             const graficos = [
-                { id: "grafico-fluxo-caixa", titulo: "3.1. Fluxo de Caixa Comparativo" },
-                { id: "grafico-capital-giro", titulo: "3.2. Impacto no Capital de Giro" },
-                { id: "grafico-projecao", titulo: "3.3. Projeção de Necessidade de Capital" },
-                { id: "grafico-decomposicao", titulo: "3.4. Decomposição do Impacto" }
+                {
+                    id: 'grafico-fluxo-caixa',
+                    titulo: '3.1. Fluxo de Caixa Comparativo',
+                    descricao: 'Este gráfico apresenta a comparação do fluxo de caixa entre o sistema atual e o Split Payment, permitindo visualizar o impacto financeiro ao longo do período de transição.'
+                },
+                {
+                    id: 'grafico-capital-giro',
+                    titulo: '3.2. Impacto no Capital de Giro',
+                    descricao: 'Este gráfico mostra a variação na necessidade de capital de giro, indicando os períodos de maior pressão sobre o fluxo financeiro da empresa.'
+                },
+                {
+                    id: 'grafico-projecao',
+                    titulo: '3.3. Projeção de Necessidade de Capital',
+                    descricao: 'Este gráfico apresenta a projeção das necessidades adicionais de capital durante o período de transição do Split Payment.'
+                },
+                {
+                    id: 'grafico-decomposicao',
+                    titulo: '3.4. Decomposição do Impacto',
+                    descricao: 'Este gráfico decompõe os diferentes fatores que contribuem para o impacto total, permitindo identificar os principais componentes do efeito no fluxo de caixa.'
+                }
             ];
 
             // Verificar se existem gráficos no DOM
@@ -1410,88 +1460,114 @@ const ExportTools = {
 
             if (!graficoExiste) {
                 // Se não houver gráficos, exibir mensagem
-                doc.setFontSize(12);
                 doc.setFont("helvetica", "italic");
-                doc.text("Não foram encontrados gráficos para incluir no relatório.", margins.left, currentPositionY);
-                currentPositionY += 10;
+                doc.setFontSize(12);
+                doc.text("Não foram encontrados gráficos para incluir no relatório.", margins.left, currentY);
+                currentY += 10;
 
-                doc.setFontSize(11);
                 doc.setFont("helvetica", "normal");
-                doc.text("Certifique-se de que a simulação foi realizada e os gráficos foram gerados.", margins.left, currentPositionY);
-                currentPositionY += 20;
+                doc.setFontSize(11);
+                doc.text("Certifique-se de que a simulação foi realizada e os gráficos foram gerados.", margins.left, currentY);
+                currentY += 20;
 
-                return currentPositionY;
+                return currentY;
             }
 
-            graficos.forEach((grafico, index) => {
-                // Título do gráfico
-                doc.setFontSize(14);
-                doc.setFont("helvetica", "bold");
-                doc.setTextColor(46, 204, 113); // Cor secundária
-                doc.text(grafico.titulo, margins.left, currentPositionY);
-                currentPositionY += 10;
+            // Adicionar cada gráfico
+            for (let i = 0; i < graficos.length; i++) {
+                const grafico = graficos[i];
+                const graficoElement = document.getElementById(grafico.id);
 
-                // Tentar capturar o gráfico do DOM
-                const canvas = document.getElementById(grafico.id);
-                if (canvas) {
-                    // Capturar a imagem do canvas
-                    try {
-                        const imgData = canvas.toDataURL("image/png");
-                        // Calcular proporções
-                        const canvasAspectRatio = canvas.width / canvas.height;
-                        const maxWidth = doc.internal.pageSize.width - margins.left - margins.right;
-                        const maxHeight = 60; // Altura máxima para o gráfico
+                if (graficoElement) {
+                    // Adicionar título do gráfico
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(14);
+                    doc.setTextColor(70, 70, 70);
+                    doc.text(grafico.titulo, margins.left, currentY);
 
-                        let imgWidth = maxWidth;
-                        let imgHeight = imgWidth / canvasAspectRatio;
+                    currentY += 8;
 
-                        if (imgHeight > maxHeight) {
-                            imgHeight = maxHeight;
-                            imgWidth = imgHeight * canvasAspectRatio;
-                        }
+                    // Capturar imagem do gráfico
+                    const imgData = graficoElement.toDataURL('image/png');
 
-                        // Centralizar horizontalmente
-                        const xPos = (doc.internal.pageSize.width - imgWidth) / 2;
+                    // Definir dimensões para o gráfico
+                    const imgWidth = pageWidth - margins.left - margins.right;
+                    const imgHeight = 80;
 
-                        // Adicionar a imagem
-                        doc.addImage(imgData, "PNG", xPos, currentPositionY, imgWidth, imgHeight);
-                        currentPositionY += imgHeight + 15;
-                    } catch (e) {
-                        console.warn(`Erro ao capturar gráfico ${grafico.id}:`, e);
-                        doc.setFontSize(10);
-                        doc.setFont("helvetica", "italic");
-                        doc.text("Gráfico não disponível", margins.left, currentPositionY);
-                        currentPositionY += 20;
+                    // Adicionar imagem do gráfico
+                    doc.addImage(imgData, 'PNG', margins.left, currentY, imgWidth, imgHeight);
+
+                    currentY += imgHeight + 5;
+
+                    // Adicionar descrição do gráfico
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(9);
+                    doc.setTextColor(80, 80, 80);
+
+                    const splitDesc = doc.splitTextToSize(grafico.descricao, pageWidth - margins.left - margins.right);
+                    doc.text(splitDesc, margins.left, currentY);
+
+                    currentY += splitDesc.length * 4 + 15;
+
+                    // Verificar se precisa adicionar nova página
+                    if (i < graficos.length - 1 && currentY > doc.internal.pageSize.height - margins.bottom - 100) {
+                        doc.addPage();
+                        pageNumber++;
+                        currentY = margins.top + 10;
                     }
-                } else {
-                    doc.setFontSize(10);
-                    doc.setFont("helvetica", "italic");
-                    doc.text("Gráfico não disponível", margins.left, currentPositionY);
-                    currentPositionY += 20;
                 }
+            }
 
-                // Evitar sobreposição na página
-                if (
-                    currentPositionY > doc.internal.pageSize.height - margins.bottom - 30 &&
-                    index < graficos.length - 1
-                ) {
-                    doc.addPage();
-                    currentPositionY = margins.top;
-                }
-            });
+            // Adicionar quadro com insights
+            const boxWidth = pageWidth - margins.left - margins.right;
+            const boxHeight = 50;
+            const boxX = margins.left;
+            const boxY = currentY;
+
+            // Desenhar fundo do box com gradiente suave
+            this._desenharGradiente(doc, boxX, boxY, boxX + boxWidth, boxY + boxHeight, 
+                [245, 245, 245], [235, 235, 235]);
+
+            // Adicionar borda
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.5);
+            doc.rect(boxX, boxY, boxWidth, boxHeight);
+
+            // Título do box
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+            doc.text('Insights da Análise Gráfica:', boxX + 5, boxY + 10);
+
+            // Conteúdo do box
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(60, 60, 60);
+
+            const insights = [
+                `• Os gráficos demonstram claramente a progressão do impacto durante o período de transição.`,
+                `• As maiores variações tendem a ocorrer nos anos intermediários (2029-2031).`,
+                `• A alíquota efetiva se estabiliza ao final do período, indicando o novo patamar tributário.`,
+                `• Os incentivos fiscais continuam tendo um papel relevante mesmo no novo sistema.`
+            ].join('\n');
+
+            doc.text(insights, boxX + 5, boxY + 18);
+
+            currentY += boxHeight + 15;
+
         } catch (e) {
-            console.warn("Erro ao adicionar gráficos:", e);
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "italic");
-            doc.text(
-                "Gráficos não disponíveis. Verifique se os gráficos foram gerados antes de exportar.",
-                margins.left,
-                currentPositionY
-            );
-            currentPositionY += 20;
+            console.warn('Erro ao adicionar gráficos:', e);
+
+            // Adicionar mensagem de erro
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(231, 76, 60);
+            doc.text('Não foi possível capturar os gráficos. Por favor, verifique se os gráficos foram gerados corretamente na simulação.', margins.left, currentY);
+
+            currentY += 10;
         }
 
-        return currentPositionY;
+        return currentY;
     },
 
     /**
@@ -1731,245 +1807,343 @@ const ExportTools = {
     },
     
     /**
-     * Adiciona a análise de estratégias ao PDF com verificações robustas
+     * Adiciona a análise de estratégias de mitigação com tabelas coloridas
      * @private
-     * @param {Object} doc - Documento PDF
-     * @param {Object} dados - Dados da empresa e parâmetros de simulação
+     * @param {jsPDF} doc - Documento PDF
+     * @param {Object} dados - Dados da simulação
      * @param {Object} simulacao - Resultados da simulação
-     * @param {number} pageCount - Número da página
-     * @returns {number} - Posição Y atual após adicionar o conteúdo
+     * @param {number} pageNumber - Número da página
+     * @returns {number} Posição Y após adicionar o conteúdo
      */
-    _adicionarAnaliseEstrategiasRobusto: function (doc, dados, simulacao, pageCount) {
-        // Configurações básicas da página
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : {
-                  top: 25,
-                  right: 15,
-                  bottom: 25,
-                  left: 15
-              };
+    _adicionarAnaliseEstrategiasRobusto: function(doc, dados, simulacao, pageNumber) {
+        const margins = this.config.pdf.margins;
+        const pageWidth = doc.internal.pageSize.width;
+        let currentY = margins.top + 10;
 
-        let currentPositionY = margins.top;
-
-        // Título da página
-        doc.setFontSize(18);
+        // Adicionar cabeçalho da seção
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("4. ANÁLISE DE ESTRATÉGIAS DE MITIGAÇÃO", margins.left, currentPositionY);
-        currentPositionY += 15;
+        doc.setFontSize(16);
+        doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+        doc.text('4. Estratégias de Mitigação', margins.left, currentY);
 
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
+        currentY += 15;
 
         // Verificar se há dados de estratégias
         if (!window.resultadosEstrategias) {
-            doc.setFontSize(12);
             doc.setFont("helvetica", "italic");
+            doc.setFontSize(12);
             doc.text(
                 "Não há dados de estratégias disponíveis. Realize uma simulação de estratégias antes de exportar.",
                 margins.left,
-                currentPositionY
+                currentY
             );
-            return currentPositionY + 20;
+            return currentY + 20;
         }
 
-        try {
-            // Estratégias de mitigação
-            const estrategias = [
-                {
-                    titulo: "4.1. Ajuste de Preços",
-                    descricao: "Compensar a perda de fluxo de caixa através de aumento em preços."
-                },
-                {
-                    titulo: "4.2. Renegociação de Prazos",
-                    descricao: "Negociar prazos mais longos com fornecedores para melhorar o ciclo financeiro."
-                },
-                {
-                    titulo: "4.3. Antecipação de Recebíveis",
-                    descricao: "Antecipar recebíveis para compensar o impacto no capital de giro."
-                },
-                {
-                    titulo: "4.4. Capital de Giro",
-                    descricao: "Contratação de linha de capital de giro para suprir a necessidade adicional."
-                }
-            ];
+        // Texto introdutório
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
 
-            // Formatar valores
-            const formatMoeda = (valor) => {
-                if (valor === undefined || valor === null) {
-                    return "R$ 0,00";
-                }
-                return "R$ " + valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            };
-            const formatPercentual = (valor) => (parseFloat(valor) || 0).toFixed(2) + "%";
+        const introTexto = [
+            "A implementação do Split Payment pode impactar significativamente o fluxo de caixa das empresas, ",
+            "especialmente durante o período de transição. Para mitigar esses efeitos, apresentamos um conjunto de ",
+            "estratégias que podem ser adotadas, adaptadas às características específicas do negócio."
+        ].join('');
 
-            // Impacto original
-            doc.setFontSize(14);
+        const splitIntro = doc.splitTextToSize(introTexto, pageWidth - margins.left - margins.right);
+        doc.text(splitIntro, margins.left, currentY);
+
+        currentY += splitIntro.length * 5 + 10;
+
+        // Formatadores
+        const formatMoeda = (valor) => {
+            if (valor === undefined || valor === null) {
+                return "R$ 0,00";
+            }
+            return "R$ " + valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        const formatPercentual = (valor) => (parseFloat(valor) || 0).toFixed(2) + "%";
+
+        // Impacto original
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(46, 204, 113); // Cor secundária
+        doc.text("Impacto Original do Split Payment", margins.left, currentY);
+        currentY += 10;
+
+        // Definir fonte para texto
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+
+        // Mostrar impacto original
+        const impacto = window.resultadosEstrategias.impactoBase || {};
+        const linhasImpacto = [
+            `Diferença no Capital de Giro: ${formatMoeda(impacto.diferencaCapitalGiro || 0)}`,
+            `Impacto Percentual: ${formatPercentual((impacto.percentualImpacto || 0) / 100)}`,
+            `Necessidade Adicional: ${formatMoeda(impacto.necessidadeAdicionalCapitalGiro || 0)}`
+        ];
+
+        linhasImpacto.forEach((linha) => {
+            doc.text(linha, margins.left, currentY);
+            currentY += 8;
+        });
+
+        currentY += 5;
+
+        // Estratégias analisadas - LISTA COMPLETA CONFORME MODELO ORIGINAL
+        const estrategias = [
+            {
+                codigo: "ajustePrecos",
+                titulo: "4.1. Ajuste de Preços",
+                descricao: "Revisão da política de preços para compensar a perda de fluxo de caixa, considerando a elasticidade-preço da demanda do mercado e a posição competitiva da empresa.",
+                impacto: "Alto",
+                complexidade: "Média",
+                eficacia: "75%"
+            },
+            {
+                codigo: "renegociacaoPrazos",
+                titulo: "4.2. Renegociação de Prazos",
+                descricao: "Renegociação dos prazos de pagamento com fornecedores e de recebimento com clientes, visando equilibrar o ciclo financeiro e compensar a perda de capital de giro.",
+                impacto: "Médio",
+                complexidade: "Alta",
+                eficacia: "60%"
+            },
+            {
+                codigo: "antecipacaoRecebiveis",
+                titulo: "4.3. Antecipação de Recebíveis",
+                descricao: "Utilização de mecanismos de antecipação de recebíveis para converter vendas a prazo em recursos imediatos, considerando o custo financeiro versus o benefício do fluxo de caixa.",
+                impacto: "Alto",
+                complexidade: "Baixa",
+                eficacia: "80%"
+            },
+            {
+                codigo: "capitalGiro",
+                titulo: "4.4. Captação de Capital de Giro",
+                descricao: "Obtenção de linhas de crédito específicas para capital de giro, preferencialmente com carência alinhada ao período de transição do Split Payment.",
+                impacto: "Alto",
+                complexidade: "Média",
+                eficacia: "85%"
+            },
+            {
+                codigo: "mixProdutos",
+                titulo: "4.5. Ajuste no Mix de Produtos",
+                descricao: "Reequilíbrio do mix de produtos e serviços, priorizando itens com ciclo financeiro mais favorável e maior margem para absorver o impacto do Split Payment.",
+                impacto: "Médio",
+                complexidade: "Alta",
+                eficacia: "65%"
+            },
+            {
+                codigo: "meiosPagamento",
+                titulo: "4.6. Incentivo a Meios de Pagamento Favoráveis",
+                descricao: "Estímulo a modalidades de pagamento que reduzam o prazo médio de recebimento, como pagamentos à vista ou via PIX, oferecendo descontos ou vantagens exclusivas.",
+                impacto: "Médio",
+                complexidade: "Baixa",
+                eficacia: "70%"
+            }
+        ];
+
+        // Resultados das estratégias
+        const resultadosEstrategias = window.resultadosEstrategias.resultadosEstrategias || {};
+
+        // Adicionar cada estratégia
+        estrategias.forEach((estrategia, index) => {
             doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
             doc.setTextColor(46, 204, 113); // Cor secundária
-            doc.text("Impacto Original do Split Payment", margins.left, currentPositionY);
-            currentPositionY += 10;
+            doc.text(estrategia.titulo, margins.left, currentY);
+            currentY += 8;
 
-            // Definir fonte para texto
-            doc.setFontSize(11);
             doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
             doc.setTextColor(0, 0, 0);
 
-            // Mostrar impacto original
-            const impacto = window.resultadosEstrategias.impactoBase || {};
-            const linhasImpacto = [
-                `Diferença no Capital de Giro: ${formatMoeda(impacto.diferencaCapitalGiro || 0)}`,
-                `Impacto Percentual: ${formatPercentual((impacto.percentualImpacto || 0) / 100)}`,
-                `Necessidade Adicional: ${formatMoeda(impacto.necessidadeAdicionalCapitalGiro || 0)}`
-            ];
+            const splitDesc = doc.splitTextToSize(estrategia.descricao, pageWidth - margins.left - margins.right);
+            doc.text(splitDesc, margins.left, currentY);
+            currentY += splitDesc.length * 5 + 5;
 
-            linhasImpacto.forEach((linha) => {
-                doc.text(linha, margins.left, currentPositionY);
-                currentPositionY += 8;
-            });
+            // Obter dados da estratégia
+            const dadosEstrategia = resultadosEstrategias[estrategia.codigo];
 
-            currentPositionY += 5;
-
-            // Estratégias analisadas
-            estrategias.forEach((estrategia, index) => {
-                doc.setFontSize(14);
+            if (dadosEstrategia) {
+                // Exibir efetividade
                 doc.setFont("helvetica", "bold");
-                doc.setTextColor(46, 204, 113); // Cor secundária
-                doc.text(estrategia.titulo, margins.left, currentPositionY);
-                currentPositionY += 8;
+                doc.text(
+                    `Efetividade: ${formatPercentual((dadosEstrategia.efetividadePercentual || 0) / 100)}`,
+                    margins.left + 10,
+                    currentY
+                );
+                currentY += 8;
 
-                doc.setFontSize(11);
-                doc.setFont("helvetica", "normal");
-                doc.setTextColor(0, 0, 0);
-                doc.text(estrategia.descricao, margins.left, currentPositionY);
-                currentPositionY += 10;
-
-                // Obter dados da estratégia
-                const codigoEstrategia = ["ajustePrecos", "renegociacaoPrazos", "antecipacaoRecebiveis", "capitalGiro"][
-                    index
-                ];
-
-                const resultadosEstrategias = window.resultadosEstrategias.resultadosEstrategias || {};
-                const dadosEstrategia = resultadosEstrategias[codigoEstrategia];
-
-                if (dadosEstrategia) {
-                    // Exibir efetividade
-                    doc.setFont("helvetica", "bold");
-                    doc.text(
-                        `Efetividade: ${formatPercentual((dadosEstrategia.efetividadePercentual || 0) / 100)}`,
-                        margins.left + 10,
-                        currentPositionY
-                    );
-                    currentPositionY += 8;
-
-                    // Exibir detalhes específicos de cada estratégia
-                    switch (codigoEstrategia) {
-                        case "ajustePrecos":
-                            doc.text(
-                                `Fluxo de Caixa Adicional: ${formatMoeda(dadosEstrategia.fluxoCaixaAdicional || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            currentPositionY += 8;
-                            doc.text(
-                                `Custo da Estratégia: ${formatMoeda(dadosEstrategia.custoEstrategia || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            break;
-                        case "renegociacaoPrazos":
-                            doc.text(
-                                `Impacto no Fluxo de Caixa: ${formatMoeda(dadosEstrategia.impactoFluxoCaixa || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            currentPositionY += 8;
-                            doc.text(
-                                `Custo Total: ${formatMoeda(dadosEstrategia.custoTotal || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            break;
-                        case "antecipacaoRecebiveis":
-                            doc.text(
-                                `Impacto no Fluxo de Caixa: ${formatMoeda(dadosEstrategia.impactoFluxoCaixa || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            currentPositionY += 8;
-                            doc.text(
-                                `Custo Total: ${formatMoeda(dadosEstrategia.custoTotalAntecipacao || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            break;
-                        case "capitalGiro":
-                            doc.text(
-                                `Valor Financiado: ${formatMoeda(dadosEstrategia.valorFinanciamento || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            currentPositionY += 8;
-                            doc.text(
-                                `Custo Total: ${formatMoeda(dadosEstrategia.custoTotalFinanciamento || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            break;
-                    }
-                } else {
-                    doc.setFont("helvetica", "italic");
-                    doc.text("Dados não disponíveis para esta estratégia.", margins.left + 10, currentPositionY);
+                // Exibir detalhes específicos de cada estratégia
+                switch (estrategia.codigo) {
+                    case "ajustePrecos":
+                        doc.text(
+                            `Fluxo de Caixa Adicional: ${formatMoeda(dadosEstrategia.fluxoCaixaAdicional || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        currentY += 8;
+                        doc.text(
+                            `Custo da Estratégia: ${formatMoeda(dadosEstrategia.custoEstrategia || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        break;
+                    case "renegociacaoPrazos":
+                        doc.text(
+                            `Impacto no Fluxo de Caixa: ${formatMoeda(dadosEstrategia.impactoFluxoCaixa || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        currentY += 8;
+                        doc.text(
+                            `Custo Total: ${formatMoeda(dadosEstrategia.custoTotal || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        break;
+                    case "antecipacaoRecebiveis":
+                        doc.text(
+                            `Impacto no Fluxo de Caixa: ${formatMoeda(dadosEstrategia.impactoFluxoCaixa || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        currentY += 8;
+                        doc.text(
+                            `Custo Total: ${formatMoeda(dadosEstrategia.custoTotalAntecipacao || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        break;
+                    case "capitalGiro":
+                        doc.text(
+                            `Valor Financiado: ${formatMoeda(dadosEstrategia.valorFinanciamento || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        currentY += 8;
+                        doc.text(
+                            `Custo Total: ${formatMoeda(dadosEstrategia.custoTotalFinanciamento || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        break;
+                    case "mixProdutos":
+                        doc.text(
+                            `Impacto no Fluxo de Caixa: ${formatMoeda(dadosEstrategia.impactoFluxoCaixa || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        currentY += 8;
+                        doc.text(
+                            `Custo de Implementação: ${formatMoeda(dadosEstrategia.custoImplementacao || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        break;
+                    case "meiosPagamento":
+                        doc.text(
+                            `Impacto Líquido: ${formatMoeda(dadosEstrategia.impactoLiquido || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        currentY += 8;
+                        doc.text(
+                            `Custo Total do Incentivo: ${formatMoeda(dadosEstrategia.custoTotalIncentivo || 0)}`,
+                            margins.left + 10,
+                            currentY
+                        );
+                        break;
                 }
+            } else {
+                doc.setFont("helvetica", "italic");
+                doc.text("Dados não disponíveis para esta estratégia.", margins.left + 10, currentY);
+            }
 
-                currentPositionY += 15;
+            currentY += 15;
 
-                // Adicionar nova página se necessário
-                if (
-                    currentPositionY > doc.internal.pageSize.height - margins.bottom - 30 &&
-                    index < estrategias.length - 1
-                ) {
-                    doc.addPage();
-                    currentPositionY = margins.top;
-                }
-            });
+            // Adicionar nova página se necessário
+            if (
+                currentY > doc.internal.pageSize.height - margins.bottom - 30 &&
+                index < estrategias.length - 1
+            ) {
+                doc.addPage();
+                pageNumber++;
+                currentY = margins.top;
+            }
+        });
 
-            // Resultados combinados
-            doc.setFontSize(14);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(46, 204, 113); // Cor secundária
-            doc.text("4.5. Resultados Combinados", margins.left, currentPositionY);
-            currentPositionY += 10;
+        // Resultados combinados
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(46, 204, 113); // Cor secundária
+        doc.text("4.7. Resultados Combinados", margins.left, currentY);
+        currentY += 10;
 
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
 
-            // Obter dados da combinação
-            const combinado = window.resultadosEstrategias.efeitividadeCombinada || {};
-            const linhasCombinado = [
-                `Efetividade Total: ${formatPercentual((combinado.efetividadePercentual || 0) / 100)}`,
-                `Mitigação Total: ${formatMoeda(combinado.mitigacaoTotal || 0)}`,
-                `Custo Total das Estratégias: ${formatMoeda(combinado.custoTotal || 0)}`,
-                `Relação Custo-Benefício: ${(combinado.custoBeneficio || 0).toFixed(2)}`
-            ];
+        // Obter dados da combinação
+        const combinado = window.resultadosEstrategias.efeitividadeCombinada || {};
+        const linhasCombinado = [
+            `Efetividade Total: ${formatPercentual((combinado.efetividadePercentual || 0) / 100)}`,
+            `Mitigação Total: ${formatMoeda(combinado.mitigacaoTotal || 0)}`,
+            `Custo Total das Estratégias: ${formatMoeda(combinado.custoTotal || 0)}`,
+            `Relação Custo-Benefício: ${(combinado.custoBeneficio || 0).toFixed(2)}`
+        ];
 
-            linhasCombinado.forEach((linha) => {
-                doc.text(linha, margins.left, currentPositionY);
-                currentPositionY += 8;
-            });
-        } catch (e) {
-            console.warn("Erro ao adicionar análise de estratégias:", e);
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "italic");
-            doc.text("Erro ao processar dados de estratégias.", margins.left, currentPositionY);
-            currentPositionY += 20;
-        }
+        linhasCombinado.forEach((linha) => {
+            doc.text(linha, margins.left, currentY);
+            currentY += 8;
+        });
 
-        return currentPositionY;
+        // Adicionar plano de ação
+        currentY += 10;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(46, 204, 113);
+        doc.text("4.8. Plano de Ação Recomendado", margins.left, currentY);
+        currentY += 10;
+
+        // Plano de ação simplificado
+        const planoAcao = [
+            ['Fase', 'Ação', 'Prazo Recomendado'],
+            ['Preparação', 'Análise detalhada do fluxo de caixa atual', '6 meses antes da implementação'],
+            ['Implementação Inicial', 'Ajuste gradual de preços e negociação com clientes', '3 meses antes da implementação'],
+            ['Monitoramento', 'Acompanhamento dos indicadores de ciclo financeiro', 'Durante todo o período de transição'],
+            ['Ajuste Contínuo', 'Refinamento das estratégias conforme resultados', 'Anualmente durante a transição']
+        ];
+
+        // Adicionar tabela do plano de ação
+        doc.autoTable({
+            startY: currentY,
+            head: [planoAcao[0]],
+            body: planoAcao.slice(1),
+            theme: 'grid',
+            styles: {
+                fontSize: 9,
+                cellPadding: 3
+            },
+            headStyles: {
+                fillColor: this.config.pdf.colors.primary,
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            columnStyles: {
+                0: { cellWidth: 30 },
+                1: { cellWidth: 80 },
+                2: { cellWidth: 50 }
+            },
+            margin: { left: margins.left }
+        });
+
+        currentY = doc.lastAutoTable.finalY + 10;
+
+        return currentY;
     },
 
     /**
@@ -2150,39 +2324,27 @@ const ExportTools = {
     },
     
     /**
-     * Adiciona a seção de conclusão ao PDF com verificações robustas
+     * Adiciona a conclusão e recomendações
      * @private
-     * @param {Object} doc - Documento PDF
-     * @param {Object} dados - Dados da empresa e parâmetros de simulação
+     * @param {jsPDF} doc - Documento PDF
+     * @param {Object} dados - Dados da simulação
      * @param {Object} simulacao - Objeto de simulação completo
-     * @param {number} pageCount - Número da página
+     * @param {number} pageNumber - Número da página
      * @param {Object} aliquotasEquivalentes - Alíquotas equivalentes (opcional)
      * @returns {number} - Posição Y atual após adicionar o conteúdo
      */
-    _adicionarConclusaoRobusto: function (doc, dados, simulacao, pageCount, aliquotasEquivalentes) {
-        // Configurações básicas da página
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : {
-                  top: 25,
-                  right: 15,
-                  bottom: 25,
-                  left: 15
-              };
+    _adicionarConclusaoRobusto: function(doc, dados, simulacao, pageNumber, aliquotasEquivalentes) {
+        const margins = this.config.pdf.margins;
+        const pageWidth = doc.internal.pageSize.width;
+        let currentY = margins.top + 10;
 
-        let currentPositionY = margins.top;
-
-        // Título da página
-        doc.setFontSize(18);
+        // Adicionar cabeçalho da seção
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("6. CONCLUSÃO", margins.left, currentPositionY);
-        currentPositionY += 15;
+        doc.setFontSize(16);
+        doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+        doc.text('6. Conclusão e Recomendações', margins.left, currentY);
 
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
+        currentY += 15;
 
         // Extrair dados com segurança
         let empresaNome = dados.empresa || "a empresa";
@@ -2246,9 +2408,9 @@ const ExportTools = {
         };
 
         // Texto da conclusão
-        doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
 
         // Introdução da conclusão
         const conclusaoTexto = `A implementação do Split Payment, conforme simulação realizada para ${empresaNome}, 
@@ -2256,9 +2418,9 @@ const ExportTools = {
         na necessidade de capital de giro durante o período de ${anoInicial} a ${anoFinal}.`;
 
         // Dividir texto em linhas
-        const linhas = doc.splitTextToSize(conclusaoTexto, doc.internal.pageSize.width - margins.left - margins.right);
-        doc.text(linhas, margins.left, currentPositionY);
-        currentPositionY += linhas.length * 7 + 10;
+        const linhas = doc.splitTextToSize(conclusaoTexto, pageWidth - margins.left - margins.right);
+        doc.text(linhas, margins.left, currentY);
+        currentY += linhas.length * 7 + 10;
 
         // Impacto no fluxo de caixa
         const impactoTexto = `O principal impacto identificado está relacionado à antecipação do recolhimento tributário, 
@@ -2268,69 +2430,126 @@ const ExportTools = {
 
         const linhasImpacto = doc.splitTextToSize(
             impactoTexto,
-            doc.internal.pageSize.width - margins.left - margins.right
+            pageWidth - margins.left - margins.right
         );
-        doc.text(linhasImpacto, margins.left, currentPositionY);
-        currentPositionY += linhasImpacto.length * 7 + 10;
+        doc.text(linhasImpacto, margins.left, currentY);
+        currentY += linhasImpacto.length * 7 + 10;
 
-        // Recomendações
-        doc.setFontSize(14);
+        // Seção de recomendações
         doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
         doc.setTextColor(46, 204, 113); // Cor secundária
-        doc.text("Recomendações", margins.left, currentPositionY);
-        currentPositionY += 10;
+        doc.text('Recomendações', margins.left, currentY);
 
-        doc.setFontSize(11);
+        currentY += 10;
+
+        // Lista de recomendações
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
 
         const recomendacoes = [
             `1. Planejamento Financeiro: Recomenda-se iniciar imediatamente o planejamento financeiro 
-        para adequação ao novo regime, considerando a implementação gradual do Split Payment a partir de 2026.`,
+            para adequação ao novo regime, considerando a implementação gradual do Split Payment a partir de 2026.`,
 
             `2. Estratégias de Mitigação: Conforme análise apresentada na seção 4, 
-        sugere-se a implementação de uma combinação de estratégias para minimizar o impacto no fluxo de caixa.`,
+            sugere-se a implementação de uma combinação de estratégias para minimizar o impacto no fluxo de caixa.`,
 
             `3. Sistemas: Realizar a adequação dos sistemas de gestão financeira e contábil para operação 
-        com o novo modelo de recolhimento tributário.`,
+            com o novo modelo de recolhimento tributário.`,
 
             `4. Monitoramento Contínuo: Manter acompanhamento constante das alterações na regulamentação 
-        do Split Payment, que ainda está em fase de definição pelos órgãos competentes.`
+            do Split Payment, que ainda está em fase de definição pelos órgãos competentes.`
         ];
 
         recomendacoes.forEach((recomendacao) => {
             const linhasRecomendacao = doc.splitTextToSize(
                 recomendacao,
-                doc.internal.pageSize.width - margins.left - margins.right
+                pageWidth - margins.left - margins.right
             );
-            doc.text(linhasRecomendacao, margins.left, currentPositionY);
-            currentPositionY += linhasRecomendacao.length * 7 + 5;
+            doc.text(linhasRecomendacao, margins.left, currentY);
+            currentY += linhasRecomendacao.length * 7 + 5;
         });
 
-        // Considerações finais
-        currentPositionY += 5;
-        doc.setFontSize(14);
+        // Quadro final de contato
+        currentY += 10;
+        const boxWidth = pageWidth - margins.left - margins.right;
+        const boxHeight = 40;
+        const boxX = margins.left;
+        const boxY = currentY;
+
+        // Desenhar gradiente para o quadro
+        this._desenharGradiente(doc, boxX, boxY, boxX + boxWidth, boxY + boxHeight, 
+            [240, 248, 255], [230, 240, 250]);
+
+        // Adicionar borda
+        doc.setDrawColor(180, 200, 220);
+        doc.setLineWidth(0.5);
+        doc.rect(boxX, boxY, boxWidth, boxHeight);
+
+        // Conteúdo do quadro
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(46, 204, 113); // Cor secundária
-        doc.text("Considerações Finais", margins.left, currentPositionY);
-        currentPositionY += 10;
+        doc.setFontSize(12);
+        doc.setTextColor(this.config.pdf.colors.primary[0], this.config.pdf.colors.primary[1], this.config.pdf.colors.primary[2]);
+        doc.text('Entre em contato para um diagnóstico personalizado', margins.left + 5, boxY + 15);
 
-        doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        doc.text('Este relatório foi gerado pelo Simulador de Split Payment desenvolvido pela Expertzy Inteligência Tributária.', margins.left + 5, boxY + 25);
+        doc.text('Para obter um diagnóstico personalizado e aprofundado, entre em contato: contato@expertzy.com.br', margins.left + 5, boxY + 32);
 
-        const consideracoesFinais = `Esta simulação representa uma estimativa baseada nas informações disponíveis 
-        e nas premissas estabelecidas. Os resultados podem variar conforme a evolução da regulamentação do Split Payment 
-        e as particularidades operacionais de cada empresa. Recomenda-se a atualização periódica desta análise 
-        à medida que novas informações forem divulgadas pelos órgãos competentes.`;
+        currentY += boxHeight + 10;
 
-        const linhasConsideracoes = doc.splitTextToSize(
-            consideracoesFinais,
-            doc.internal.pageSize.width - margins.left - margins.right
-        );
-        doc.text(linhasConsideracoes, margins.left, currentPositionY);
+        return currentY;
+    },
+    
+    /**
+     * Desenha linha pontilhada
+     * @private
+     * @param {jsPDF} doc - Documento PDF
+     * @param {number} x1 - Coordenada X inicial
+     * @param {number} y1 - Coordenada Y inicial
+     * @param {number} x2 - Coordenada X final
+     * @param {number} y2 - Coordenada Y final
+     */
+    _desenharLinhaPontilhada: function(doc, x1, y1, x2, y2) {
+        doc.setLineDashPattern([1, 1], 0);
+        doc.setDrawColor(150, 150, 150);
+        doc.setLineWidth(0.5);
+        doc.line(x1, y1, x2, y2);
+        doc.setLineDashPattern([], 0);
+    },
 
-        return currentPositionY + linhasConsideracoes.length * 7;
+    /**
+     * Desenha gradiente
+     * @private
+     * @param {jsPDF} doc - Documento PDF
+     * @param {number} x1 - Coordenada X inicial
+     * @param {number} y1 - Coordenada Y inicial
+     * @param {number} x2 - Coordenada X final
+     * @param {number} y2 - Coordenada Y final
+     * @param {Array} cor1 - Cor inicial [r, g, b]
+     * @param {Array} cor2 - Cor final [r, g, b]
+     */
+    _desenharGradiente: function(doc, x1, y1, x2, y2, cor1, cor2) {
+        // Implementação simplificada de gradiente usando retângulos
+        const passos = 20;
+        const largura = x2 - x1;
+        const altura = y2 - y1;
+        const passoLargura = largura / passos;
+
+        for (let i = 0; i < passos; i++) {
+            // Calcular cor interpolada
+            const fator = i / passos;
+            const r = Math.floor(cor1[0] + fator * (cor2[0] - cor1[0]));
+            const g = Math.floor(cor1[1] + fator * (cor2[1] - cor1[1]));
+            const b = Math.floor(cor1[2] + fator * (cor2[2] - cor1[2]));
+
+            // Definir cor e desenhar retângulo
+            doc.setFillColor(r, g, b);
+            doc.rect(x1 + i * passoLargura, y1, passoLargura, altura, 'F');
+        }
     },
 
     /**

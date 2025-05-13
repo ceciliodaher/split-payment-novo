@@ -418,7 +418,7 @@ function calcularFluxoCaixaSplitPayment(dados, ano = 2026, parametrosSetoriais =
     const valorImpostoNormal = valorImpostoLiquido - valorImpostoSplit;
     
     // Cálculo do capital de giro disponível (apenas a parte não afetada pelo Split Payment)
-    const capitalGiroDisponivel = valorImpostoNormal;
+    const capitalGiroDisponivel = percentualImplementacao > 0 ? valorImpostoNormal : valorImpostoLiquido;
     
     // Cálculo dos recebimentos
     // Para vendas à vista: recebimento - split payment imediato
@@ -472,7 +472,8 @@ function calcularImpactoCapitalGiro(dados, ano = 2026, parametrosSetoriais = nul
     
     // Calcular diferenças
     const diferencaCapitalGiro = resultadoSplitPayment.capitalGiroDisponivel - resultadoAtual.capitalGiroDisponivel;
-    const percentualImpacto = (diferencaCapitalGiro / resultadoAtual.capitalGiroDisponivel) * 100;
+    const percentualImpacto = resultadoAtual.capitalGiroDisponivel !== 0 ?
+      (diferencaCapitalGiro / resultadoAtual.capitalGiroDisponivel) * 100 : 0;
     
     // Calcular necessidade adicional de capital de giro (com margem de segurança)
     const necesidadeAdicionalCapitalGiro = Math.abs(diferencaCapitalGiro) * 1.2;

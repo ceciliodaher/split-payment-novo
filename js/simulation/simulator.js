@@ -1207,50 +1207,51 @@ window.SimuladorFluxoCaixa = {
 	gerarMemoriaCalculo: function(dados, anoInicial, anoFinal) {
 		const memoria = {};
 
+		let memoriaCompleta = '';
 		for (let ano = anoInicial; ano <= anoFinal; ano++) {
-			let textoMemoria = `=== MEMÓRIA DE CÁLCULO AUDITÁVEL - ANO ${ano} ===\n\n`;
+			memoriaCompleta += `\n\n=== CÁLCULOS PARA O ANO ${ano} ===\n\n`;
 
 			// 1. DADOS DE ENTRADA (Parâmetros básicos)
-			textoMemoria += `=== 1. DADOS DE ENTRADA ===\n`;
-			textoMemoria += this.gerarSecaoParametrosBasicos(dados);
+			memoriaCompleta += `=== 1. DADOS DE ENTRADA ===\n`;
+			memoriaCompleta += this.gerarSecaoParametrosBasicos(dados);
 
 			// 2. CÁLCULO DO FLUXO DE CAIXA ATUAL (Pré-Split Payment)
-			textoMemoria += `\n=== 2. CÁLCULO DO FLUXO DE CAIXA ATUAL (PRÉ-SPLIT PAYMENT) ===\n`;
+			memoriaCompleta += `\n=== 2. CÁLCULO DO FLUXO DE CAIXA ATUAL (PRÉ-SPLIT PAYMENT) ===\n`;
 			const resultadoAtual = this.calcularFluxoCaixaAtual(dados);
-			textoMemoria += this.gerarSecaoFluxoCaixaAtual(dados, resultadoAtual);
+			memoriaCompleta += this.gerarSecaoFluxoCaixaAtual(dados, resultadoAtual);
 
 			// 3. CÁLCULO DO FLUXO DE CAIXA COM SPLIT PAYMENT
-			textoMemoria += `\n=== 3. CÁLCULO DO FLUXO DE CAIXA COM SPLIT PAYMENT ===\n`;
+			memoriaCompleta += `\n=== 3. CÁLCULO DO FLUXO DE CAIXA COM SPLIT PAYMENT ===\n`;
 			const percentualImplementacao = this.obterPercentualImplementacao(ano);
 			const resultadoSplitPayment = this.calcularFluxoCaixaSplitPayment(dados, ano);
-			textoMemoria += this.gerarSecaoFluxoCaixaSplitPayment(dados, resultadoSplitPayment, percentualImplementacao);
+			memoriaCompleta += this.gerarSecaoFluxoCaixaSplitPayment(dados, resultadoSplitPayment, percentualImplementacao);
 
 			// 4. CÁLCULO DO IMPACTO NO CAPITAL DE GIRO
-			textoMemoria += `\n=== 4. CÁLCULO DO IMPACTO NO CAPITAL DE GIRO ===\n`;
+			memoriaCompleta += `\n=== 4. CÁLCULO DO IMPACTO NO CAPITAL DE GIRO ===\n`;
 			const diferencaCapitalGiro = resultadoSplitPayment.capitalGiroDisponivel - resultadoAtual.capitalGiroDisponivel;
 			const percentualImpacto = (diferencaCapitalGiro / resultadoAtual.capitalGiroDisponivel) * 100;
-			textoMemoria += this.gerarSecaoImpactoCapitalGiro(resultadoAtual, resultadoSplitPayment, diferencaCapitalGiro, percentualImpacto);
+			memoriaCompleta += this.gerarSecaoImpactoCapitalGiro(resultadoAtual, resultadoSplitPayment, diferencaCapitalGiro, percentualImpacto);
 
 			// 5. CÁLCULO DO IMPACTO NA MARGEM OPERACIONAL
-			textoMemoria += `\n=== 5. CÁLCULO DO IMPACTO NA MARGEM OPERACIONAL ===\n`;
+			memoriaCompleta += `\n=== 5. CÁLCULO DO IMPACTO NA MARGEM OPERACIONAL ===\n`;
 			const custoGiro = dados.taxaCapitalGiro || 0.021; // Taxa de capital de giro (2,1% a.m.)
 			const necesidadeAdicionalCapitalGiro = Math.abs(diferencaCapitalGiro) * 1.2; // 20% de margem de segurança
 			const custoMensal = necesidadeAdicionalCapitalGiro * custoGiro;
 			const impactoMargem = custoMensal / dados.faturamento;
-			textoMemoria += this.gerarSecaoImpactoMargem(dados, necesidadeAdicionalCapitalGiro, custoGiro, custoMensal, impactoMargem);
+			memoriaCompleta += this.gerarSecaoImpactoMargem(dados, necesidadeAdicionalCapitalGiro, custoGiro, custoMensal, impactoMargem);
 
 			// 6. CENÁRIOS DE SENSIBILIDADE
-			textoMemoria += `\n=== 6. ANÁLISE DE SENSIBILIDADE ===\n`;
-			textoMemoria += window.CalculationModule.gerarSecaoAnaliseSensibilidade(dados, diferencaCapitalGiro, ano);
+			memoriaCompleta += `\n=== 6. ANÁLISE DE SENSIBILIDADE ===\n`;
+			memoriaCompleta += window.CalculationModule.gerarSecaoAnaliseSensibilidade(dados, diferencaCapitalGiro, ano);
 
 			// 7. PROJEÇÃO E IMPACTO AO LONGO DO TEMPO
-			textoMemoria += `\n=== 7. PROJEÇÃO DE IMPACTO TEMPORAL ===\n`;
-			textoMemoria += window.CalculationModule.gerarSecaoProjecaoTemporal(dados, ano);
+			memoriaCompleta += `\n=== 7. PROJEÇÃO DE IMPACTO TEMPORAL ===\n`;
+			memoriaCompleta += window.CalculationModule.gerarSecaoProjecaoTemporal(dados, ano);
 
-			memoria[ano] = textoMemoria;
+			memoria[ano] = memoriaCompleta;
 		}
 
-		return memoria;
+		return memoriaCompleta;
 	},
 
 
