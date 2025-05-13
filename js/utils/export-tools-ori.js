@@ -1,3 +1,12 @@
+// Importação manual da biblioteca via CDN (certifique-se de remover esta linha após resolver o problema)
+const importJsPDF = document.createElement('script');
+importJsPDF.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+importJsPDF.onload = function() { 
+    console.log('jsPDF carregado manualmente com sucesso'); 
+    window.jsPDFLoaded = true;
+};
+document.head.appendChild(importJsPDF);
+
 /**
  * Ferramentas de Exportação de Dados
  * Módulo para exportação dos resultados de simulação em diferentes formatos
@@ -122,44 +131,75 @@ const ExportTools = {
      */
     exportarParaPDF: function () {
         console.log("Iniciando exportação para PDF");
-
-        // Verificar se a biblioteca foi carregada
+        
+         // Verificar se a biblioteca foi carregada
         if (!window.jsPDFLoaded && !window.jspdf && !window.jsPDF) {
             alert('Biblioteca jsPDF não foi carregada. Tente novamente em alguns segundos.');
             return Promise.reject('jsPDF não disponível');
         }
 
-        // Verificação robusta da simulação
         if (!window.ultimaSimulacao) {
             alert('Nenhuma simulação realizada ainda');
             return Promise.reject('Simulação não realizada');
         }
 
-        try {
-            // Obter resultadosExportacao de qualquer localização
-            const resultadosExportacao = window.ultimaSimulacao.resultadosExportacao || 
-                                      (window.ultimaSimulacao.resultados && 
-                                       window.ultimaSimulacao.resultados.resultadosExportacao);
+        // Verificar se a estrutura de dados está completa
+        if (!window.ultimaSimulacao.resultados || 
+            !window.ultimaSimulacao.resultados.resultadosExportacao || 
+            !window.ultimaSimulacao.resultados.resultadosExportacao.resultadosPorAno) {
+            alert("Estrutura de resultados inválida. Realize uma nova simulação.");
+            return Promise.reject("Estrutura de resultados inválida");
+        }
 
-            // Verificar dados mínimos necessários
-            if (!resultadosExportacao || !resultadosExportacao.resultadosPorAno) {
-                console.warn("Estrutura resultadosExportacao incompleta");
-                // Continuar mesmo assim, algumas seções serão geradas com dados básicos
+        // Iniciar a geração do PDF
+        const doc = new (window.jspdf?.jsPDF || window.jsPDF || function() {
+            throw new Error('jsPDF não está disponível');
+        })();
+
+        // Passar a simulação completa
+        _adicionarResultadosSimulacao(doc, window.ultimaSimulacao);
+
+        try {
+            // Verificar se a simulação foi realizada
+            if (!window.ultimaSimulacao) {
+                alert("Execute uma simulação antes de exportar os resultados.");
+                return Promise.reject("Simulação não realizada");
             }
+
+            // Extrair os dados da última simulação
+            const dados = window.ultimaSimulacao.dados;
+            const resultados = window.ultimaSimulacao; // Passa o objeto completo para ter acesso à nova estrutura
+            const aliquotasEquivalentes = window.ultimaSimulacao.aliquotasEquivalentes || {};
 
             // Solicitar nome do arquivo ao usuário
             const nomeArquivo = this._solicitarNomeArquivo("pdf", "relatorio-split-payment");
             if (!nomeArquivo) {
-                return Promise.resolve({success: false, message: "Exportação cancelada pelo usuário"});
+                return; // Usuário cancelou
             }
 
             // Criar documento PDF com configurações definidas
             const doc = new window.jspdf.jsPDF({
-                orientation: this.config.pdf.orientation || "portrait",
+                orientation: this.config.orientation,
                 unit: "mm",
-                format: this.config.pdf.pageSize || "a4",
+                format: this.config.pageSize,
                 compress: true
             });
+
+            // Definir margens
+            const margins =
+                this.config.pdf && this.config.pdf.margins
+                    ? this.config.pdf.margins
+                    : {
+                          top: 25,
+                          right: 15,
+                          bottom: 30,
+                          left: 15
+                      };
+
+            // Se existir configuração de margens, usar esses valores
+            if (this.config.pdf && this.config.pdf.margins) {
+                Object.assign(margins, this.config.pdf.margins);
+            }
 
             // Definir propriedades do documento
             doc.setProperties({
@@ -172,56 +212,51 @@ const ExportTools = {
 
             // Inicializar contagem de páginas para numeração
             let pageCount = 1;
-            let currentPositionY = 0;
-            const margins = this.config.pdf.margins || {
-                top: 25,
-                right: 15,
-                bottom: 25,
-                left: 15
-            };
+            let currentPositionY = margins.top;
 
             // Adicionar capa
-            this._adicionarCapa(doc, window.ultimaSimulacao.dados || {}, pageCount);
+            this._adicionarCapa(doc, dados, pageCount);
             doc.addPage();
             pageCount++;
 
             // Adicionar índice
             currentPositionY = this._adicionarIndice(doc, pageCount);
+
+            if (currentPositionY > doc.internal.pageSize.height - margins.bottom - 40) {
+                doc.addPage();
+                pageCount++;
+                currentPositionY = margins.top;
+            } else {
+                currentPositionY += 20;
+            }
+
+            // Adicionar páginas de conteúdo
+
+            // 1. Parâmetros da simulação
             doc.addPage();
             pageCount++;
+            currentPositionY = this._adicionarParametrosSimulacao(doc, dados, pageCount);
 
-            // Adicionar parâmetros da simulação
-            currentPositionY = this._adicionarParametrosSimulacao(doc, window.ultimaSimulacao.dados || {}, pageCount);
+            // 2. Resultados da simulação
             doc.addPage();
             pageCount++;
+            currentPositionY = this._adicionarResultadosSimulacao(doc, resultados, aliquotasEquivalentes, pageCount);
 
-            // Adicionar resultados da simulação - versão robusta
-            currentPositionY = this._adicionarResultadosSimulacaoRobusto(
-                doc, 
-                window.ultimaSimulacao, 
-                resultadosExportacao,
-                pageCount
-            );
+            // 3. Gráficos
             doc.addPage();
             pageCount++;
+            currentPositionY = this._adicionarGraficos(doc, pageCount);
 
-            // Adicionar gráficos - com verificação de existência
-            currentPositionY = this._adicionarGraficosRobusto(doc, pageCount);
+            // 4. Análise de Estratégias
             doc.addPage();
             pageCount++;
+            currentPositionY = this._adicionarAnaliseEstrategias(doc, dados, resultados, pageCount);
 
-            // Adicionar análise de estratégias - com verificação de existência
-            currentPositionY = this._adicionarAnaliseEstrategiasRobusto(
-                doc, 
-                window.ultimaSimulacao.dados || {}, 
-                window.ultimaSimulacao, 
-                pageCount
-            );
+            // 5. Memória de cálculo
             doc.addPage();
             pageCount++;
-
-            // Adicionar memória de cálculo
-            const obterMemoriaCalculo = function() {
+            // Definir uma função para obter a memória de cálculo
+            const obterMemoriaCalculo = function () {
                 const anoSelecionado =
                     document.getElementById("select-ano-memoria")?.value ||
                     (window.memoriaCalculoSimulacao ? Object.keys(window.memoriaCalculoSimulacao)[0] : "2026");
@@ -230,18 +265,12 @@ const ExportTools = {
                     : "Memória de cálculo não disponível para o ano selecionado.";
             };
             currentPositionY = this._adicionarMemoriaCalculo(doc, obterMemoriaCalculo, pageCount);
+
+            // 6. Conclusão
             doc.addPage();
             pageCount++;
-
-            // Adicionar conclusão
-            const aliquotasEquivalentes = window.ultimaSimulacao.aliquotasEquivalentes || {};
-            currentPositionY = this._adicionarConclusaoRobusto(
-                doc, 
-                window.ultimaSimulacao.dados || {}, 
-                window.ultimaSimulacao, 
-                pageCount, 
-                aliquotasEquivalentes
-            );
+            // Na função exportarParaPDF, linha ~213
+            currentPositionY = this._adicionarConclusao(doc, dados, resultados, pageCount, aliquotasEquivalentes);
 
             // Adicionar cabeçalho e rodapé em todas as páginas (exceto capa)
             this._adicionarCabecalhoRodape(doc, pageCount);
@@ -264,92 +293,6 @@ const ExportTools = {
                 error: error
             });
         }
-    },
-
-    /**
-     * Verifica se a estrutura de dados da simulação é válida e completa
-     * @private
-     * @param {Object} simulacao - Objeto de simulação
-     * @returns {boolean} - Indica se a estrutura é válida
-     */
-    _verificarEstruturaDados: function(simulacao) {
-        // Verificar dados básicos
-        if (!simulacao || !simulacao.dados) {
-            console.warn('Dados básicos da simulação não encontrados');
-            return false;
-        }
-
-        // Verificar estrutura de resultadosExportacao (em qualquer localização)
-        const resultadosExportacao = simulacao.resultadosExportacao || 
-                                  (simulacao.resultados && simulacao.resultados.resultadosExportacao);
-
-        if (!resultadosExportacao || !resultadosExportacao.resultadosPorAno) {
-            console.warn('Estrutura resultadosExportacao não encontrada ou incompleta');
-            return false;
-        }
-
-        // Tudo verificado e ok
-        return true;
-    },
-
-    /**
-     * Adiciona conteúdo básico ao PDF, mesmo se a estrutura estiver incompleta
-     * @private
-     * @param {Object} doc - Documento PDF
-     * @param {Object} simulacao - Objeto de simulação
-     */
-    _adicionarConteudoBasico: function(doc, simulacao) {
-        // Configuração de margens
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : { top: 25, right: 15, bottom: 25, left: 15 };
-
-        // Extrai os dados disponíveis (com segurança)
-        const dados = simulacao.dados || {};
-
-        // Adicionar capa
-        let pageCount = 1;
-        this._adicionarCapa(doc, dados, pageCount);
-
-        // Adicionar cabeçalho e rodapé
-        this._adicionarCabecalhoRodape(doc, pageCount);
-    },
-
-    /**
-     * Adiciona conteúdo detalhado ao PDF quando a estrutura estiver completa
-     * @private
-     * @param {Object} doc - Documento PDF
-     * @param {Object} simulacao - Objeto de simulação
-     */
-    _adicionarConteudoDetalhado: function(doc, simulacao) {
-        // Aqui você pode adicionar o resto das seções do relatório
-        // Usando o código existente, mas com verificações robustas
-
-        // Configuração de margens
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : { top: 25, right: 15, bottom: 25, left: 15 };
-
-        let pageCount = 1;
-
-        // Adicionar novas páginas e seções
-        doc.addPage();
-        pageCount++;
-
-        // Adicionar parâmetros da simulação
-        this._adicionarParametrosSimulacao(doc, simulacao.dados, pageCount);
-
-        doc.addPage();
-        pageCount++;
-
-        // Resultados da simulação
-        const resultadosExportacao = simulacao.resultadosExportacao || 
-                                  (simulacao.resultados && simulacao.resultados.resultadosExportacao);
-
-        this._adicionarResultadosSimulacao(doc, simulacao, resultadosExportacao, pageCount);
-
-        // Adicionar mais seções conforme necessário
-        // ...
     },
 
     /**
@@ -858,182 +801,34 @@ const ExportTools = {
 
         return `${dia}/${mes}/${ano}`;
     },
-   
+
+    /**
+     * Correção 6: Implementar a função _adicionarResultadosSimulacao que é chamada mas parece estar faltando
+     */
     /**
      * Adiciona os resultados da simulação ao PDF
      * @private
      * @param {Object} doc - Documento PDF
-     * @param {Object} simulacao - Objeto de simulação completo
-     * @param {Object} resultadosExportacao - Estrutura de resultados para exportação
+     * @param {Object} resultados - Resultados da simulação
+     * @param {Object} aliquotasEquivalentes - Alíquotas equivalentes calculadas (opcional)
      * @param {number} pageCount - Número da página
-     * @returns {number} - Posição Y atual após adicionar o conteúdo
+     * @returns {number} Posição Y atual após adicionar o conteúdo
      */
-    _adicionarResultadosSimulacao: function (doc, simulacao, resultadosExportacao, pageCount) {
-        // Configurações de margem
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : { top: 25, right: 15, bottom: 25, left: 15 };
-
-        let currentPositionY = margins.top;
-
-        // Título da página
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("2. RESULTADOS DA SIMULAÇÃO", margins.left, currentPositionY);
-        currentPositionY += 15;
-
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
-
-        // Funções auxiliares de formatação
-        const formatarMoeda = (valor) => {
-            if (isNaN(valor) || valor === undefined || valor === null) return "R$ 0,00";
-            return "R$ " + Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        };
-
-        const formatarPercentual = (valor) => {
-            if (valor === undefined || valor === null || isNaN(parseFloat(valor))) return "0,00%";
-            return `${Math.abs(parseFloat(valor)).toFixed(2)}%`;
-        };
-
-        // Verificar se temos dados suficientes para criar uma tabela
-        if (resultadosExportacao && resultadosExportacao.resultadosPorAno && resultadosExportacao.anos) {
-            // Seção 2.1. Impacto no Fluxo de Caixa
-            doc.setFontSize(14);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(46, 204, 113); // Cor secundária
-            doc.text("2.1. Impacto no Fluxo de Caixa", margins.left, currentPositionY);
-            currentPositionY += 10;
-
-            // Cabeçalho da tabela
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(255, 255, 255);
-            doc.setFillColor(52, 152, 219);
-            doc.setDrawColor(52, 152, 219);
-
-            const headers = [
-                "Ano",
-                "Capital de Giro (Split Payment)",
-                "Capital de Giro (Sistema Atual)",
-                "Diferença",
-                "Variação (%)"
-            ];
-
-            // Largura das colunas ajustada para evitar sobreposição
-            const colWidths = [22, 48, 48, 32, 32];
-            let currentX = margins.left;
-            const headerHeight = 8;
-
-            // Desenhar fundo do cabeçalho
-            doc.rect(
-                margins.left,
-                currentPositionY,
-                colWidths.reduce((a, b) => a + b, 0),
-                headerHeight,
-                "F"
-            );
-
-            // Escrever cabeçalhos
-            currentX = margins.left + 2;
-            headers.forEach((header, idx) => {
-                doc.text(header, currentX, currentPositionY + 6, { maxWidth: colWidths[idx] - 2 });
-                currentX += colWidths[idx];
-            });
-            currentPositionY += headerHeight;
-
-            // Adicionar dados para cada ano
-            const anos = resultadosExportacao.anos;
-            anos.forEach((ano) => {
-                // Obter dados do ano com validação
-                const dadosAno = resultadosExportacao.resultadosPorAno[ano] || {};
-
-                // Extrair valores com segurança
-                const capitalGiroSplitPayment = 
-                    dadosAno.capitalGiroSplitPayment || dadosAno.impostoDevido || 0;
-                const capitalGiroAtual = 
-                    dadosAno.capitalGiroAtual || dadosAno.sistemaAtual || 0;
-                const diferenca = 
-                    dadosAno.diferenca || (capitalGiroSplitPayment - capitalGiroAtual);
-                const percentualImpacto = 
-                    dadosAno.percentualImpacto || (capitalGiroAtual !== 0 ? (diferenca / capitalGiroAtual) * 100 : 0);
-
-                // Alternância de cor de fundo para linhas
-                if (parseInt(ano) % 2 === 0) {
-                    doc.setFillColor(245, 248, 250);
-                    doc.rect(margins.left, currentPositionY, colWidths.reduce((a, b) => a + b, 0), headerHeight, "F");
-                }
-
-                // Adicionar valores às células
-                doc.setFont("helvetica", "normal");
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
-
-                currentX = margins.left + 2;
-                doc.text(String(ano), currentX, currentPositionY + 6);
-                currentX += colWidths[0];
-
-                doc.text(formatarMoeda(capitalGiroSplitPayment), currentX, currentPositionY + 6);
-                currentX += colWidths[1];
-
-                doc.text(formatarMoeda(capitalGiroAtual), currentX, currentPositionY + 6);
-                currentX += colWidths[2];
-
-                // Coloração condicional para diferença
-                if (diferenca > 0) {
-                    doc.setTextColor(46, 204, 113); // Verde
-                } else if (diferenca < 0) {
-                    doc.setTextColor(231, 76, 60); // Vermelho
-                } else {
-                    doc.setTextColor(0, 0, 0); // Preto
-                }
-                doc.text(formatarMoeda(diferenca), currentX, currentPositionY + 6);
-                currentX += colWidths[3];
-
-                doc.text(formatarPercentual(percentualImpacto), currentX, currentPositionY + 6);
-
-                // Resetar cor do texto
-                doc.setTextColor(0, 0, 0);
-
-                currentPositionY += headerHeight;
-
-                // Quebra de página automática se necessário
-                if (currentPositionY > doc.internal.pageSize.height - margins.bottom - 20) {
-                    doc.addPage();
-                    currentPositionY = margins.top;
-                }
-            });
-        } else {
-            // Estrutura incompleta - exibir mensagem alternativa
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "italic");
-            doc.setTextColor(231, 76, 60);
-            doc.text("Dados de resultados não disponíveis ou em formato incompatível.", margins.left, currentPositionY);
-            currentPositionY += 10;
-
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(0, 0, 0);
-            doc.text("Realize uma nova simulação para gerar o relatório completo.", margins.left, currentPositionY);
-            currentPositionY += 20;
+    _adicionarResultadosSimulacao: function (doc, simulacao) {
+        // Verificar se a simulação existe e contém dados
+        if (!simulacao || !simulacao.dados) {
+            console.error('Simulação inválida ou sem dados');
+            throw new Error('Estrutura de dados da simulação inválida');
         }
 
-        return currentPositionY;
-    },
-    
-    /**
-     * Adiciona os resultados da simulação ao PDF com verificações robustas
-     * @private
-     * @param {Object} doc - Documento PDF
-     * @param {Object} simulacao - Simulação completa
-     * @param {Object} resultadosExportacao - Resultados para exportação
-     * @param {number} pageCount - Número da página
-     * @returns {number} - Posição Y atual após adicionar o conteúdo
-     */
-    _adicionarResultadosSimulacaoRobusto: function (doc, simulacao, resultadosExportacao, pageCount) {
+        // Usar os dados da última simulação
+        const dadosAno = simulacao.dados;
+
+        // Verificar componentes necessários
+        if (!dadosAno.faturamento || !dadosAno.aliquota) {
+            console.warn('Dados incompletos na simulação');
+        }
+
         // Configurações de margem
         const margins = this.config.pdf && this.config.pdf.margins
             ? this.config.pdf.margins
@@ -1053,21 +848,15 @@ const ExportTools = {
         doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
         currentPositionY += 10;
 
-        // Funções auxiliares de formatação
-        const formatarMoeda = (valor) => {
-            if (isNaN(valor) || valor === undefined || valor === null) return "R$ 0,00";
-            return "R$ " + Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        };
+        // Verificar se temos a estrutura atualizada
+        if (resultados.resultadosExportacao && resultados.resultadosExportacao.resultadosPorAno) {
+            // Nova estrutura simplificada
+            const resultadosPorAno = resultados.resultadosExportacao.resultadosPorAno;
+            const anos = resultados.resultadosExportacao.anos;
+            const resumo = resultados.resultadosExportacao.resumo || {};
 
-        const formatarPercentual = (valor) => {
-            if (valor === undefined || valor === null || isNaN(parseFloat(valor))) return "0,00%";
-            return `${Math.abs(parseFloat(valor)).toFixed(2)}%`;
-        };
-
-        // Verificar se temos dados suficientes para criar uma tabela
-        if (resultadosExportacao && resultadosExportacao.resultadosPorAno) {
             // Seção 2.1. Impacto no Fluxo de Caixa
-            doc.setFontSize(14);
+            doc.setFontSize(12);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(46, 204, 113); // Cor secundária
 
@@ -1091,7 +880,6 @@ const ExportTools = {
                 "Diferença",
                 "Variação (%)"
             ];
-
             // Largura das colunas ajustada para evitar sobreposição
             const colWidths = [22, 48, 48, 32, 32];
             let currentX = margins.left;
@@ -1105,7 +893,6 @@ const ExportTools = {
                 headerHeight,
                 "F"
             );
-
             // Escrever cabeçalhos
             currentX = margins.left + 2;
             headers.forEach((header, idx) => {
@@ -1116,8 +903,28 @@ const ExportTools = {
             });
             currentPositionY += headerHeight;
 
-            // Determinar anos
-            const anos = resultadosExportacao.anos || Object.keys(resultadosExportacao.resultadosPorAno).sort();
+            // Funções auxiliares de formatação
+            const formatarMoeda = (valor) => {
+                if (isNaN(valor) || valor === undefined || valor === null) return "R$ 0,00";
+                return "R$ " + Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+            // Alterar a formatação dos percentuais para exibir corretamente
+            const formatarPercentual = (valor) => {
+                if (valor === undefined || valor === null || isNaN(parseFloat(valor))) return "0,00%";
+                // Verificar se o valor já está em percentual ou precisa ser multiplicado por 100
+                return `${Math.abs(parseFloat(valor)).toFixed(2)}%`;
+            };
+
+            // Corrigir o acesso aos dados na tabela de resultados
+            const diferencaCapitalGiro = dadosAno && typeof dadosAno.diferencaCapitalGiro !== "undefined" 
+                ? dadosAno.diferencaCapitalGiro 
+                : 0;
+
+            // Corrigir os valores percentuais na tabela
+            // Por um cálculo que garanta valores adequados
+            const percentualImpacto = capitalGiroAtual !== 0 
+                ? Math.min(Math.max((diferencaCapitalGiro / capitalGiroAtual) * 100, -100), 100) // Limitar entre -100% e 100%
+                : 0;
 
             // Adicionar linhas da tabela
             doc.setFont("helvetica", "normal");
@@ -1125,17 +932,16 @@ const ExportTools = {
             doc.setTextColor(0, 0, 0);
 
             anos.forEach((ano) => {
-                // Obter dados do ano com validação
-                const dadosAno = resultadosExportacao.resultadosPorAno[ano] || {};
+                const dadosAno = resultadosPorAno[ano];
+                if (!dadosAno) return;
 
                 // Os campos corretos para capital de giro vêm de resultadoSplitPayment.capitalGiroDisponivel e resultadoAtual.capitalGiroDisponivel
                 const capitalGiroSplitPayment = dadosAno.resultadoSplitPayment && typeof dadosAno.resultadoSplitPayment.capitalGiroDisponivel !== "undefined"
                     ? dadosAno.resultadoSplitPayment.capitalGiroDisponivel
-                    : dadosAno.impostoDevido || 0;
-
+                    : 0;
                 const capitalGiroAtual = dadosAno.resultadoAtual && typeof dadosAno.resultadoAtual.capitalGiroDisponivel !== "undefined"
                     ? dadosAno.resultadoAtual.capitalGiroDisponivel
-                    : dadosAno.sistemaAtual || 0;
+                    : 0;
 
                 // Verificar e tratar diferença e percentual com segurança
                 let diferenca = 0;
@@ -1153,12 +959,12 @@ const ExportTools = {
                 }
 
                 // Alternância de cor de fundo para linhas
-                if (parseInt(ano) % 2 === 0) {
+                if (ano % 2 === 0) {
                     doc.setFillColor(245, 248, 250);
                     doc.rect(margins.left, currentPositionY, colWidths.reduce((a, b) => a + b, 0), headerHeight, "F");
                 }
 
-                // Adicionar valores às células
+                // Resto do código permanece igual
                 currentX = margins.left + 2;
                 doc.text(String(ano), currentX, currentPositionY + 6, { maxWidth: colWidths[0] - 2 });
                 currentX += colWidths[0];
@@ -1181,7 +987,6 @@ const ExportTools = {
                 currentX += colWidths[3];
 
                 doc.text(formatarPercentual(percentualImpacto), currentX, currentPositionY + 6, { maxWidth: colWidths[4] - 2 });
-
                 // Resetar cor do texto
                 doc.setTextColor(0, 0, 0);
 
@@ -1197,7 +1002,7 @@ const ExportTools = {
             currentPositionY += 5;
 
             // Seção 2.2. Análise dos Resultados
-            doc.setFontSize(14);
+            doc.setFontSize(12);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(46, 204, 113);
 
@@ -1210,14 +1015,12 @@ const ExportTools = {
             doc.setFont("helvetica", "normal");
             doc.setTextColor(0, 0, 0);
 
-            // Recuperar dados do resumo ou criar valores padrão seguros
-            const resumo = resultadosExportacao.resumo || {};
+            // Recuperar dados do resumo
             const anoInicial = anos.length > 0 ? anos[0] : "";
             const anoFinal = anos.length > 0 ? anos[anos.length - 1] : "";
-
-            const textoVariacao = `A variação total acumulada no período de ${anoInicial} a ${anoFinal} foi de ${formatarMoeda(resumo.variacaoTotal || 0)}.`;
-            const textoMaiorImpacto = `O ano com maior impacto foi ${resumo.anoMaiorImpacto || "N/A"}, com uma diferença de ${formatarMoeda(resumo.valorMaiorImpacto || 0)}.`;
-            const textoMenorImpacto = `O ano com menor impacto foi ${resumo.anoMenorImpacto || "N/A"}, com uma diferença de ${formatarMoeda(resumo.valorMenorImpacto || 0)}.`;
+            const textoVariacao = `A variação total acumulada no período de ${anoInicial} a ${anoFinal} foi de ${formatarMoeda(resumo.variacaoTotal)}.`;
+            const textoMaiorImpacto = `O ano com maior impacto foi ${resumo.anoMaiorImpacto}, com uma diferença de ${formatarMoeda(resumo.valorMaiorImpacto)}.`;
+            const textoMenorImpacto = `O ano com menor impacto foi ${resumo.anoMenorImpacto}, com uma diferença de ${formatarMoeda(resumo.valorMenorImpacto)}.`;
 
             // Quebra automática de texto
             [textoVariacao, textoMaiorImpacto, textoMenorImpacto].forEach((linha) => {
@@ -1228,7 +1031,7 @@ const ExportTools = {
 
             // Conclusão
             const impactoCapitalGiro = resumo.variacaoTotal || 0;
-            const tendencia = impactoCapitalGiro < 0 ? "aumento" : "redução";
+            const tendencia = diferencaCapitalGiro < 0 ? "aumento" : "redução";
             const conclusao = `A implementação do Split Payment resultará em um ${tendencia} da necessidade de capital de giro.`;
             const recomendacao = "Recomenda-se a análise das estratégias de mitigação apresentadas na seção 4 deste relatório.";
 
@@ -1238,20 +1041,13 @@ const ExportTools = {
                 currentPositionY += 6 * linhas.length + 2;
             });
         } else {
-            // Estrutura incompleta - exibir mensagem alternativa
+            // Estrutura antiga ou inválida
             doc.setFontSize(12);
             doc.setFont("helvetica", "italic");
             doc.setTextColor(231, 76, 60);
             doc.text("Dados de resultados não disponíveis ou em formato incompatível.", margins.left, currentPositionY);
-            currentPositionY += 10;
-
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(0, 0, 0);
-            doc.text("Realize uma nova simulação para gerar o relatório completo.", margins.left, currentPositionY);
             currentPositionY += 20;
         }
-
         return currentPositionY;
     },
 
@@ -1292,136 +1088,6 @@ const ExportTools = {
                 { id: "grafico-projecao", titulo: "3.3. Projeção de Necessidade de Capital" },
                 { id: "grafico-decomposicao", titulo: "3.4. Decomposição do Impacto" }
             ];
-
-            graficos.forEach((grafico, index) => {
-                // Título do gráfico
-                doc.setFontSize(14);
-                doc.setFont("helvetica", "bold");
-                doc.setTextColor(46, 204, 113); // Cor secundária
-                doc.text(grafico.titulo, margins.left, currentPositionY);
-                currentPositionY += 10;
-
-                // Tentar capturar o gráfico do DOM
-                const canvas = document.getElementById(grafico.id);
-                if (canvas) {
-                    // Capturar a imagem do canvas
-                    try {
-                        const imgData = canvas.toDataURL("image/png");
-                        // Calcular proporções
-                        const canvasAspectRatio = canvas.width / canvas.height;
-                        const maxWidth = doc.internal.pageSize.width - margins.left - margins.right;
-                        const maxHeight = 60; // Altura máxima para o gráfico
-
-                        let imgWidth = maxWidth;
-                        let imgHeight = imgWidth / canvasAspectRatio;
-
-                        if (imgHeight > maxHeight) {
-                            imgHeight = maxHeight;
-                            imgWidth = imgHeight * canvasAspectRatio;
-                        }
-
-                        // Centralizar horizontalmente
-                        const xPos = (doc.internal.pageSize.width - imgWidth) / 2;
-
-                        // Adicionar a imagem
-                        doc.addImage(imgData, "PNG", xPos, currentPositionY, imgWidth, imgHeight);
-                        currentPositionY += imgHeight + 15;
-                    } catch (e) {
-                        console.warn(`Erro ao capturar gráfico ${grafico.id}:`, e);
-                        doc.setFontSize(10);
-                        doc.setFont("helvetica", "italic");
-                        doc.text("Gráfico não disponível", margins.left, currentPositionY);
-                        currentPositionY += 20;
-                    }
-                } else {
-                    doc.setFontSize(10);
-                    doc.setFont("helvetica", "italic");
-                    doc.text("Gráfico não disponível", margins.left, currentPositionY);
-                    currentPositionY += 20;
-                }
-
-                // Evitar sobreposição na página
-                if (
-                    currentPositionY > doc.internal.pageSize.height - margins.bottom - 30 &&
-                    index < graficos.length - 1
-                ) {
-                    doc.addPage();
-                    currentPositionY = margins.top;
-                }
-            });
-        } catch (e) {
-            console.warn("Erro ao adicionar gráficos:", e);
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "italic");
-            doc.text(
-                "Gráficos não disponíveis. Verifique se os gráficos foram gerados antes de exportar.",
-                margins.left,
-                currentPositionY
-            );
-            currentPositionY += 20;
-        }
-
-        return currentPositionY;
-    },
-    
-    /**
-     * Adiciona os gráficos ao PDF com verificações robustas
-     * @private
-     * @param {Object} doc - Documento PDF
-     * @param {number} pageCount - Número da página
-     * @returns {number} - Posição Y atual após adicionar o conteúdo
-     */
-    _adicionarGraficosRobusto: function (doc, pageCount) {
-        // Configurações básicas da página
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : {
-                  top: 25,
-                  right: 15,
-                  bottom: 25,
-                  left: 15
-              };
-
-        let currentPositionY = margins.top;
-
-        // Título da página
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("3. GRÁFICOS", margins.left, currentPositionY);
-        currentPositionY += 15;
-
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
-
-        try {
-            // Tentar capturar os gráficos do DOM
-            const graficos = [
-                { id: "grafico-fluxo-caixa", titulo: "3.1. Fluxo de Caixa Comparativo" },
-                { id: "grafico-capital-giro", titulo: "3.2. Impacto no Capital de Giro" },
-                { id: "grafico-projecao", titulo: "3.3. Projeção de Necessidade de Capital" },
-                { id: "grafico-decomposicao", titulo: "3.4. Decomposição do Impacto" }
-            ];
-
-            // Verificar se existem gráficos no DOM
-            const graficoExiste = graficos.some(g => document.getElementById(g.id));
-
-            if (!graficoExiste) {
-                // Se não houver gráficos, exibir mensagem
-                doc.setFontSize(12);
-                doc.setFont("helvetica", "italic");
-                doc.text("Não foram encontrados gráficos para incluir no relatório.", margins.left, currentPositionY);
-                currentPositionY += 10;
-
-                doc.setFontSize(11);
-                doc.setFont("helvetica", "normal");
-                doc.text("Certifique-se de que a simulação foi realizada e os gráficos foram gerados.", margins.left, currentPositionY);
-                currentPositionY += 20;
-
-                return currentPositionY;
-            }
 
             graficos.forEach((grafico, index) => {
                 // Título do gráfico
@@ -1729,248 +1395,6 @@ const ExportTools = {
 
         return currentPositionY;
     },
-    
-    /**
-     * Adiciona a análise de estratégias ao PDF com verificações robustas
-     * @private
-     * @param {Object} doc - Documento PDF
-     * @param {Object} dados - Dados da empresa e parâmetros de simulação
-     * @param {Object} simulacao - Resultados da simulação
-     * @param {number} pageCount - Número da página
-     * @returns {number} - Posição Y atual após adicionar o conteúdo
-     */
-    _adicionarAnaliseEstrategiasRobusto: function (doc, dados, simulacao, pageCount) {
-        // Configurações básicas da página
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : {
-                  top: 25,
-                  right: 15,
-                  bottom: 25,
-                  left: 15
-              };
-
-        let currentPositionY = margins.top;
-
-        // Título da página
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("4. ANÁLISE DE ESTRATÉGIAS DE MITIGAÇÃO", margins.left, currentPositionY);
-        currentPositionY += 15;
-
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
-
-        // Verificar se há dados de estratégias
-        if (!window.resultadosEstrategias) {
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "italic");
-            doc.text(
-                "Não há dados de estratégias disponíveis. Realize uma simulação de estratégias antes de exportar.",
-                margins.left,
-                currentPositionY
-            );
-            return currentPositionY + 20;
-        }
-
-        try {
-            // Estratégias de mitigação
-            const estrategias = [
-                {
-                    titulo: "4.1. Ajuste de Preços",
-                    descricao: "Compensar a perda de fluxo de caixa através de aumento em preços."
-                },
-                {
-                    titulo: "4.2. Renegociação de Prazos",
-                    descricao: "Negociar prazos mais longos com fornecedores para melhorar o ciclo financeiro."
-                },
-                {
-                    titulo: "4.3. Antecipação de Recebíveis",
-                    descricao: "Antecipar recebíveis para compensar o impacto no capital de giro."
-                },
-                {
-                    titulo: "4.4. Capital de Giro",
-                    descricao: "Contratação de linha de capital de giro para suprir a necessidade adicional."
-                }
-            ];
-
-            // Formatar valores
-            const formatMoeda = (valor) => {
-                if (valor === undefined || valor === null) {
-                    return "R$ 0,00";
-                }
-                return "R$ " + valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            };
-            const formatPercentual = (valor) => (parseFloat(valor) || 0).toFixed(2) + "%";
-
-            // Impacto original
-            doc.setFontSize(14);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(46, 204, 113); // Cor secundária
-            doc.text("Impacto Original do Split Payment", margins.left, currentPositionY);
-            currentPositionY += 10;
-
-            // Definir fonte para texto
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(0, 0, 0);
-
-            // Mostrar impacto original
-            const impacto = window.resultadosEstrategias.impactoBase || {};
-            const linhasImpacto = [
-                `Diferença no Capital de Giro: ${formatMoeda(impacto.diferencaCapitalGiro || 0)}`,
-                `Impacto Percentual: ${formatPercentual((impacto.percentualImpacto || 0) / 100)}`,
-                `Necessidade Adicional: ${formatMoeda(impacto.necessidadeAdicionalCapitalGiro || 0)}`
-            ];
-
-            linhasImpacto.forEach((linha) => {
-                doc.text(linha, margins.left, currentPositionY);
-                currentPositionY += 8;
-            });
-
-            currentPositionY += 5;
-
-            // Estratégias analisadas
-            estrategias.forEach((estrategia, index) => {
-                doc.setFontSize(14);
-                doc.setFont("helvetica", "bold");
-                doc.setTextColor(46, 204, 113); // Cor secundária
-                doc.text(estrategia.titulo, margins.left, currentPositionY);
-                currentPositionY += 8;
-
-                doc.setFontSize(11);
-                doc.setFont("helvetica", "normal");
-                doc.setTextColor(0, 0, 0);
-                doc.text(estrategia.descricao, margins.left, currentPositionY);
-                currentPositionY += 10;
-
-                // Obter dados da estratégia
-                const codigoEstrategia = ["ajustePrecos", "renegociacaoPrazos", "antecipacaoRecebiveis", "capitalGiro"][
-                    index
-                ];
-
-                const resultadosEstrategias = window.resultadosEstrategias.resultadosEstrategias || {};
-                const dadosEstrategia = resultadosEstrategias[codigoEstrategia];
-
-                if (dadosEstrategia) {
-                    // Exibir efetividade
-                    doc.setFont("helvetica", "bold");
-                    doc.text(
-                        `Efetividade: ${formatPercentual((dadosEstrategia.efetividadePercentual || 0) / 100)}`,
-                        margins.left + 10,
-                        currentPositionY
-                    );
-                    currentPositionY += 8;
-
-                    // Exibir detalhes específicos de cada estratégia
-                    switch (codigoEstrategia) {
-                        case "ajustePrecos":
-                            doc.text(
-                                `Fluxo de Caixa Adicional: ${formatMoeda(dadosEstrategia.fluxoCaixaAdicional || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            currentPositionY += 8;
-                            doc.text(
-                                `Custo da Estratégia: ${formatMoeda(dadosEstrategia.custoEstrategia || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            break;
-                        case "renegociacaoPrazos":
-                            doc.text(
-                                `Impacto no Fluxo de Caixa: ${formatMoeda(dadosEstrategia.impactoFluxoCaixa || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            currentPositionY += 8;
-                            doc.text(
-                                `Custo Total: ${formatMoeda(dadosEstrategia.custoTotal || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            break;
-                        case "antecipacaoRecebiveis":
-                            doc.text(
-                                `Impacto no Fluxo de Caixa: ${formatMoeda(dadosEstrategia.impactoFluxoCaixa || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            currentPositionY += 8;
-                            doc.text(
-                                `Custo Total: ${formatMoeda(dadosEstrategia.custoTotalAntecipacao || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            break;
-                        case "capitalGiro":
-                            doc.text(
-                                `Valor Financiado: ${formatMoeda(dadosEstrategia.valorFinanciamento || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            currentPositionY += 8;
-                            doc.text(
-                                `Custo Total: ${formatMoeda(dadosEstrategia.custoTotalFinanciamento || 0)}`,
-                                margins.left + 10,
-                                currentPositionY
-                            );
-                            break;
-                    }
-                } else {
-                    doc.setFont("helvetica", "italic");
-                    doc.text("Dados não disponíveis para esta estratégia.", margins.left + 10, currentPositionY);
-                }
-
-                currentPositionY += 15;
-
-                // Adicionar nova página se necessário
-                if (
-                    currentPositionY > doc.internal.pageSize.height - margins.bottom - 30 &&
-                    index < estrategias.length - 1
-                ) {
-                    doc.addPage();
-                    currentPositionY = margins.top;
-                }
-            });
-
-            // Resultados combinados
-            doc.setFontSize(14);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(46, 204, 113); // Cor secundária
-            doc.text("4.5. Resultados Combinados", margins.left, currentPositionY);
-            currentPositionY += 10;
-
-            doc.setFontSize(11);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(0, 0, 0);
-
-            // Obter dados da combinação
-            const combinado = window.resultadosEstrategias.efeitividadeCombinada || {};
-            const linhasCombinado = [
-                `Efetividade Total: ${formatPercentual((combinado.efetividadePercentual || 0) / 100)}`,
-                `Mitigação Total: ${formatMoeda(combinado.mitigacaoTotal || 0)}`,
-                `Custo Total das Estratégias: ${formatMoeda(combinado.custoTotal || 0)}`,
-                `Relação Custo-Benefício: ${(combinado.custoBeneficio || 0).toFixed(2)}`
-            ];
-
-            linhasCombinado.forEach((linha) => {
-                doc.text(linha, margins.left, currentPositionY);
-                currentPositionY += 8;
-            });
-        } catch (e) {
-            console.warn("Erro ao adicionar análise de estratégias:", e);
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "italic");
-            doc.text("Erro ao processar dados de estratégias.", margins.left, currentPositionY);
-            currentPositionY += 20;
-        }
-
-        return currentPositionY;
-    },
 
     /**
      * Adiciona a seção de conclusão ao PDF
@@ -2046,190 +1470,6 @@ const ExportTools = {
                 const diferenca = resultado && resultado.imposto_devido ? resultado.imposto_devido - valorAtual : 0;
 
                 variacaoTotal += diferenca;
-            });
-
-            tendencia = variacaoTotal > 0 ? "aumento" : "redução";
-        }
-
-        // Formatar números
-        const formatarMoeda = (valor) => {
-            if (isNaN(valor) || valor === undefined || valor === null) {
-                return "R$ 0,00";
-            }
-            return (
-                "R$ " + Math.abs(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-            );
-        };
-
-        // Texto da conclusão
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
-
-        // Introdução da conclusão
-        const conclusaoTexto = `A implementação do Split Payment, conforme simulação realizada para ${empresaNome}, 
-        resultará em um ${tendencia} estimado de ${formatarMoeda(variacaoTotal)} 
-        na necessidade de capital de giro durante o período de ${anoInicial} a ${anoFinal}.`;
-
-        // Dividir texto em linhas
-        const linhas = doc.splitTextToSize(conclusaoTexto, doc.internal.pageSize.width - margins.left - margins.right);
-        doc.text(linhas, margins.left, currentPositionY);
-        currentPositionY += linhas.length * 7 + 10;
-
-        // Impacto no fluxo de caixa
-        const impactoTexto = `O principal impacto identificado está relacionado à antecipação do recolhimento tributário, 
-        que no modelo atual ocorre em média 30-45 dias após o faturamento, e no novo modelo ocorrerá de forma instantânea 
-        no momento da transação financeira. Esta mudança afeta diretamente o ciclo financeiro da empresa 
-        e sua necessidade de capital de giro.`;
-
-        const linhasImpacto = doc.splitTextToSize(
-            impactoTexto,
-            doc.internal.pageSize.width - margins.left - margins.right
-        );
-        doc.text(linhasImpacto, margins.left, currentPositionY);
-        currentPositionY += linhasImpacto.length * 7 + 10;
-
-        // Recomendações
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(46, 204, 113); // Cor secundária
-        doc.text("Recomendações", margins.left, currentPositionY);
-        currentPositionY += 10;
-
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
-
-        const recomendacoes = [
-            `1. Planejamento Financeiro: Recomenda-se iniciar imediatamente o planejamento financeiro 
-        para adequação ao novo regime, considerando a implementação gradual do Split Payment a partir de 2026.`,
-
-            `2. Estratégias de Mitigação: Conforme análise apresentada na seção 4, 
-        sugere-se a implementação de uma combinação de estratégias para minimizar o impacto no fluxo de caixa.`,
-
-            `3. Sistemas: Realizar a adequação dos sistemas de gestão financeira e contábil para operação 
-        com o novo modelo de recolhimento tributário.`,
-
-            `4. Monitoramento Contínuo: Manter acompanhamento constante das alterações na regulamentação 
-        do Split Payment, que ainda está em fase de definição pelos órgãos competentes.`
-        ];
-
-        recomendacoes.forEach((recomendacao) => {
-            const linhasRecomendacao = doc.splitTextToSize(
-                recomendacao,
-                doc.internal.pageSize.width - margins.left - margins.right
-            );
-            doc.text(linhasRecomendacao, margins.left, currentPositionY);
-            currentPositionY += linhasRecomendacao.length * 7 + 5;
-        });
-
-        // Considerações finais
-        currentPositionY += 5;
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(46, 204, 113); // Cor secundária
-        doc.text("Considerações Finais", margins.left, currentPositionY);
-        currentPositionY += 10;
-
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
-
-        const consideracoesFinais = `Esta simulação representa uma estimativa baseada nas informações disponíveis 
-        e nas premissas estabelecidas. Os resultados podem variar conforme a evolução da regulamentação do Split Payment 
-        e as particularidades operacionais de cada empresa. Recomenda-se a atualização periódica desta análise 
-        à medida que novas informações forem divulgadas pelos órgãos competentes.`;
-
-        const linhasConsideracoes = doc.splitTextToSize(
-            consideracoesFinais,
-            doc.internal.pageSize.width - margins.left - margins.right
-        );
-        doc.text(linhasConsideracoes, margins.left, currentPositionY);
-
-        return currentPositionY + linhasConsideracoes.length * 7;
-    },
-    
-    /**
-     * Adiciona a seção de conclusão ao PDF com verificações robustas
-     * @private
-     * @param {Object} doc - Documento PDF
-     * @param {Object} dados - Dados da empresa e parâmetros de simulação
-     * @param {Object} simulacao - Objeto de simulação completo
-     * @param {number} pageCount - Número da página
-     * @param {Object} aliquotasEquivalentes - Alíquotas equivalentes (opcional)
-     * @returns {number} - Posição Y atual após adicionar o conteúdo
-     */
-    _adicionarConclusaoRobusto: function (doc, dados, simulacao, pageCount, aliquotasEquivalentes) {
-        // Configurações básicas da página
-        const margins = this.config.pdf && this.config.pdf.margins
-            ? this.config.pdf.margins
-            : {
-                  top: 25,
-                  right: 15,
-                  bottom: 25,
-                  left: 15
-              };
-
-        let currentPositionY = margins.top;
-
-        // Título da página
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(52, 152, 219); // Cor principal
-        doc.text("6. CONCLUSÃO", margins.left, currentPositionY);
-        currentPositionY += 15;
-
-        // Linha separadora
-        doc.setDrawColor(52, 152, 219);
-        doc.line(margins.left, currentPositionY, doc.internal.pageSize.width - margins.right, currentPositionY);
-        currentPositionY += 10;
-
-        // Extrair dados com segurança
-        let empresaNome = dados.empresa || "a empresa";
-        let anoInicial = "";
-        let anoFinal = "";
-        let variacaoTotal = 0;
-        let tendencia = "variação";
-
-        // Obter resultadosExportacao de qualquer localização
-        const resultadosExportacao = simulacao.resultadosExportacao || 
-                                  (simulacao.resultados && simulacao.resultados.resultadosExportacao);
-
-        if (resultadosExportacao) {
-            // Usar a estrutura de dados
-            const resumo = resultadosExportacao.resumo || {};
-            const anos = resultadosExportacao.anos || [];
-
-            anoInicial = anos.length > 0 ? anos[0] : "";
-            anoFinal = anos.length > 0 ? anos[anos.length - 1] : "";
-            variacaoTotal = resumo.variacaoTotal || 0;
-            tendencia = resumo.tendenciaGeral || (variacaoTotal > 0 ? "aumento" : "redução");
-        } else {
-            // Tentar extrair informações da estrutura antiga
-            const resultados = simulacao.resultados || {};
-            const anos = Object.keys(resultados)
-                .filter((key) => !isNaN(parseInt(key)))
-                .sort();
-
-            anoInicial = anos.length > 0 ? anos[0] : "";
-            anoFinal = anos.length > 0 ? anos[anos.length - 1] : "";
-
-            // Tentar calcular variação total
-            anos.forEach((ano) => {
-                const resultado = resultados[ano] || {};
-
-                // Verificar se temos os dados necessários
-                if (resultado && resultado.imposto_devido) {
-                    const valorAtual =
-                        aliquotasEquivalentes &&
-                        aliquotasEquivalentes[ano] &&
-                        typeof aliquotasEquivalentes[ano].valor_atual !== "undefined"
-                            ? aliquotasEquivalentes[ano].valor_atual
-                            : 0;
-
-                    const diferenca = resultado.imposto_devido - valorAtual;
-                    variacaoTotal += diferenca;
-                }
             });
 
             tendencia = variacaoTotal > 0 ? "aumento" : "redução";

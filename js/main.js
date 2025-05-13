@@ -148,10 +148,16 @@ function inicializarEventosPrincipais() {
     }
     
     // Evento para simulação de estratégias
-    const btnSimularEstrategias = document.getElementById('btn-simular-estrategias');
+     const btnSimularEstrategias = document.getElementById('btn-simular-estrategias');
     if (btnSimularEstrategias) {
         btnSimularEstrategias.addEventListener('click', function() {
-            simularEstrategias();
+            // Corrigir a referência para a função
+            if (window.SimuladorFluxoCaixa && typeof window.SimuladorFluxoCaixa.simularEstrategias === 'function') {
+                window.SimuladorFluxoCaixa.simularEstrategias();
+            } else {
+                console.error('Função de simulação de estratégias não encontrada');
+                alert('Não foi possível simular estratégias. Verifique se todos os módulos foram carregados corretamente.');
+            }
         });
     }
     
