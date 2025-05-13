@@ -1445,125 +1445,138 @@ window.SimuladorFluxoCaixa = {
     /**
      * Simula o impacto das estratégias de mitigação selecionadas
      */
-    simularEstrategias: function() {
-        console.log('Iniciando simulação de estratégias...');
+    // Modifique o trecho problemático da função simularEstrategias
+	simularEstrategias: function() {
+		console.log('Iniciando simulação de estratégias...');
 
-        try {
-            // Verificar se há uma simulação principal realizada
-            if (!window.ultimaSimulacao) {
-                alert('É necessário realizar uma simulação principal antes de simular estratégias de mitigação.');
-                // Redirecionar para a aba de simulação
-                TabsManager.mudarPara('simulacao-principal');
-                return;
-            }
-
-            // Coletar dados da última simulação
-            const dados = window.ultimaSimulacao.dados;
-            const impactoBase = window.ultimaSimulacao.resultados.impactoBase;
-
-            // Coletar configurações das estratégias
-            const estrategias = {
-                ajustePrecos: {
-                    ativar: document.getElementById('ap-ativar').value === '1',
-                    percentualAumento: parseFloat(document.getElementById('ap-percentual').value) || 0,
-                    elasticidade: parseFloat(document.getElementById('ap-elasticidade').value) || 0,
-                    impactoVendas: parseFloat(document.getElementById('ap-impacto-vendas').value) || 0,
-                    periodoAjuste: parseInt(document.getElementById('ap-periodo').value) || 0
-                },
-                renegociacaoPrazos: {
-                    ativar: document.getElementById('rp-ativar').value === '1',
-                    aumentoPrazo: parseInt(document.getElementById('rp-aumento-prazo').value) || 0,
-                    percentualFornecedores: parseInt(document.getElementById('rp-percentual').value) || 0,
-                    contrapartidas: document.getElementById('rp-contrapartidas').value || 'nenhuma',
-                    custoContrapartida: parseFloat(document.getElementById('rp-custo').value) || 0
-                },
-                antecipacaoRecebiveis: {
-                    ativar: document.getElementById('ar-ativar').value === '1',
-                    percentualAntecipacao: parseInt(document.getElementById('ar-percentual').value) || 0,
-                    taxaDesconto: parseFloat(document.getElementById('ar-taxa').value) / 100 || 0,
-                    prazoAntecipacao: parseInt(document.getElementById('ar-prazo').value) || 0
-                },
-                capitalGiro: {
-                    ativar: document.getElementById('cg-ativar').value === '1',
-                    valorCaptacao: parseInt(document.getElementById('cg-valor').value) || 0,
-                    taxaJuros: parseFloat(document.getElementById('cg-taxa').value) / 100 || 0,
-                    prazoPagamento: parseInt(document.getElementById('cg-prazo').value) || 0,
-                    carencia: parseInt(document.getElementById('cg-carencia').value) || 0
-                },
-                mixProdutos: {
-                    ativar: document.getElementById('mp-ativar').value === '1',
-                    percentualAjuste: parseInt(document.getElementById('mp-percentual').value) || 0,
-                    focoAjuste: document.getElementById('mp-foco').value || 'ciclo',
-                    impactoReceita: parseFloat(document.getElementById('mp-impacto-receita').value) || 0,
-                    impactoMargem: parseFloat(document.getElementById('mp-impacto-margem').value) || 0
-                },
-                meiosPagamento: {
-                    ativar: document.getElementById('mp-pag-ativar').value === '1',
-                    distribuicaoAtual: {
-                        vista: parseInt(document.getElementById('mp-pag-vista-atual').value) || 0,
-                        prazo: parseInt(document.getElementById('mp-pag-prazo-atual').value) || 0
-                    },
-                    distribuicaoNova: {
-                        vista: parseInt(document.getElementById('mp-pag-vista-novo').value) || 0,
-                        dias30: parseInt(document.getElementById('mp-pag-30-novo').value) || 0,
-                        dias60: parseInt(document.getElementById('mp-pag-60-novo').value) || 0,
-                        dias90: parseInt(document.getElementById('mp-pag-90-novo').value) || 0
-                    },
-                    taxaIncentivo: parseFloat(document.getElementById('mp-pag-taxa-incentivo').value) || 0
-                }
-            };
-
-            // Inicializar resultados das estratégias
-            const resultadosEstrategias = {};
-
-            // Calcular efetividade de cada estratégia ativa
-            if (estrategias.ajustePrecos.ativar) {
-                resultadosEstrategias.ajustePrecos = calcularEfeitividadeAjustePrecos(dados, estrategias.ajustePrecos, impactoBase);
-            }
-
-            if (estrategias.renegociacaoPrazos.ativar) {
-                resultadosEstrategias.renegociacaoPrazos = calcularEfeitividadeRenegociacaoPrazos(dados, estrategias.renegociacaoPrazos, impactoBase);
-            }
-
-            if (estrategias.antecipacaoRecebiveis.ativar) {
-                resultadosEstrategias.antecipacaoRecebiveis = calcularEfeitividadeAntecipacaoRecebiveis(dados, estrategias.antecipacaoRecebiveis, impactoBase);
-            }
-
-            if (estrategias.capitalGiro.ativar) {
-                resultadosEstrategias.capitalGiro = calcularEfeitividadeCapitalGiro(dados, estrategias.capitalGiro, impactoBase);
-            }
-
-            if (estrategias.mixProdutos.ativar) {
-                resultadosEstrategias.mixProdutos = calcularEfeitividadeMixProdutos(dados, estrategias.mixProdutos, impactoBase);
-            }
-
-            if (estrategias.meiosPagamento.ativar) {
-                resultadosEstrategias.meiosPagamento = calcularEfeitividadeMeiosPagamento(dados, estrategias.meiosPagamento, impactoBase);
-            }
-
-            // Calcular efetividade combinada
-            const efeitividadeCombinada = calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias, impactoBase);
-
-            // O problema ocorre quando a estratégia "Renegociação de Prazos" é selecionada como ótima
-			// mas seus valores de custo não estão sendo capturados corretamente
-
-			// Adicione este código onde a combinação ótima é definida:
-			if (estrategias.renegociacaoPrazos && estrategias.renegociacaoPrazos.ativar) {
-				// Assegurar que o custo da renegociação de prazos seja calculado corretamente
-				const resultado = resultadosEstrategias.renegociacaoPrazos;
-
-				// Verificar se o custoTotal está sendo calculado e atribuído
-				if (resultado && typeof resultado.custoTotal === 'undefined') {
-					// Calcular o custo total a partir dos dados disponíveis
-					const percFornecedores = estrategias.renegociacaoPrazos.percentualFornecedores / 100;
-					const custoContrapartida = estrategias.renegociacaoPrazos.custoContrapartida / 100;
-
-					// Calcular custo com base na contrapartida
-					resultado.custoTotal = resultado.impactoFluxoCaixa * custoContrapartida * percFornecedores;
-				}
+		try {
+			// Verificar se há uma simulação principal realizada
+			if (!window.ultimaSimulacao) {
+				alert('É necessário realizar uma simulação principal antes de simular estratégias de mitigação.');
+				// Redirecionar para a aba de simulação
+				TabsManager.mudarPara('simulacao-principal');
+				return;
 			}
 
-			// Determinar a estratégia ótima
+			// Coletar dados da última simulação
+			const dados = window.ultimaSimulacao.dados;
+			const impactoBase = window.ultimaSimulacao.resultados.impactoBase;
+
+			// Inicializar resultados das estratégias
+			const resultadosEstrategias = {};
+
+			// Função auxiliar para obter valor de elemento com verificação de existência
+			function getElementValue(id, defaultValue = '0') {
+				const element = document.getElementById(id);
+				return element ? element.value || defaultValue : defaultValue;
+			}
+
+			// Coletar configurações das estratégias com verificações de segurança
+			const estrategias = {
+				ajustePrecos: {
+					ativar: getElementValue('ap-ativar') === '1',
+					percentualAumento: parseFloat(getElementValue('ap-percentual')) || 0,
+					elasticidade: parseFloat(getElementValue('ap-elasticidade')) || 0,
+					impactoVendas: parseFloat(getElementValue('ap-impacto-vendas')) || 0,
+					periodoAjuste: parseInt(getElementValue('ap-periodo')) || 0
+				},
+				renegociacaoPrazos: {
+					ativar: getElementValue('rp-ativar') === '1',
+					aumentoPrazo: parseInt(getElementValue('rp-aumento-prazo')) || 0,
+					percentualFornecedores: parseInt(getElementValue('rp-percentual')) || 0,
+					contrapartidas: getElementValue('rp-contrapartidas') || 'nenhuma',
+					custoContrapartida: parseFloat(getElementValue('rp-custo')) || 0
+				},
+				antecipacaoRecebiveis: {
+					ativar: getElementValue('ar-ativar') === '1',
+					percentualAntecipacao: parseInt(getElementValue('ar-percentual')) || 0,
+					taxaDesconto: parseFloat(getElementValue('ar-taxa')) / 100 || 0,
+					prazoAntecipacao: parseInt(getElementValue('ar-prazo')) || 0
+				},
+				capitalGiro: {
+					ativar: getElementValue('cg-ativar') === '1',
+					valorCaptacao: parseInt(getElementValue('cg-valor')) || 0,
+					taxaJuros: parseFloat(getElementValue('cg-taxa')) / 100 || 0,
+					prazoPagamento: parseInt(getElementValue('cg-prazo')) || 0,
+					carencia: parseInt(getElementValue('cg-carencia')) || 0
+				},
+				mixProdutos: {
+					ativar: getElementValue('mp-ativar') === '1',
+					percentualAjuste: parseInt(getElementValue('mp-percentual')) || 0,
+					focoAjuste: getElementValue('mp-foco') || 'ciclo',
+					impactoReceita: parseFloat(getElementValue('mp-impacto-receita')) || 0,
+					impactoMargem: parseFloat(getElementValue('mp-impacto-margem')) || 0
+				},
+				meiosPagamento: {
+					ativar: getElementValue('mp-pag-ativar') === '1',
+					distribuicaoAtual: {
+						vista: parseInt(getElementValue('mp-pag-vista-atual')) || 0,
+						prazo: parseInt(getElementValue('mp-pag-prazo-atual')) || 0
+					},
+					distribuicaoNova: {
+						vista: parseInt(getElementValue('mp-pag-vista-novo')) || 0,
+						dias30: parseInt(getElementValue('mp-pag-30-novo')) || 0,
+						dias60: parseInt(getElementValue('mp-pag-60-novo')) || 0,
+						dias90: parseInt(getElementValue('mp-pag-90-novo')) || 0
+					},
+					taxaIncentivo: parseFloat(getElementValue('mp-pag-taxa-incentivo')) || 0
+				}
+			};
+
+			console.log('Estratégias coletadas:', estrategias);
+
+			// Verificar se as funções de cálculo existem no escopo
+			const calcFunctions = {
+				ajustePrecos: typeof calcularEfeitividadeAjustePrecos === 'function',
+				renegociacaoPrazos: typeof calcularEfeitividadeRenegociacaoPrazos === 'function',
+				antecipacaoRecebiveis: typeof calcularEfeitividadeAntecipacaoRecebiveis === 'function',
+				capitalGiro: typeof calcularEfeitividadeCapitalGiro === 'function',
+				mixProdutos: typeof calcularEfeitividadeMixProdutos === 'function',
+				meiosPagamento: typeof calcularEfeitividadeMeiosPagamento === 'function',
+				combinada: typeof calcularEfeitividadeCombinada === 'function'
+			};
+
+			console.log('Verificação de funções de cálculo:', calcFunctions);
+
+			// Calcular efetividade de cada estratégia ativa
+			// Com verificações de segurança para cada estratégia
+			if (estrategias.ajustePrecos && estrategias.ajustePrecos.ativar && calcFunctions.ajustePrecos) {
+				resultadosEstrategias.ajustePrecos = calcularEfeitividadeAjustePrecos(dados, estrategias.ajustePrecos, impactoBase);
+			}
+
+			if (estrategias.renegociacaoPrazos && estrategias.renegociacaoPrazos.ativar && calcFunctions.renegociacaoPrazos) {
+				resultadosEstrategias.renegociacaoPrazos = calcularEfeitividadeRenegociacaoPrazos(dados, estrategias.renegociacaoPrazos, impactoBase);
+			}
+
+			if (estrategias.antecipacaoRecebiveis && estrategias.antecipacaoRecebiveis.ativar && calcFunctions.antecipacaoRecebiveis) {
+				resultadosEstrategias.antecipacaoRecebiveis = calcularEfeitividadeAntecipacaoRecebiveis(dados, estrategias.antecipacaoRecebiveis, impactoBase);
+			}
+
+			if (estrategias.capitalGiro && estrategias.capitalGiro.ativar && calcFunctions.capitalGiro) {
+				resultadosEstrategias.capitalGiro = calcularEfeitividadeCapitalGiro(dados, estrategias.capitalGiro, impactoBase);
+			}
+
+			if (estrategias.mixProdutos && estrategias.mixProdutos.ativar && calcFunctions.mixProdutos) {
+				resultadosEstrategias.mixProdutos = calcularEfeitividadeMixProdutos(dados, estrategias.mixProdutos, impactoBase);
+			}
+
+			if (estrategias.meiosPagamento && estrategias.meiosPagamento.ativar && calcFunctions.meiosPagamento) {
+				resultadosEstrategias.meiosPagamento = calcularEfeitividadeMeiosPagamento(dados, estrategias.meiosPagamento, impactoBase);
+			}
+
+			// Verificar se a função gerarMemoriaCritica existe
+			let resultadoEstrategia = {};
+			if (typeof gerarMemoriaCritica === 'function') {
+				resultadoEstrategia.memoriaCritica = gerarMemoriaCritica(dados, resultadosEstrategias);
+			}
+
+			// Calcular efetividade combinada se a função existir
+			let efeitividadeCombinada = {};
+			if (calcFunctions.combinada) {
+				efeitividadeCombinada = calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias, impactoBase);
+			}
+
+			// Determinação da estratégia ótima
 			let estrategiasSelecionadas = [];
 			let nomesEstrategias = [];
 			let efetividadeTotal = 0;
@@ -1574,45 +1587,42 @@ window.SimuladorFluxoCaixa = {
 			Object.entries(resultadosEstrategias).forEach(([codigo, resultado]) => {
 				if (!resultado) return;
 
-				estrategiasSelecionadas.push(resultado);
-				nomesEstrategias.push(traduzirNomeEstrategia(codigo));
+				if (typeof resultado === 'object') {
+					estrategiasSelecionadas.push(resultado);
+					nomesEstrategias.push(typeof traduzirNomeEstrategia === 'function' ? 
+						traduzirNomeEstrategia(codigo) : codigo);
 
-				// Somar a efetividade (evitando duplicação de impacto)
-				efetividadeTotal = Math.max(efetividadeTotal, resultado.efetividadePercentual/100 || 0);
+					// Somar a efetividade (evitando duplicação de impacto)
+					efetividadeTotal = Math.max(efetividadeTotal, (resultado.efetividadePercentual/100) || 0);
 
-				// Calcular impacto e custo com base no tipo de estratégia
-				let impacto = 0;
-				let custo = 0;
+					// Calcular impacto e custo com base no tipo de estratégia
+					let impacto = 0;
+					let custo = 0;
 
-				switch (codigo) {
-					case 'ajustePrecos':
+					// Extrair impacto e custo específicos de cada estratégia
+					if (codigo === 'ajustePrecos') {
 						impacto = resultado.fluxoCaixaAdicional || 0;
 						custo = resultado.custoEstrategia || 0;
-						break;
-					case 'renegociacaoPrazos':
+					} else if (codigo === 'renegociacaoPrazos') {
 						impacto = resultado.impactoFluxoCaixa || 0;
 						custo = resultado.custoTotal || 0;
-						break;
-					case 'antecipacaoRecebiveis':
+					} else if (codigo === 'antecipacaoRecebiveis') {
 						impacto = resultado.impactoFluxoCaixa || 0;
 						custo = resultado.custoTotalAntecipacao || 0;
-						break;
-					case 'capitalGiro':
+					} else if (codigo === 'capitalGiro') {
 						impacto = resultado.valorFinanciamento || 0;
 						custo = resultado.custoTotalFinanciamento || 0;
-						break;
-					case 'mixProdutos':
+					} else if (codigo === 'mixProdutos') {
 						impacto = resultado.impactoFluxoCaixa || 0;
 						custo = resultado.custoImplementacao || 0;
-						break;
-					case 'meiosPagamento':
+					} else if (codigo === 'meiosPagamento') {
 						impacto = resultado.impactoLiquido || 0;
 						custo = resultado.custoTotalIncentivo || 0;
-						break;
-				}
+					}
 
-				mitigacaoTotal += impacto;
-				custoTotal += custo;
+					mitigacaoTotal += impacto;
+					custoTotal += custo;
+				}
 			});
 
 			// Calcular a relação custo-benefício
@@ -1630,31 +1640,39 @@ window.SimuladorFluxoCaixa = {
 				custoBeneficio: custoBeneficio
 			};
 
-            // Consolidar resultados
-            const resultados = {
-                impactoBase,
-                estrategias,
-                resultadosEstrategias,
-                efeitividadeCombinada,
-                combinacaoOtima
-            };
+			// Consolidar resultados
+			const resultados = {
+				impactoBase,
+				estrategias,
+				resultadosEstrategias,
+				efeitividadeCombinada,
+				combinacaoOtima
+			};
 
-            // Armazenar resultados para uso posterior
-            window.resultadosEstrategias = resultados;
+			// Armazenar resultados para uso posterior
+			window.resultadosEstrategias = resultados;
 
-            // Exibir resultados
-            exibirResultadosEstrategias(resultados);
+			// Exibir resultados se a função existir
+			if (typeof this.exibirResultadosEstrategias === 'function') {
+				this.exibirResultadosEstrategias(resultados);
+			} else {
+				console.warn('Função exibirResultadosEstrategias não encontrada');
+			}
 
-            // Atualizar gráficos
-            gerarGraficoEstrategias(resultados);
+			// Atualizar gráficos se a função existir
+			if (typeof this.gerarGraficoEstrategias === 'function') {
+				this.gerarGraficoEstrategias(resultados);
+			} else {
+				console.warn('Função gerarGraficoEstrategias não encontrada');
+			}
 
-            console.log('Simulação de estratégias concluída com sucesso');
-            return resultados;
-        } catch (error) {
-            console.error('Erro ao simular estratégias:', error);
-            alert('Ocorreu um erro durante a simulação das estratégias: ' + error.message);
-        }
-    },
+			console.log('Simulação de estratégias concluída com sucesso');
+			return resultados;
+		} catch (error) {
+			console.error('Erro ao simular estratégias:', error);
+			alert('Ocorreu um erro durante a simulação das estratégias: ' + error.message);
+		}
+	},
 
     /**
      * Exibe os resultados das estratégias de mitigação na interface

@@ -8,41 +8,8 @@
 const CalculationModule = (function() {
     // Variáveis para armazenar resultados intermediários
     let _resultadoAtual = null;
-    let _resultadoSplitPayment = null;
+    let _resultadoSplitPayment = null;  
     
-    // Adicionar no início do arquivo calculation.js
-    function gerarMemoriaCritica(dados, resultados) {
-        // Extrair ou definir valores seguros
-        const faturamento = dados?.faturamento || 0;
-        const aliquota = dados?.aliquota || 0;
-        const creditos = dados?.creditos || 0;
-        const percVista = dados?.percVista || 0;
-        const percPrazo = dados?.percPrazo || 0;
-
-        // Calcular valores derivados
-        const valorImpostoTotal = faturamento * aliquota;
-        const valorImpostoLiquido = Math.max(0, valorImpostoTotal - creditos);
-        const tempoMedioCapitalGiro = 30; // valor aproximado ou calculado
-        const beneficioDiasCapitalGiro = 15; // valor aproximado ou calculado
-
-        return {
-            tituloRegime: "Regime Atual (Pré-Split Payment)",
-            descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
-            tituloCalculo: "Cálculo do Capital de Giro Disponível",
-            formula: `Capital de Giro = Valor do Imposto Líquido (${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoLiquido) : valorImpostoLiquido.toFixed(2)})`,
-            passoAPasso: [
-                `1. Cálculo do Imposto Total: ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(faturamento) : faturamento.toFixed(2)} × ${(aliquota*100).toFixed(2)}% = ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoTotal) : valorImpostoTotal.toFixed(2)}`,
-                `2. Cálculo do Imposto Líquido: ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoTotal) : valorImpostoTotal.toFixed(2)} - ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(creditos) : creditos.toFixed(2)} = ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoLiquido) : valorImpostoLiquido.toFixed(2)}`,
-                `3. Determinação do Capital de Giro: O valor de ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoLiquido) : valorImpostoLiquido.toFixed(2)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
-            ],
-            observacoes: [
-                `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
-                `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
-                `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
-            ]
-        };
-    }
-
     // Adicionar função para formatação segura de moeda caso não exista
     if (!window.FormatacaoHelper || !window.FormatacaoHelper.formatarMoeda) {
         window.FormatacaoHelper = window.FormatacaoHelper || {};
@@ -153,6 +120,62 @@ const CalculationModule = (function() {
     };
 })();
 
+// Adicionar no início do arquivo calculation.js
+// Alterar a função gerarMemoriaCritica em calculation.js
+function gerarMemoriaCritica(dados, resultados = null) {
+    // Extrair ou definir valores seguros
+    const faturamento = dados?.faturamento || 0;
+    const aliquota = dados?.aliquota || 0;
+    const creditos = dados?.creditos || 0;
+    const percVista = dados?.percVista || 0;
+    const percPrazo = dados?.percPrazo || 0;
+
+    // Calcular valores derivados
+    const valorImpostoTotal = faturamento * aliquota;
+    const valorImpostoLiquido = Math.max(0, valorImpostoTotal - creditos);
+    const tempoMedioCapitalGiro = 30; // valor aproximado ou calculado
+    const beneficioDiasCapitalGiro = 15; // valor aproximado ou calculado
+
+    // Criar o objeto base de memória crítica
+    const memoriaBase = {
+        tituloRegime: "Regime Atual (Pré-Split Payment)",
+        descricaoRegime: "No regime atual, o tributo é recolhido no mês subsequente (normalmente até o dia 25).",
+        tituloCalculo: "Cálculo do Capital de Giro Disponível",
+        formula: `Capital de Giro = Valor do Imposto Líquido (${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoLiquido) : valorImpostoLiquido.toFixed(2)})`,
+        passoAPasso: [
+            `1. Cálculo do Imposto Total: ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(faturamento) : faturamento.toFixed(2)} × ${(aliquota*100).toFixed(2)}% = ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoTotal) : valorImpostoTotal.toFixed(2)}`,
+            `2. Cálculo do Imposto Líquido: ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoTotal) : valorImpostoTotal.toFixed(2)} - ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(creditos) : creditos.toFixed(2)} = ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoLiquido) : valorImpostoLiquido.toFixed(2)}`,
+            `3. Determinação do Capital de Giro: O valor de ${FormatacaoHelper.formatarMoeda ? FormatacaoHelper.formatarMoeda(valorImpostoLiquido) : valorImpostoLiquido.toFixed(2)} fica disponível por ${tempoMedioCapitalGiro.toFixed(1)} dias em média.`
+        ],
+        observacoes: [
+            `O valor do imposto fica disponível para uso como capital de giro por aproximadamente ${tempoMedioCapitalGiro.toFixed(1)} dias.`,
+            `Isso representa ${beneficioDiasCapitalGiro.toFixed(1)} dias de faturamento em capital de giro.`,
+            `O cálculo considera a distribuição de vendas à vista (${(percVista*100).toFixed(1)}%) e a prazo (${(percPrazo*100).toFixed(1)}%).`
+        ]
+    };
+
+    // Se existirem resultados de estratégias, incorporar na memória crítica
+    if (resultados) {
+        memoriaBase.estrategias = {
+            analisadas: Object.keys(resultados).filter(k => resultados[k] !== null),
+            efetividade: {}
+        };
+
+        // Adicionar informações de efetividade para cada estratégia
+        for (const [estrategia, resultado] of Object.entries(resultados)) {
+            if (resultado !== null) {
+                memoriaBase.estrategias.efetividade[estrategia] = {
+                    percentual: resultado.efetividadePercentual?.toFixed(2) || "N/A",
+                    custoMensal: resultado.custoMensalJuros || resultado.custoImplementacao || resultado.custoAntecipacao || 0,
+                    relacaoCustoBeneficio: resultado.custoBeneficio?.toFixed(3) || "N/A"
+                };
+            }
+        }
+    }
+
+    return memoriaBase;
+}
+
     /**
      * Calcula o fluxo de caixa no regime tributário atual (pré-Split Payment)
      * 
@@ -201,7 +224,7 @@ const CalculationModule = (function() {
             tempoMedioCapitalGiro,
             beneficioDiasCapitalGiro,
             fluxoCaixaLiquido: faturamento - valorImpostoLiquido,            
-            memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+            memoriaCritica: gerarMemoriaCritica(dados)
         };
 
         return resultado;
@@ -428,7 +451,7 @@ function calcularFluxoCaixaSplitPayment(dados, ano = 2026, parametrosSetoriais =
         tempoMedioCapitalGiro,
         beneficioDiasCapitalGiro,
         fluxoCaixaLiquido: recebimentoVista + recebimentoPrazo,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -476,7 +499,7 @@ function calcularImpactoCapitalGiro(dados, ano = 2026, parametrosSetoriais = nul
         margemOperacionalAjustada: dados.margem - (impactoMargem.impactoPercentual / 100),
         impactoMargem: impactoMargem.impactoPercentual,
         analiseSensibilidade,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -518,7 +541,7 @@ function calcularImpactoMargem(dados, diferencaCapitalGiro) {
         margemOriginal: margem,
         margemAjustada,
         percentualReducaoMargem,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -571,7 +594,7 @@ function calcularNecessidadeAdicionalCapital(dados, ano = 2026, parametrosSetori
         necessidadeTotal,
         opcoesFinanciamento,
         impactoResultado,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -647,7 +670,7 @@ function calcularProjecaoTemporal(dados, anoInicial = 2026, anoFinal = 2033, cen
         resultadosAnuais,
         impactoAcumulado,
         analiseElasticidade,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -704,7 +727,7 @@ function calcularImpactoCicloFinanceiro(dados, ano = 2026, parametrosSetoriais =
         ncgAjustada,
         diferencaNCG,
         // Resto do código...
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -755,7 +778,7 @@ function calcularEfeitividadeMitigacao(dados, estrategias, ano = 2026, parametro
         estrategiasOrdenadas,
         estrategiaMaisEfetiva,
         combinacaoOtima,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -1187,7 +1210,7 @@ function calcularEfeitividadeRenegociacaoPrazos(dados, estrategia, impactoBase) 
         impactoNovoPMP,
         impactoCicloFinanceiro,
         diferençaCiclo,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -1260,7 +1283,7 @@ function calcularEfeitividadeAntecipacaoRecebiveis(dados, estrategia, impactoBas
         cicloFinanceiroAjustado,
         reducaoCiclo,
         custoBeneficio: custoTotalAntecipacao / valorTotalAntecipado,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -1322,7 +1345,7 @@ function calcularEfeitividadeCapitalGiro(dados, estrategia, impactoBase) {
         taxaEfetivaAnual,
         impactoMargemPP,
         custoBeneficio: custoTotalFinanciamento / valorFinanciamento,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -1414,7 +1437,7 @@ function calcularEfeitividadeMixProdutos(dados, estrategia, impactoBase) {
         impactoTotal,
         custoImplementacao,
         custoBeneficio: custoImplementacao / impactoTotal,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -1505,7 +1528,7 @@ function calcularEfeitividadeMeiosPagamento(dados, estrategia, impactoBase) {
         impactoTotal,
         custoTotalIncentivo,
         custoBeneficio: variaPMR < 0 ? valorIncentivoMensal / Math.abs(impacto_pmr) : Infinity,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
@@ -1513,15 +1536,6 @@ function calcularEfeitividadeMeiosPagamento(dados, estrategia, impactoBase) {
 
 // Demais funções de efetividade...
 
-/**
- * Calcula a efetividade combinada das estratégias
- * 
- * @param {Object} dados - Dados da empresa e parâmetros de simulação
- * @param {Object} estrategias - Configuração das estratégias
- * @param {Object} resultadosEstrategias - Resultados individuais das estratégias
- * @param {Object} impactoBase - Impacto base do Split Payment
- * @returns {Object} - Análise de efetividade combinada
- */
 /**
  * Calcula a efetividade combinada das estratégias selecionadas
  * 
@@ -1649,21 +1663,12 @@ function calcularEfeitividadeCombinada(dados, estrategias, resultadosEstrategias
         variacaoCiclo,
         margemAjustada,
         impactosMitigados,
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
 }
 
-/**
- * Identifica a combinação ótima de estratégias
- * 
- * @param {Object} dados - Dados da empresa e parâmetros de simulação
- * @param {Object} estrategias - Configuração das estratégias
- * @param {Object} resultadosEstrategias - Resultados individuais das estratégias
- * @param {Object} impactoBase - Impacto base do Split Payment
- * @returns {Object} - Combinação ótima de estratégias
- */
 /**
  * Identifica a combinação ótima de estratégias
  * 
@@ -1825,7 +1830,7 @@ function identificarCombinacaoOtima(dados, estrategias, resultadosEstrategias, i
                 custo: melhorEstrategia.custo
             }
         },
-        memoriaCritica: gerarMemoriaCritica(dados, resultadosEstrategias)
+        memoriaCritica: gerarMemoriaCritica(dados)
     };
 
     return resultado;
